@@ -1,0 +1,58 @@
+{
+  "name": "backend",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "dev": "ts-node-dev --respawn --transpile-only ./api/src/server.ts",
+    "start": "node dist/api/src/server.js",
+    "prisma:generate": "ts-node ./scripts/generate-prisma.ts",
+    "prisma:migrate": "prisma migrate dev",
+    "create-admin": "node scripts/create-admin.js",
+    "create-admin-ts": "ts-node ./scripts/create-admin-prisma.ts",
+    "create-admin-sql": "ts-node ./scripts/create-admin.ts",
+    "reset-admin": "node scripts/reset-admin.js",
+    "update-admin-password": "ts-node ./scripts/create-admin.ts --update",
+    "generate-hash": "node ./scripts/generate-hash.js",
+    "create-sample-tests": "node scripts/create-sample-tests.js",
+    "create-sample-parameters": "node scripts/create-sample-parameters.js",
+    "process-scheduled-messages": "ts-node ./scripts/process-scheduled-messages.ts"
+  },
+  "keywords": [],
+  "type": "commonjs",
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.9.1",
+    "@prisma/client": "^7.9.1",
+    "bcryptjs": "^3.0.3",
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "express-rate-limit": "^8.6.2",
+    "helmet": "^8.3.0",
+    "jsonwebtoken": "^9.0.3",
+    "morgan": "^1.12.0",
+    "nodemailer": "^6.9.15",
+    "pg": "^8.23.0",
+    "puppeteer": "^23.11.1",
+    "socket.io": "^4.7.5",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/jsonwebtoken": "^9.0.10",
+    "@types/morgan": "^1.9.10",
+    "@types/nodemailer": "^6.4.17",
+    "@types/node": "^26.2.0",
+    "@types/socket.io": "^4.4.10",
+    "prisma": "^7.9.1",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.9.3"
+  },
+  "allowScripts": {
+    "prisma@7.9.1": true,
+    "@prisma/engines@7.9.1": true
+  }
+}

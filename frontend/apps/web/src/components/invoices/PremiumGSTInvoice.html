@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TAX INVOICE - LabCore ELIS</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+    :root {
+      /* Theme Colors - Enhanced Palette */
+      --color-base: #FDFBF7;
+      --color-accent: #0A1628;
+      --color-accent-secondary: #1E3A5F;
+      --color-accent-light: #2A4A6F;
+      --color-text-primary: #0A1628;
+      --color-text-secondary: #4A5568;
+      --color-text-muted: #718096;
+      --color-border: #E2E8F0;
+      --color-border-light: #EDF2F7;
+      --color-border-subtle: #F7FAFC;
+      --color-success: #047857;
+      --color-success-light: #D1FAE5;
+      --color-warning: #B45309;
+      --color-warning-light: #FEF3C7;
+      --color-error: #B91C1C;
+      --color-error-light: #FEE2E2;
+
+      /* Typography - Enhanced Font Pairing */
+      --font-serif: 'Cormorant Garamond', Georgia, serif;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+
+      /* Spacing - Enhanced */
+      --spacing-xs: 3px;
+      --spacing-sm: 6px;
+      --spacing-md: 12px;
+      --spacing-lg: 18px;
+      --spacing-xl: 24px;
+      --spacing-2xl: 36px;
+      --spacing-3xl: 48px;
+
+      /* Borders - Enhanced */
+      --border-hairline: 1px solid var(--color-border);
+      --border-thin: 1px solid var(--color-accent);
+      --border-medium: 1px solid var(--color-accent-secondary);
+      --border-frame: 2px solid var(--color-accent);
+      --border-subtle: 1px solid var(--color-border-subtle);
+
+      /* Shadows - Enhanced */
+      --shadow-soft: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-medium: 0 2px 4px rgba(0, 0, 0, 0.06);
+      --shadow-inset: inset 0 1px 3px rgba(0, 0, 0, 0.02);
+      --shadow-elegant: 0 4px 12px rgba(10, 22, 40, 0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      font-size: 11px;
+      color: var(--color-text-primary);
+      background: var(--color-base);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* A4 Page Container - Enhanced */
+    .invoice-page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 15mm;
+      background: white;
+      position: relative;
+      box-shadow: var(--shadow-elegant);
+    }
+
+    /* Die-line Frame - Enhanced */
+    .invoice-page::before {
+      content: '';
+      position: absolute;
+      top: 8mm;
+      left: 8mm;
+      right: 8mm;
+      bottom: 8mm;
+      border: var(--border-frame);
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.8;
+    }
+
+    /* Subtle corner accents */
+    .invoice-page::after {
+      content: '';
+      position: absolute;
+      top: 8mm;
+      left: 8mm;
+      width: 20px;
+      height: 20px;
+      border-top: 3px solid var(--color-accent);
+      border-left: 3px solid var(--color-accent);
+      pointer-events: none;
+      z-index: 2;
+      opacity: 0.6;
+    }
+
+    /* Content Container */
+    .invoice-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Header Section - Enhanced */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--spacing-3xl);
+      padding-bottom: var(--spacing-xl);
+      border-bottom: var(--border-hairline);
+    }
+
+    .company-branding {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-lg);
+    }
+
+    .accent-bar {
+      width: 2px;
+      height: 52px;
+      background: linear-gradient(180deg, var(--color-accent) 0%, var(--color-accent-secondary) 100%);
+    }
+
+    .company-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .company-name {
+      font-family: var(--font-serif);
+      font-size: 28px;
+      font-weight: 400;
+      color: var(--color-accent);
+      letter-spacing: 0.3px;
+      margin-bottom: var(--spacing-xs);
+      line-height: 1.1;
+    }
+
+    .company-tagline {
+      font-size: 8px;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 2.5px;
+      font-weight: 500;
+      margin-bottom: var(--spacing-sm);
+    }
+
+    .company-meta {
+      font-size: 9px;
+      color: var(--color-text-muted);
+      line-height: 1.4;
+      font-family: var(--font-sans);
+    }
+
+    .invoice-meta {
+      text-align: right;
+    }
+
+    .invoice-title {
+      font-family: var(--font-serif);
+      font-size: 16px;
+      font-weight: 400;
+      color: var(--color-accent);
+      letter-spacing: 1.5px;
+      margin-bottom: var(--spacing-sm);
+      text-transform: uppercase;
+    }
+
+    .invoice-number {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--color-accent);
+      margin-bottom: var(--spacing-sm);
+      letter-spacing: 0.5px;
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--spacing-xl);
+      font-size: 10px;
+      color: var(--color-text-secondary);
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .meta-label {
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+      color: var(--color-text-muted);
+      margin-bottom: 2px;
+      font-weight: 500;
+    }
+
+    .meta-value {
+      font-weight: 500;
+      color: var(--color-text-primary);
+      font-family: var(--font-sans);
+    }
+
+    /* Status Badge - Enhanced */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 6px 16px;
+      border-radius: 16px;
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      background: var(--color-base);
+      border: var(--border-hairline);
+      box-shadow: var(--shadow-soft);
+      margin-top: var(--spacing-md);
+      transition: all 0.2s ease;
+    }
+
+    .status-badge.paid {
+      color: var(--color-success);
+      border-color: var(--color-success-light);
+      background: var(--color-success-light);
+    }
+
+    .status-badge.due {
+      color: var(--color-warning);
+      border-color: var(--color-warning-light);
+      background: var(--color-warning-light);
+    }
+
+    .status-badge.overdue {
+      color: var(--color-error);
+      border-color: var(--color-error-light);
+      background: var(--color-error-light);
+    }
+
+    /* Section Labels - Enhanced */
+    .section-label {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.8px;
+      color: var(--color-text-muted);
+      margin-bottom: var(--spacing-sm);
+      font-family: var(--font-sans);
+    }
+
+    /* Party Details - Enhanced */
+    .party-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: var(--spacing-2xl);
+      margin-bottom: var(--spacing-3xl);
+    }
+
+    .party-section {
+      padding: var(--spacing-lg);
+      background: var(--color-base);
+      border: var(--border-subtle);
+      position: relative;
+    }
+
+    .party-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 3px;
+      height: 100%;
+      background: linear-gradient(180deg, var(--color-accent) 0%, var(--color-accent-secondary) 100%);
+    }
+
+    .party-name {
+      font-family: var(--font-serif);
+      font-size: 15px;
+      font-weight: 400;
+      color: var(--color-accent);
+      margin-bottom: var(--spacing-sm);
+      line-height: 1.2;
+    }
+
+    .party-detail {
+      font-size: 10px;
+      color: var(--color-text-secondary);
+      margin-bottom: var(--spacing-xs);
+      line-height: 1.5;
+    }
+
+    .party-detail strong {
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    /* Table Section - Enhanced */
+    .table-section {
+      margin-bottom: var(--spacing-3xl);
+    }
+
+    .invoice-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+
+    .invoice-table thead {
+      border-bottom: var(--border-medium);
+    }
+
+    .invoice-table th {
+      font-family: var(--font-sans);
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--color-text-muted);
+      padding: var(--spacing-md) var(--spacing-lg);
+      text-align: left;
+      position: relative;
+    }
+
+    .invoice-table th.text-right {
+      text-align: right;
+    }
+
+    .invoice-table th.text-center {
+      text-align: center;
+    }
+
+    .invoice-table td {
+      padding: var(--spacing-lg) var(--spacing-lg);
+      border-bottom: var(--border-subtle);
+      color: var(--color-text-primary);
+      vertical-align: top;
+    }
+
+    .invoice-table td.text-right {
+      text-align: right;
+    }
+
+    .invoice-table td.text-center {
+      text-align: center;
+    }
+
+    .invoice-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .invoice-table tbody tr:hover {
+      background: var(--color-border-subtle);
+    }
+
+    /* Tabular nums for numeric columns - Enhanced */
+    .tabular-nums {
+      font-feature-settings: "tnum";
+      font-variant-numeric: tabular-nums;
+      font-family: var(--font-mono);
+    }
+
+    .amount {
+      font-weight: 500;
+    }
+
+    .total-amount {
+      font-weight: 600;
+    }
+
+    /* Summary Section */
+    .summary-section {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: var(--spacing-2xl);
+    }
+
+    .summary-box {
+      width: 280px;
+      padding: var(--spacing-lg);
+      background: var(--color-base);
+      border: var(--border-thin);
+      box-shadow: var(--shadow-inset);
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-sm);
+      font-size: 10px;
+    }
+
+    .summary-row.total {
+      margin-top: var(--spacing-md);
+      padding-top: var(--spacing-md);
+      border-top: var(--border-thin);
+    }
+
+    .summary-label {
+      color: var(--color-text-secondary);
+      font-weight: 500;
+    }
+
+    .summary-value {
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .grand-total {
+      font-family: var(--font-serif);
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--color-accent);
+    }
+
+    .grand-total-value {
+      font-family: var(--font-serif);
+      font-size: 18px;
+      font-weight: 400;
+      color: var(--color-accent);
+    }
+
+    .amount-in-words {
+      font-size: 9px;
+      color: var(--color-text-muted);
+      font-style: italic;
+      margin-top: var(--spacing-sm);
+      line-height: 1.4;
+    }
+
+    /* Balance Due */
+    .balance-due {
+      margin-top: var(--spacing-md);
+      padding-top: var(--spacing-md);
+      border-top: var(--border-hairline);
+    }
+
+    .balance-due .summary-label {
+      font-weight: 600;
+      color: var(--color-accent);
+    }
+
+    .balance-due .summary-value {
+      font-weight: 700;
+      color: var(--color-error);
+    }
+
+    /* QR Code Section */
+    .qr-section {
+      display: flex;
+      align-items: center;
+      gap: var(--spacing-lg);
+      margin-bottom: var(--spacing-2xl);
+      padding: var(--spacing-lg);
+      background: linear-gradient(135deg, #fafafa 0%, #f5f5f5 100%);
+      border: var(--border-hairline);
+      position: relative;
+    }
+
+    /* Subtle dotted pattern behind QR */
+    .qr-section::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background-image: radial-gradient(circle, #e5e7eb 1px, transparent 1px);
+      background-size: 8px 8px;
+      opacity: 0.5;
+      pointer-events: none;
+    }
+
+    .qr-code {
+      width: 64px;
+      height: 64px;
+      background: white;
+      border: var(--border-hairline);
+      padding: 4px;
+      position: relative;
+      z-index: 1;
+    }
+
+    .qr-code img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .qr-info {
+      flex: 1;
+      position: relative;
+      z-index: 1;
+    }
+
+    .qr-title {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--color-accent);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .qr-description {
+      font-size: 9px;
+      color: var(--color-text-secondary);
+      line-height: 1.4;
+    }
+
+    /* Bank Details */
+    .bank-details {
+      margin-bottom: var(--spacing-2xl);
+      padding: var(--spacing-md);
+      background: var(--color-base);
+      border: var(--border-hairline);
+    }
+
+    .bank-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: var(--spacing-md);
+    }
+
+    .bank-item {
+      font-size: 10px;
+    }
+
+    .bank-label {
+      font-size: 9px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--color-text-muted);
+      margin-bottom: 2px;
+    }
+
+    .bank-value {
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: var(--spacing-2xl);
+      padding-top: var(--spacing-lg);
+      border-top: var(--border-hairline);
+      text-align: center;
+    }
+
+    .footer-text {
+      font-size: 9px;
+      color: var(--color-text-muted);
+      margin-bottom: var(--spacing-xs);
+    }
+
+    .footer-terms {
+      font-size: 8px;
+      color: var(--color-text-muted);
+      line-height: 1.4;
+      max-width: 80%;
+      margin: 0 auto;
+    }
+
+    /* Print Media Query */
+    @media print {
+      body {
+        margin: 0;
+        background: white;
+      }
+
+      .invoice-page {
+        box-shadow: none;
+        margin: 0;
+        width: 100%;
+        page-break-after: always;
+      }
+
+      .invoice-page::before {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .qr-section::before {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+
+      .status-badge {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-page">
+    <div class="invoice-content">
+      <!-- Header -->
+      <header class="header">
+        <div class="company-branding">
+          <div class="accent-bar"></div>
+          <div class="company-info">
+            <h1 class="company-name">LABCORE ELIS</h1>
+            <p class="company-tagline">Enterprise Laboratory Information System</p>
+          </div>
+        </div>
+
+        <div class="invoice-meta">
+          <h2 class="invoice-title">Tax Invoice</h2>
+          <p class="invoice-number">INV-2024-001234</p>
+          <div class="meta-row">
+            <div class="meta-item">
+              <span class="meta-label">Date</span>
+              <span class="meta-value">03 September 2026</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Due Date</span>
+              <span class="meta-value">03 October 2026</span>
+            </div>
+          </div>
+          <span class="status-badge paid">Paid</span>
+        </div>
+      </header>
+
+      <!-- Party Details -->
+      <div class="party-details">
+        <div class="party-section">
+          <p class="section-label">Bill To</p>
+          <h3 class="party-name">John Doe</h3>
+          <p class="party-detail"><strong>UHID:</strong> UHID-2024-789012</p>
+          <p class="party-detail"><strong>Phone:</strong> +91-9876543210</p>
+          <p class="party-detail"><strong>Email:</strong> john.doe@email.com</p>
+          <p class="party-detail">123 Healthcare Avenue, Medical District, City - 560001</p>
+        </div>
+
+        <div class="party-section">
+          <p class="section-label">Ship From</p>
+          <h3 class="party-name">LabCore ELIS</h3>
+          <p class="party-detail"><strong>GSTIN:</strong> 29ABCDE1234F1Z5</p>
+          <p class="party-detail"><strong>PAN:</strong> ABCDE1234F</p>
+          <p class="party-detail"><strong>Phone:</strong> +91-9876543210</p>
+          <p class="party-detail"><strong>Email:</strong> billing@labcore.com</p>
+          <p class="party-detail">123 Healthcare Avenue, Medical District, City - 560001</p>
+        </div>
+      </div>
+
+      <!-- Invoice Items Table -->
+      <div class="table-section">
+        <p class="section-label">Services / Tests</p>
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Description</th>
+              <th class="text-center">HSN/SAC</th>
+              <th class="text-center">Qty</th>
+              <th class="text-right">Rate</th>
+              <th class="text-right">Taxable</th>
+              <th class="text-center">CGST%</th>
+              <th class="text-right">CGST</th>
+              <th class="text-center">SGST%</th>
+              <th class="text-right">SGST</th>
+              <th class="text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>
+                <strong>Complete Blood Count (CBC)</strong>
+                <br><span style="color: var(--color-text-muted); font-size: 9px;">CBC-001</span>
+              </td>
+              <td class="text-center">999312</td>
+              <td class="text-center">1</td>
+              <td class="text-right tabular-nums amount">₹500.00</td>
+              <td class="text-right tabular-nums amount">₹500.00</td>
+              <td class="text-center">9%</td>
+              <td class="text-right tabular-nums amount">₹45.00</td>
+              <td class="text-center">9%</td>
+              <td class="text-right tabular-nums amount">₹45.00</td>
+              <td class="text-right tabular-nums total-amount">₹590.00</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>
+                <strong>Lipid Profile</strong>
+                <br><span style="color: var(--color-text-muted); font-size: 9px;">LIP-002</span>
+              </td>
+              <td class="text-center">999312</td>
+              <td class="text-center">1</td>
+              <td class="text-right tabular-nums amount">₹800.00</td>
+              <td class="text-right tabular-nums amount">₹800.00</td>
+              <td class="text-center">9%</td>
+              <td class="text-right tabular-nums amount">₹72.00</td>
+              <td class="text-center">9%</td>
+              <td class="text-right tabular-nums amount">₹72.00</td>
+              <td class="text-right tabular-nums total-amount">₹944.00</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>
+                <strong>Thyroid Function Test</strong>
+                <br><span style="color: var(--color-text-muted); font-size: 9px;">TFT-003</span>
+              </td>
+              <td class="text-center">999312</td>
+              <td class="text-center">1</td>
+              <td class="text-right tabular-nums amount">₹650.00</td>
+              <td class="text-right tabular-nums amount">₹650.00</td>
+              <td class="text-center">9%</td>
+              <td class="text-right tabular-nums amount">₹58.50</td>
+              <td class="text-center">9%</td>
+              <td class="text-right tabular-nums amount">₹58.50</td>
+              <td class="text-right tabular-nums total-amount">₹767.00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Summary Section -->
+      <div class="summary-section">
+        <div class="summary-box">
+          <div class="summary-row">
+            <span class="summary-label">Subtotal</span>
+            <span class="summary-value tabular-nums">₹1,950.00</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Total Taxable Value</span>
+            <span class="summary-value tabular-nums">₹1,950.00</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Total GST</span>
+            <span class="summary-value tabular-nums">₹351.00</span>
+          </div>
+          <div class="summary-row total">
+            <span class="summary-label grand-total">Grand Total</span>
+            <span class="summary-value grand-total-value tabular-nums">₹2,301.00</span>
+          </div>
+          <p class="amount-in-words">Two Thousand Three Hundred One Rupees Only</p>
+          <div class="balance-due">
+            <div class="summary-row">
+              <span class="summary-label">Amount Paid</span>
+              <span class="summary-value tabular-nums" style="color: var(--color-success);">₹2,301.00</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Balance Due</span>
+              <span class="summary-value tabular-nums">₹0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QR Code Section -->
+      <div class="qr-section">
+        <div class="qr-code">
+          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23ffffff' width='100' height='100'/%3E%3Cpath fill='%230B1B3A' d='M10 10h30v30H10zM50 10h10v10H50zM70 10h20v20H70zM10 50h10v10H10zM30 50h10v10H30zM50 50h10v10H50zM70 50h10v10H70zM90 50h10v10H90zM10 70h10v10H10zM30 70h10v10H30zM50 70h30v30H50z'/%3E%3C/svg%3E" alt="QR Code">
+        </div>
+        <div class="qr-info">
+          <h4 class="qr-title">Invoice Verification</h4>
+          <p class="qr-description">Scan this QR code to verify invoice authenticity and GST compliance. Invoice: INV-2024-001234</p>
+        </div>
+      </div>
+
+      <!-- Bank Details -->
+      <div class="bank-details">
+        <p class="section-label">Bank Details</p>
+        <div class="bank-grid">
+          <div class="bank-item">
+            <p class="bank-label">Bank Name</p>
+            <p class="bank-value">ABC Bank</p>
+          </div>
+          <div class="bank-item">
+            <p class="bank-label">Account Number</p>
+            <p class="bank-value">1234567890123</p>
+          </div>
+          <div class="bank-item">
+            <p class="bank-label">IFSC Code</p>
+            <p class="bank-value">ABCD0123456</p>
+          </div>
+          <div class="bank-item">
+            <p class="bank-label">Branch</p>
+            <p class="bank-value">Main Branch, City</p>
+          </div>
+          <div class="bank-item">
+            <p class="bank-label">UPI ID</p>
+            <p class="bank-value">labcore@upi</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="footer">
+        <p class="footer-text">This is a computer-generated tax invoice. For queries, please contact the laboratory billing department.</p>
+        <p class="footer-terms">
+          Terms & Conditions: Payment is due within 30 days from invoice date. Goods once sold will not be taken back. 
+          Subject to local jurisdiction only. This is a computer-generated invoice and does not require signature.
+        </p>
+        <p class="footer-text" style="margin-top: 8px;">Generated on 03 September 2026</p>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

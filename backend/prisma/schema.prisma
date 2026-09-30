@@ -1,0 +1,2337 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id                           String                        @id @default(cuid())
+  employeeCode                 String                        @unique
+  fullName                     String
+  email                        String                        @unique
+  phone                        String?                       @db.VarChar(15)
+  passwordHash                 String
+  role                         UserRole
+  status                       AccountStatus                 @default(ACTIVE)
+  specialization               String?
+  createdAt                    DateTime                      @default(now())
+  updatedAt                    DateTime                      @updatedAt
+  autoApproveResults           Boolean                       @default(false)
+  compactMode                  Boolean                       @default(false)
+  darkMode                     Boolean                       @default(false)
+  dateFormat                   String?                       @default("DD/MM/YYYY")
+  defaultReportTemplate        String?                       @default("standard")
+  department                   String?
+  designation                  String?
+  emergencyContact             String?
+  emergencyContactPhone        String?                       @db.VarChar(15)
+  enableCriticalAlerts         Boolean                       @default(true)
+  enableDailyDigest            Boolean                       @default(true)
+  enableEmailNotifications     Boolean                       @default(true)
+  enablePushNotifications      Boolean                       @default(true)
+  enableSmsNotifications       Boolean                       @default(false)
+  firstName                    String?
+  language                     String?                       @default("English")
+  lastName                     String?
+  preferredCommunicationMethod String?                       @default("email")
+  profileImage                 String?
+  showTutorial                 Boolean                       @default(true)
+  signature                    String?
+  timeFormat                   String?                       @default("24h")
+  timezone                     String?                       @default("Asia/Kolkata")
+  workingHoursEnd              String?                       @default("17:00")
+  workingHoursStart            String?                       @default("09:00")
+  failedLoginCount             Int                           @default(0)
+  lockedUntil                  DateTime?
+  passwordChangedAt            DateTime?
+  mfaEnabled                   Boolean                       @default(false)
+  totpSecretEnc                String?
+  totpPendingEnc               String?
+  createdTestMappings          AnalyzerTestMapping[]         @relation("TestMappingCreator")
+  approvals                    Approval[]                    @relation("ApprovalUser")
+  auditLogs                    AuditLog[]
+  createdCalibrations          Calibration[]                 @relation("CalibrationCreator")
+  counterSessions              CashCounterSession[]          @relation("CounterSessionUser")
+  cashCounters                 CashCounter[]                 @relation("CounterAssigned")
+  cashMovements                CashMovement[]                @relation("CashMovementPerformer")
+  sentCommunications           CommunicationLog[]            @relation("CommunicationSender")
+  criticalAcknowledgments      CriticalValueAcknowledgment[]
+  createdMaintenances          Maintenance[]                 @relation("MaintenanceCreator")
+  mfaBackupCodes               MfaBackupCode[]
+  createdTemplates             NotificationTemplate[]        @relation("TemplateCreator")
+  createdOrders                Order[]                       @relation("OrderCreator")
+  passwordHistory              PasswordHistory[]
+  advancesReceived             PatientAdvance[]              @relation("AdvanceReceiver")
+  consentsCollected            PatientConsent[]              @relation("ConsentCollector")
+  historyEntries               PatientHistoryEntry[]         @relation("HistoryEntryCreator")
+  createdPatients              Patient[]                     @relation("PatientCreator")
+  patientKycVerifications      Patient[]                     @relation("PatientKycVerifier")
+  paymentAuditLogs             PaymentAuditLog[]             @relation("PaymentAuditUser")
+  paymentsReceived             Payment[]                     @relation("PaymentReceiver")
+  createdQCRules               QCRule[]                      @relation("QCRuleCreator")
+  reconciliationRecords        ReconciliationRecord[]        @relation("ReconciliationPerformer")
+  refundApprovals              RefundApproval[]
+  refundsProcessed             Refund[]                      @relation("RefundProcessor")
+  refundsRequested             Refund[]                      @relation("RefundRequester")
+  createdAddendums             ReportAddendum[]              @relation("AddendumCreator")
+  createdShareLinks            ReportShareLink[]             @relation("ShareLinkCreator")
+  publishedReports             Report[]                      @relation("ReportPublisher")
+  createdAmendments            ResultAmendment[]             @relation("AmendmentCreator")
+  approvedAmendments           ResultAmendment[]             @relation("AmendmentApprover")
+  approvedResults              Result[]                      @relation("ApprovedBy")
+  enteredResults               Result[]                      @relation("EnteredBy")
+  performedTrackingEvents      SampleTrackingHistory[]       @relation("TrackingPerformer")
+  collectedSamples             Sample[]                      @relation("SampleCollector")
+  sessions                     UserSession[]
+  createdAutoReplyRules        WhatsAppAutoReplyRule[]       @relation("AutoReplyCreator")
+  createdCampaigns             WhatsAppCampaign[]            @relation("CampaignCreator")
+  createdTriggers              WhatsAppNotificationTrigger[] @relation("TriggerCreator")
+  createdWhatsAppTemplates     WhatsAppTemplate[]            @relation("WhatsAppTemplateCreator")
+
+  @@index([role])
+  @@index([status])
+  @@index([fullName])
+  @@map("users")
+}
+
+model PasswordHistory {
+  id           String   @id @default(cuid())
+  userId       String
+  passwordHash String
+  createdAt    DateTime @default(now())
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@map("password_history")
+}
+
+model UserSession {
+  id                String    @id @default(cuid())
+  userId            String
+  refreshTokenHash  String    @unique
+  deviceFingerprint String?
+  userAgent         String?
+  ipAddress         String?
+  lastSeenAt        DateTime  @default(now())
+  expiresAt         DateTime
+  revokedAt         DateTime?
+  revokeReason      String?
+  createdAt         DateTime  @default(now())
+  user              User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([userId, revokedAt])
+  @@map("user_sessions")
+}
+
+model MfaBackupCode {
+  id        String    @id @default(cuid())
+  userId    String
+  codeHash  String
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("mfa_backup_codes")
+}
+
+model RolePermission {
+  id         String   @id @default(cuid())
+  role       UserRole
+  permission String
+  createdAt  DateTime @default(now())
+
+  @@unique([role, permission])
+  @@index([role])
+  @@map("role_permissions")
+}
+
+model Doctor {
+  id                     String      @id @default(cuid())
+  doctorCode             String      @unique
+  fullName               String
+  qualification          String?
+  specialization         String?
+  phone                  String?     @db.VarChar(15)
+  email                  String?     @unique
+  clinicName             String?
+  address                String?
+  commissionRate         Decimal?    @db.Decimal(5, 2)
+  isActive               Boolean     @default(true)
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+  availableDays          String?
+  availableTime          String?
+  consultationFee        Decimal?    @db.Decimal(10, 2)
+  department             String?
+  designation            String?
+  experience             Int?
+  licenseExpiry          DateTime?
+  licenseNumber          String?
+  photoUrl               String?
+  signatureUrl           String?
+  doctorType             DoctorType? @default(REFERRING_DOCTOR)
+  clinicAddress          String?     @db.VarChar(500)
+  whatsappNumber         String?     @db.VarChar(15)
+  reportDeliveryEmail    Boolean     @default(false)
+  reportDeliveryWhatsApp Boolean     @default(false)
+  reportDeliveryHardCopy Boolean     @default(false)
+  reportDeliveryPortal   Boolean     @default(false)
+  enablePortalAccess     Boolean     @default(false)
+  bankAccountNumber      String?     @db.VarChar(30)
+  bankIfscCode           String?     @db.VarChar(20)
+  bankAccountHolderName  String?     @db.VarChar(200)
+  registrationNumber     String?
+  orders                 Order[]
+  patients               Patient[]
+
+  @@index([fullName])
+  @@index([specialization])
+  @@index([isActive])
+  @@index([doctorType])
+  @@map("doctors")
+}
+
+model Patient {
+  id                           String                     @id @default(cuid())
+  uhid                         String                     @unique
+  firstName                    String
+  lastName                     String
+  gender                       Gender
+  dateOfBirth                  DateTime?
+  age                          Int?
+  ageMonth                     Int?
+  ageDay                       Int?
+  phone                        String?                    @db.VarChar(15)
+  email                        String?
+  bloodGroup                   String?
+  address                      String?
+  city                         String?
+  state                        String?
+  pincode                      String?                    @db.VarChar(10)
+  emergencyContact             String?                    @db.VarChar(15)
+  referredById                 String?
+  createdById                  String?
+  createdAt                    DateTime                   @default(now())
+  updatedAt                    DateTime                   @updatedAt
+  emergencyContactName         String?
+  emergencyContactRelationship String?
+  fastingStatus                String?
+  insuranceNumber              String?
+  insuranceProvider            String?
+  nationalId                   String?
+  isActive                     Boolean                    @default(true)
+  middleName                   String?
+  alternatePhone               String?                    @db.VarChar(15)
+  landmark                     String?
+  country                      String?                    @default("India")
+  emergencyContactAddress      String?
+  height                       Float?
+  weight                       Float?
+  bmi                          Float?
+  aadhaarNumber                String?                    @db.VarChar(12)
+  panNumber                    String?                    @db.VarChar(10)
+  patientType                  String?                    @default("GENERAL")
+  maritalStatus                String?
+  occupation                   String?
+  nationality                  String?                    @default("Indian")
+  allergies                    Json?
+  chronicDiseases              Json?
+  currentMedications           Json?
+  insuranceGroupNumber         String?
+  insuranceExpiryDate          DateTime?
+  photoUrl                     String?
+  preferredLanguage            String?                    @default("ENGLISH")
+  preferredCommunicationMethod String?
+  communicationPreference      Json?
+  consentForTreatment          Boolean                    @default(false)
+  consentForDataSharing        Boolean                    @default(false)
+  consentForMarketing          Boolean                    @default(false)
+  familyHeadId                 String?
+  relationshipToHead           String?
+  notes                        String?
+  isDraft                      Boolean                    @default(false)
+  registrationSource           String?                    @default("WALK_IN")
+  referralSource               String?
+  verificationStatus           String?                    @default("UNVERIFIED")
+  phoneVerified                Boolean                    @default(false)
+  emailVerified                Boolean                    @default(false)
+  kycVerified                  Boolean                    @default(false)
+  qrCode                       String?
+  abhaNumber                   String?                    @db.VarChar(20)
+  abhaAddress                  String?                    @db.VarChar(100)
+  abhaStatus                   String                     @default("UNLINKED")
+  abhaLinkedAt                 DateTime?
+  formStep                     Int?
+  formProgress                 Int?
+  lastEditedSection            String?
+  kycVerifiedAt                DateTime?
+  kycVerifiedById              String?
+  abdm_care_contexts           abdm_care_contexts[]
+  abdm_consents                abdm_consents[]
+  communications               CommunicationLog[]
+  orders                       Order[]
+  advances                     PatientAdvance[]
+  consents                     PatientConsent[]           @relation("PatientConsents")
+  historyEntries               PatientHistoryEntry[]      @relation("PatientHistory")
+  medicalHistories             PatientMedicalHistory[]    @relation("PatientMedicalHistories")
+  verifications                PatientVerification[]      @relation("PatientVerifications")
+  wallet                       PatientWallet?
+  createdBy                    User?                      @relation("PatientCreator", fields: [createdById], references: [id])
+  familyHead                   Patient?                   @relation("FamilyHead", fields: [familyHeadId], references: [id])
+  familyMembers                Patient[]                  @relation("FamilyHead")
+  kycVerifiedBy                User?                      @relation("PatientKycVerifier", fields: [kycVerifiedById], references: [id])
+  referredBy                   Doctor?                    @relation(fields: [referredById], references: [id])
+  reports                      Report[]
+  results                      Result[]                   @relation("ResultPatient")
+  trackingHistory              SampleTrackingHistory[]
+  samples                      Sample[]
+  whatsappConversations        WhatsAppConversation[]
+  whatsappIncomingMessages     WhatsAppIncomingMessage[]
+  whatsappScheduledMessages    WhatsAppScheduledMessage[]
+
+  @@index([phone])
+  @@index([firstName, lastName])
+  @@index([referredById])
+  @@index([createdById])
+  @@index([familyHeadId])
+  @@index([isDraft])
+  @@index([isActive])
+  @@index([createdAt])
+  @@index([abhaNumber])
+  @@index([abhaAddress])
+  @@index([kycVerifiedById])
+  @@map("patients")
+}
+
+model TestCategory {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  name         String
+  description  String?
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  department   String?
+  color        String?  @default("#3B82F6")
+  icon         String?
+  displayOrder Int?     @default(0)
+  tests        Test[]
+
+  @@index([name])
+  @@index([department])
+  @@index([isActive])
+  @@map("test_categories")
+}
+
+model Test {
+  id                       String            @id @default(cuid())
+  testCode                 String            @unique
+  testName                 String
+  categoryId               String?
+  sampleType               SampleType
+  sampleContainer          String?
+  method                   String?
+  price                    Decimal           @db.Decimal(10, 2)
+  gstPercentage            Decimal           @default(0) @db.Decimal(5, 2)
+  tatHours                 Int               @default(24)
+  isActive                 Boolean           @default(true)
+  createdAt                DateTime          @default(now())
+  updatedAt                DateTime          @updatedAt
+  shortName                String?
+  sampleVolume             String?
+  processingDepartment     String?
+  offerPrice               Decimal?          @db.Decimal(10, 2)
+  b2bRate                  Decimal?          @db.Decimal(10, 2)
+  tatDisplay               String?
+  displayOrder             Int?              @default(0)
+  clinicalSignificance     String?
+  patientPreparation       String?
+  deltaCheckAbsThreshold   Decimal?          @db.Decimal(10, 2)
+  deltaCheckEnabled        Boolean           @default(false)
+  deltaThresholdPercentage Decimal?          @db.Decimal(5, 2)
+  description              String?
+  orderItems               OrderItem[]
+  results                  Result[]
+  samples                  Sample[]
+  packageItems             TestPackageItem[]
+  parameters               TestParameter[]
+  category                 TestCategory?     @relation(fields: [categoryId], references: [id])
+
+  @@index([testName])
+  @@index([categoryId])
+  @@index([sampleType])
+  @@index([isActive])
+  @@map("tests")
+}
+
+model TestParameter {
+  id                      String                        @id @default(cuid())
+  testId                  String
+  parameterName           String
+  unit                    String?
+  dataType                ParameterType
+  displayOrder            Int                           @default(1)
+  isRequired              Boolean                       @default(true)
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
+  shortName               String?
+  measurementMethod       String?
+  dropdownOptions         String?
+  allowRichText           Boolean                       @default(false)
+  decimalPrecision        Int?
+  isActive                Boolean                       @default(true)
+  criticalAcknowledgments CriticalValueAcknowledgment[]
+  referenceRanges         ReferenceRange[]
+  resultValues            ResultValue[]
+  test                    Test                          @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@index([testId])
+  @@index([parameterName])
+  @@map("test_parameters")
+}
+
+model ReferenceRange {
+  id             String        @id @default(cuid())
+  parameterId    String
+  gender         Gender?
+  minAge         Int?
+  maxAge         Int?
+  criticalLow    Decimal?      @db.Decimal(10, 2)
+  normalLow      Decimal?      @db.Decimal(10, 2)
+  normalHigh     Decimal?      @db.Decimal(10, 2)
+  criticalHigh   Decimal?      @db.Decimal(10, 2)
+  interpretation String?
+  createdAt      DateTime      @default(now())
+  ageGroup       String?
+  minAgeUnit     String?
+  maxAgeUnit     String?
+  notes          String?
+  isActive       Boolean       @default(true)
+  displayOrder   Int?          @default(0)
+  updatedAt      DateTime      @updatedAt
+  parameter      TestParameter @relation(fields: [parameterId], references: [id], onDelete: Cascade)
+
+  @@index([parameterId])
+  @@index([ageGroup])
+  @@index([gender])
+  @@index([isActive])
+  @@map("reference_ranges")
+}
+
+model TestPackage {
+  id                 String            @id @default(cuid())
+  packageCode        String            @unique
+  packageName        String
+  description        String?
+  totalPrice         Decimal           @db.Decimal(10, 2)
+  offerPrice         Decimal?          @db.Decimal(10, 2)
+  discountPercentage Decimal?          @db.Decimal(5, 2)
+  gstPercentage      Decimal           @default(0) @db.Decimal(5, 2)
+  includesTestsCount Int               @default(0)
+  tatHours           Int               @default(24)
+  tatDisplay         String?
+  targetAudience     String?
+  recommendedFor     String?
+  isActive           Boolean           @default(true)
+  isPopular          Boolean           @default(false)
+  displayOrder       Int?              @default(0)
+  color              String?           @default("#10B981")
+  icon               String?
+  createdAt          DateTime          @default(now())
+  updatedAt          DateTime          @updatedAt
+  orderItems         OrderItem[]
+  items              TestPackageItem[]
+
+  @@index([packageName])
+  @@index([isActive])
+  @@index([isPopular])
+  @@map("test_packages")
+}
+
+model TestPackageItem {
+  id           String      @id @default(cuid())
+  packageId    String
+  testId       String
+  testPrice    Decimal     @db.Decimal(10, 2)
+  discount     Decimal     @default(0) @db.Decimal(10, 2)
+  displayOrder Int         @default(0)
+  createdAt    DateTime    @default(now())
+  package      TestPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  test         Test        @relation(fields: [testId], references: [id], onDelete: Cascade)
+
+  @@unique([packageId, testId])
+  @@index([packageId])
+  @@index([testId])
+  @@map("test_package_items")
+}
+
+model Order {
+  id                     String                  @id @default(cuid())
+  orderNumber            String                  @unique
+  barcode                String                  @unique
+  patientId              String
+  doctorId               String?
+  createdById            String?
+  orderStatus            OrderStatus             @default(REGISTERED)
+  paymentStatus          PaymentStatus           @default(PENDING)
+  sampleCollected        Boolean                 @default(false)
+  collectedAt            DateTime?
+  reportedAt             DateTime?
+  notes                  String?
+  subtotal               Decimal                 @default(0) @db.Decimal(10, 2)
+  discount               Decimal                 @default(0) @db.Decimal(10, 2)
+  gstAmount              Decimal                 @default(0) @db.Decimal(10, 2)
+  grandTotal             Decimal                 @default(0) @db.Decimal(10, 2)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  collectionType         String?
+  discountCode           String?
+  dueAmount              Decimal                 @default(0) @db.Decimal(10, 2)
+  homeCollectionAddress  String?
+  paidAmount             Decimal                 @default(0) @db.Decimal(10, 2)
+  priority               String?                 @default("ROUTINE")
+  reportDeliveryEmail    Boolean                 @default(false)
+  reportDeliveryPortal   Boolean                 @default(false)
+  reportDeliveryPrinted  Boolean                 @default(false)
+  reportDeliveryWhatsApp Boolean                 @default(false)
+  clinicalNotes          String?
+  fastingStatus          String?
+  reportId               String?                 @unique
+  specimenType           String?
+  invoice                Invoice?
+  items                  OrderItem[]
+  createdBy              User?                   @relation("OrderCreator", fields: [createdById], references: [id])
+  doctor                 Doctor?                 @relation(fields: [doctorId], references: [id])
+  patient                Patient                 @relation(fields: [patientId], references: [id])
+  payments               Payment[]
+  reports                Report[]
+  results                Result[]
+  trackingHistory        SampleTrackingHistory[]
+  samples                Sample[]
+
+  @@index([patientId])
+  @@index([doctorId])
+  @@index([createdById])
+  @@index([orderStatus])
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@map("orders")
+}
+
+model OrderItem {
+  id            String       @id @default(cuid())
+  orderId       String
+  testId        String?
+  price         Decimal      @db.Decimal(10, 2)
+  discount      Decimal      @default(0) @db.Decimal(10, 2)
+  gstPercentage Decimal      @default(0) @db.Decimal(5, 2)
+  gstAmount     Decimal      @default(0) @db.Decimal(10, 2)
+  finalPrice    Decimal      @db.Decimal(10, 2)
+  createdAt     DateTime     @default(now())
+  packageId     String?
+  itemType      String       @default("TEST")
+  order         Order        @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  package       TestPackage? @relation(fields: [packageId], references: [id])
+  test          Test?        @relation(fields: [testId], references: [id])
+
+  @@index([orderId])
+  @@index([testId])
+  @@index([packageId])
+  @@index([itemType])
+  @@map("order_items")
+}
+
+model Sample {
+  id              String                  @id @default(cuid())
+  sampleNumber    String                  @unique
+  barcode         String                  @unique
+  patientId       String
+  orderId         String
+  testId          String
+  sampleType      SampleType
+  status          SampleStatus            @default(PENDING)
+  collectedById   String?
+  collectedAt     DateTime?
+  receivedAt      DateTime?
+  completedAt     DateTime?
+  rejectionReason String?
+  createdAt       DateTime                @default(now())
+  updatedAt       DateTime                @updatedAt
+  collectionType  String?
+  priority        String?
+  trackingHistory SampleTrackingHistory[]
+  collectedBy     User?                   @relation("SampleCollector", fields: [collectedById], references: [id])
+  order           Order                   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  patient         Patient                 @relation(fields: [patientId], references: [id])
+  test            Test                    @relation(fields: [testId], references: [id])
+
+  @@index([patientId])
+  @@index([orderId])
+  @@index([testId])
+  @@index([status])
+  @@index([collectedById])
+  @@map("samples")
+}
+
+model SampleTrackingHistory {
+  id            String                  @id @default(cuid())
+  sampleId      String
+  orderId       String
+  patientId     String
+  eventType     SampleTrackingEventType
+  status        String?
+  location      String?
+  notes         String?
+  performedById String?
+  performedAt   DateTime                @default(now())
+  metadata      Json?
+  createdAt     DateTime                @default(now())
+  order         Order                   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  patient       Patient                 @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  performedBy   User?                   @relation("TrackingPerformer", fields: [performedById], references: [id])
+  sample        Sample                  @relation(fields: [sampleId], references: [id], onDelete: Cascade)
+
+  @@index([sampleId])
+  @@index([orderId])
+  @@index([patientId])
+  @@index([eventType])
+  @@index([performedAt])
+  @@map("sample_tracking_history")
+}
+
+model Invoice {
+  id            String        @id @default(cuid())
+  invoiceNumber String        @unique
+  orderId       String        @unique
+  subtotal      Decimal       @db.Decimal(10, 2)
+  discount      Decimal       @default(0) @db.Decimal(10, 2)
+  gstPercent    Decimal       @default(18) @db.Decimal(5, 2)
+  gstAmount     Decimal       @db.Decimal(10, 2)
+  grandTotal    Decimal       @db.Decimal(10, 2)
+  paymentStatus PaymentStatus @default(PENDING)
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  cgstAmount    Decimal       @default(0) @db.Decimal(10, 2)
+  dueDate       DateTime?
+  igstAmount    Decimal       @default(0) @db.Decimal(10, 2)
+  sgstAmount    Decimal       @default(0) @db.Decimal(10, 2)
+  taxableAmount Decimal       @db.Decimal(10, 2)
+  order         Order         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@index([paymentStatus])
+  @@index([createdAt])
+  @@index([dueDate])
+  @@map("invoices")
+}
+
+model Payment {
+  id                 String                  @id @default(cuid())
+  receiptNumber      String                  @unique
+  orderId            String
+  amount             Decimal                 @db.Decimal(10, 2)
+  method             PaymentMethod
+  status             PaymentStatus           @default(PAID)
+  transactionId      String?
+  remarks            String?
+  receivedById       String?
+  paidAt             DateTime                @default(now())
+  createdAt          DateTime                @default(now())
+  allocationId       String?
+  cashDrawerId       String?
+  corporateAccountId String?
+  counterId          String?
+  gatewayProvider    String?
+  gatewayReference   String?
+  gatewayResponse    Json?
+  updatedAt          DateTime                @default(now()) @updatedAt
+  utr                String?
+  allocation         PaymentAllocation?
+  cashDrawer         CashDrawer?             @relation(fields: [cashDrawerId], references: [id])
+  corporateAccount   CorporateAccount?       @relation(fields: [corporateAccountId], references: [id])
+  counter            CashCounter?            @relation(fields: [counterId], references: [id])
+  order              Order                   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  receivedBy         User?                   @relation("PaymentReceiver", fields: [receivedById], references: [id])
+  refunds            Refund[]
+  settlementItems    SettlementTransaction[]
+
+  @@index([orderId])
+  @@index([method])
+  @@index([status])
+  @@index([receivedById])
+  @@index([paidAt])
+  @@index([receiptNumber])
+  @@index([utr])
+  @@index([counterId])
+  @@index([corporateAccountId])
+  @@map("payments")
+}
+
+model Result {
+  id                      String                        @id @default(cuid())
+  orderId                 String
+  testId                  String
+  status                  ResultStatus                  @default(PENDING)
+  remarks                 String?
+  interpretation          String?
+  enteredById             String?
+  approvedById            String?
+  enteredAt               DateTime?
+  verifiedAt              DateTime?
+  approvedAt              DateTime?
+  publishedAt             DateTime?
+  createdAt               DateTime                      @default(now())
+  updatedAt               DateTime                      @updatedAt
+  patientId               String?
+  analyzerUsed            String?
+  calibrationStatus       String?
+  externalQAScheme        String?
+  fastingStatus           String?
+  hemolysisLipemia        String?
+  internalQCStatus        String?
+  methodUsed              String?
+  reportConfidenceScore   String?
+  sampleCollectionTime    DateTime?
+  specimenQuality         String?
+  approvals               Approval[]
+  criticalAcknowledgments CriticalValueAcknowledgment[]
+  amendments              ResultAmendment[]
+  values                  ResultValue[]
+  approvedBy              User?                         @relation("ApprovedBy", fields: [approvedById], references: [id])
+  enteredBy               User?                         @relation("EnteredBy", fields: [enteredById], references: [id])
+  order                   Order                         @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  patient                 Patient?                      @relation("ResultPatient", fields: [patientId], references: [id])
+  test                    Test                          @relation(fields: [testId], references: [id])
+
+  @@unique([orderId, testId])
+  @@index([orderId])
+  @@index([testId])
+  @@index([status])
+  @@index([enteredById])
+  @@index([approvedById])
+  @@index([patientId])
+  @@index([testId, status, approvedAt])
+  @@index([patientId, testId, approvedAt])
+  @@index([patientId, testId, createdAt])
+  @@map("results")
+}
+
+model ResultValue {
+  id                           String                        @id @default(cuid())
+  resultId                     String
+  parameterId                  String
+  value                        String
+  flag                         ResultFlag?
+  remark                       String?
+  createdAt                    DateTime                      @default(now())
+  updatedAt                    DateTime                      @updatedAt
+  clinicalSignificance         String?
+  rangeIndicator               String?
+  criticalValueAcknowledgments CriticalValueAcknowledgment[]
+  parameter                    TestParameter                 @relation(fields: [parameterId], references: [id])
+  result                       Result                        @relation(fields: [resultId], references: [id], onDelete: Cascade)
+
+  @@unique([resultId, parameterId])
+  @@index([parameterId])
+  @@index([flag])
+  @@map("result_values")
+}
+
+model Approval {
+  id           String         @id @default(cuid())
+  resultId     String
+  approvedById String
+  status       ApprovalStatus @default(PENDING)
+  remarks      String?
+  approvedAt   DateTime?
+  createdAt    DateTime       @default(now())
+  approvedBy   User           @relation("ApprovalUser", fields: [approvedById], references: [id])
+  result       Result         @relation(fields: [resultId], references: [id], onDelete: Cascade)
+
+  @@index([resultId])
+  @@index([approvedById])
+  @@index([status])
+  @@map("approvals")
+}
+
+model Report {
+  id                     String                @id @default(cuid())
+  reportNumber           String                @unique
+  patientId              String
+  orderId                String
+  status                 ReportStatus          @default(DRAFT)
+  reportTitle            String?
+  reportData             Json?
+  fileUrl                String?
+  publishedById          String?
+  generatedAt            DateTime?
+  publishedAt            DateTime?
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+  clinicalInterpretation String?
+  methodology            String?
+  qualityAssurance       Json?
+  reportReferenceId      String?               @unique
+  templateType           String?               @default("standard")
+  historyEntries         PatientHistoryEntry[] @relation("PatientHistoryReports")
+  addendums              ReportAddendum[]      @relation("ReportAddendums")
+  shareLinks             ReportShareLink[]
+  order                  Order                 @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  patient                Patient               @relation(fields: [patientId], references: [id])
+  publishedBy            User?                 @relation("ReportPublisher", fields: [publishedById], references: [id])
+
+  @@index([patientId])
+  @@index([orderId])
+  @@index([status])
+  @@index([publishedById])
+  @@map("reports")
+}
+
+model AnalyzerLog {
+  id           String           @id @default(cuid())
+  machineName  String
+  machineCode  String
+  protocol     AnalyzerProtocol
+  orderNumber  String?
+  barcode      String?
+  rawMessage   String
+  parsedJson   Json?
+  isProcessed  Boolean          @default(false)
+  errorMessage String?
+  receivedAt   DateTime         @default(now())
+  processedAt  DateTime?
+
+  @@index([machineCode])
+  @@index([protocol])
+  @@index([orderNumber])
+  @@index([barcode])
+  @@index([isProcessed])
+  @@index([receivedAt])
+  @@map("analyzer_logs")
+}
+
+model Analyzer {
+  id                      String                     @id @default(cuid())
+  name                    String
+  analyzerId              String                     @unique
+  manufacturer            String?
+  model                   String?
+  serialNumber            String?                    @unique
+  analyzerType            String?
+  department              String?
+  laboratorySection       String?
+  location                String?
+  installationDate        DateTime?
+  connectionType          AnalyzerConnectionType     @default(NETWORK)
+  protocol                AnalyzerProtocol           @default(ASTM)
+  host                    String?
+  port                    Int?
+  deviceIdentifier        String?
+  connectionString        String?
+  status                  AnalyzerStatus             @default(OFFLINE)
+  lastCommunicationAt     DateTime?
+  lastSuccessfulHeartbeat DateTime?
+  connectionLatency       Int?
+  isActive                Boolean                    @default(true)
+  isArchived              Boolean                    @default(false)
+  archivedAt              DateTime?
+  archivedBy              String?
+  notes                   String?
+  createdAt               DateTime                   @default(now())
+  updatedAt               DateTime                   @updatedAt
+  alerts                  AnalyzerAlert[]
+  communicationLogs       AnalyzerCommunicationLog[]
+  jobs                    AnalyzerJob[]
+  portMappings            AnalyzerPortMapping[]
+  testMappings            AnalyzerTestMapping[]
+  calibrations            Calibration[]
+  maintenances            Maintenance[]
+  qcRules                 QCRule[]
+  worklistEntries         WorklistEntry[]
+
+  @@index([analyzerId])
+  @@index([serialNumber])
+  @@index([status])
+  @@index([isActive])
+  @@index([isArchived])
+  @@index([department])
+  @@index([analyzerType])
+  @@map("analyzers")
+}
+
+model Calibration {
+  id                          String            @id @default(cuid())
+  analyzerId                  String
+  calibrationDate             DateTime
+  performedBy                 String?
+  operator                    String?
+  status                      CalibrationStatus @default(VALID)
+  outcome                     String?
+  result                      String?
+  nextCalibrationDueDate      DateTime?
+  nextCalibrationReminderDate DateTime?
+  calibrationType             String?
+  reagentsUsed                String?
+  notes                       String?
+  performedAt                 DateTime          @default(now())
+  createdBy                   String?
+  analyzer                    Analyzer          @relation(fields: [analyzerId], references: [id], onDelete: Cascade)
+  creator                     User?             @relation("CalibrationCreator", fields: [createdBy], references: [id])
+
+  @@index([analyzerId])
+  @@index([status])
+  @@index([nextCalibrationDueDate])
+  @@index([calibrationDate])
+  @@map("calibrations")
+}
+
+model Maintenance {
+  id              String            @id @default(cuid())
+  analyzerId      String
+  maintenanceType String?
+  scheduledDate   DateTime?
+  completedDate   DateTime?
+  status          MaintenanceStatus @default(SCHEDULED)
+  description     String
+  technician      String?
+  partsReplaced   String?
+  cost            Decimal?          @db.Decimal(10, 2)
+  notes           String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  createdBy       String?
+  analyzer        Analyzer          @relation(fields: [analyzerId], references: [id], onDelete: Cascade)
+  creator         User?             @relation("MaintenanceCreator", fields: [createdBy], references: [id])
+
+  @@index([analyzerId])
+  @@index([status])
+  @@index([scheduledDate])
+  @@index([completedDate])
+  @@map("maintenances")
+}
+
+model AnalyzerTestMapping {
+  id               String   @id @default(cuid())
+  analyzerId       String
+  labCoreTestId    String
+  labCoreTestCode  String
+  labCoreTestName  String
+  analyzerTestCode String
+  analyzerTestName String?
+  unit             String?
+  referenceRange   String?
+  sampleType       String?
+  isActive         Boolean  @default(true)
+  isValid          Boolean  @default(true)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  createdBy        String?
+  analyzer         Analyzer @relation(fields: [analyzerId], references: [id], onDelete: Cascade)
+  creator          User?    @relation("TestMappingCreator", fields: [createdBy], references: [id])
+
+  @@unique([analyzerId, analyzerTestCode])
+  @@unique([analyzerId, labCoreTestId])
+  @@index([analyzerId])
+  @@index([labCoreTestId])
+  @@index([isActive])
+  @@map("analyzer_test_mappings")
+}
+
+model AnalyzerJob {
+  id                 String            @id @default(cuid())
+  analyzerId         String
+  jobId              String            @unique
+  orderId            String?
+  orderNumber        String?
+  sampleId           String?
+  sampleNumber       String?
+  barcode            String?
+  testId             String?
+  testCode           String?
+  testName           String?
+  analyzerTestCode   String?
+  createdAt          DateTime          @default(now())
+  startedAt          DateTime?
+  completedAt        DateTime?
+  status             AnalyzerJobStatus @default(PENDING)
+  progressPercentage Int?              @default(0)
+  currentStep        String?
+  errorMessage       String?
+  errorDetails       Json?
+  retryCount         Int               @default(0)
+  maxRetries         Int               @default(3)
+  resultId           String?
+  resultReceived     Boolean           @default(false)
+  resultReceivedAt   DateTime?
+  priority           String?           @default("NORMAL")
+  analyzer           Analyzer          @relation(fields: [analyzerId], references: [id], onDelete: Cascade)
+
+  @@index([analyzerId])
+  @@index([status])
+  @@index([orderId])
+  @@index([sampleId])
+  @@index([jobId])
+  @@index([createdAt])
+  @@index([priority])
+  @@map("analyzer_jobs")
+}
+
+model AnalyzerAlert {
+  id              String        @id @default(cuid())
+  analyzerId      String
+  alertType       String
+  severity        AlertSeverity @default(INFO)
+  title           String
+  message         String
+  isAcknowledged  Boolean       @default(false)
+  acknowledgedBy  String?
+  acknowledgedAt  DateTime?
+  isResolved      Boolean       @default(false)
+  resolvedBy      String?
+  resolvedAt      DateTime?
+  resolutionNotes String?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+  metadata        Json?
+  analyzer        Analyzer      @relation(fields: [analyzerId], references: [id], onDelete: Cascade)
+
+  @@index([analyzerId])
+  @@index([alertType])
+  @@index([severity])
+  @@index([isAcknowledged])
+  @@index([isResolved])
+  @@index([createdAt])
+  @@map("analyzer_alerts")
+}
+
+model AnalyzerCommunicationLog {
+  id                String           @id @default(cuid())
+  analyzerId        String
+  direction         String
+  messageType       String
+  protocol          AnalyzerProtocol
+  payload           String
+  parsedData        Json?
+  status            String
+  errorMessage      String?
+  responseTime      Int?
+  connectionLatency Int?
+  createdAt         DateTime         @default(now())
+  analyzer          Analyzer         @relation(fields: [analyzerId], references: [id], onDelete: Cascade)
+
+  @@index([analyzerId])
+  @@index([direction])
+  @@index([messageType])
+  @@index([status])
+  @@index([createdAt])
+  @@map("analyzer_communication_logs")
+}
+
+model AuditLog {
+  id        String   @id @default(cuid())
+  userId    String?
+  module    String
+  action    String
+  recordId  String?
+  ipAddress String?
+  userAgent String?
+  oldData   Json?
+  newData   Json?
+  createdAt DateTime @default(now())
+  user      User?    @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([module])
+  @@index([action])
+  @@index([recordId])
+  @@index([createdAt])
+  @@map("audit_logs")
+}
+
+model CommunicationLog {
+  id                String              @id @default(cuid())
+  patientId         String
+  type              CommunicationType
+  status            CommunicationStatus @default(PENDING)
+  recipientContact  String
+  subject           String?
+  message           String
+  provider          String?
+  providerMessageId String?
+  errorReason       String?
+  errorMessage      String?
+  metadata          Json?
+  sentById          String?
+  sentAt            DateTime?
+  deliveredAt       DateTime?
+  failedAt          DateTime?
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  patient           Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  sentBy            User?               @relation("CommunicationSender", fields: [sentById], references: [id])
+
+  @@index([patientId])
+  @@index([type])
+  @@index([status])
+  @@index([sentById])
+  @@index([createdAt])
+  @@map("communication_logs")
+}
+
+model NotificationTemplate {
+  id              String                @id @default(cuid())
+  name            String
+  description     String?
+  eventType       NotificationEventType @default(PATIENT_REGISTRATION)
+  channel         CommunicationType     @default(EMAIL)
+  subjectTemplate String?
+  bodyTemplate    String                @default("")
+  variables       String[]              @default([])
+  isActive        Boolean               @default(true)
+  createdBy       String?
+  createdAt       DateTime              @default(now())
+  updatedAt       DateTime              @default(now()) @updatedAt
+  creator         User?                 @relation("TemplateCreator", fields: [createdBy], references: [id])
+
+  @@index([eventType])
+  @@index([channel])
+  @@index([isActive])
+  @@map("notification_templates")
+}
+
+model AnalyzerPortMapping {
+  id          String   @id @default(cuid())
+  analyzerId  String
+  portName    String
+  portType    String
+  direction   String
+  baudRate    Int?
+  dataBits    Int?
+  stopBits    Int?
+  parity      String?
+  flowControl String?
+  hostAddress String?
+  portNumber  Int?
+  socketType  String?
+  timeout     Int?
+  isActive    Boolean  @default(true)
+  isDefault   Boolean  @default(false)
+  description String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  analyzer    Analyzer @relation(fields: [analyzerId], references: [id], onDelete: Cascade)
+
+  @@unique([analyzerId, portName])
+  @@index([analyzerId])
+  @@index([isActive])
+  @@map("analyzer_port_mappings")
+}
+
+model QCRule {
+  id                       String        @id @default(cuid())
+  analyzerId               String?
+  testId                   String?
+  testParameterId          String?
+  ruleName                 String
+  ruleType                 String
+  ruleCondition            String
+  minValue                 Decimal?      @db.Decimal(10, 2)
+  maxValue                 Decimal?      @db.Decimal(10, 2)
+  criticalLowThreshold     Decimal?      @db.Decimal(10, 2)
+  criticalHighThreshold    Decimal?      @db.Decimal(10, 2)
+  deltaThreshold           Decimal?      @db.Decimal(10, 2)
+  requireQCPass            Boolean       @default(true)
+  qcLevel                  String?
+  qcSampleType             String?
+  autoApprove              Boolean       @default(false)
+  requirePathologistReview Boolean       @default(false)
+  requireTechnicianReview  Boolean       @default(true)
+  priority                 Int           @default(0)
+  generateAlertOnFailure   Boolean       @default(true)
+  alertSeverity            AlertSeverity @default(WARNING)
+  isActive                 Boolean       @default(true)
+  description              String?
+  notes                    String?
+  createdAt                DateTime      @default(now())
+  updatedAt                DateTime      @updatedAt
+  createdBy                String?
+  analyzer                 Analyzer?     @relation(fields: [analyzerId], references: [id], onDelete: Cascade)
+  creator                  User?         @relation("QCRuleCreator", fields: [createdBy], references: [id])
+
+  @@index([analyzerId])
+  @@index([testId])
+  @@index([testParameterId])
+  @@index([isActive])
+  @@index([ruleType])
+  @@map("qc_rules")
+}
+
+model WorklistEntry {
+  id               String           @id @default(cuid())
+  analyzerId       String
+  orderId          String?
+  orderNumber      String?
+  sampleId         String?
+  sampleNumber     String?
+  barcode          String
+  testId           String?
+  testCode         String?
+  testName         String?
+  status           String
+  sentAt           DateTime?
+  acknowledgedAt   DateTime?
+  completedAt      DateTime?
+  priority         String           @default("NORMAL")
+  resultReceived   Boolean          @default(false)
+  resultReceivedAt DateTime?
+  errorMessage     String?
+  retryCount       Int              @default(0)
+  maxRetries       Int              @default(3)
+  protocol         AnalyzerProtocol
+  sequenceNumber   Int?
+  createdAt        DateTime         @default(now())
+  updatedAt        DateTime         @updatedAt
+  analyzer         Analyzer         @relation(fields: [analyzerId], references: [id], onDelete: Cascade)
+
+  @@index([analyzerId])
+  @@index([barcode])
+  @@index([status])
+  @@index([priority])
+  @@index([createdAt])
+  @@map("worklist_entries")
+}
+
+model LaboratorySettings {
+  id                               String   @id @default(cuid())
+  labName                          String   @default("LabCore Enterprise LIS")
+  labPhone                         String   @default("") @db.VarChar(15)
+  labEmail                         String   @default("")
+  labAddress                       String?
+  labCity                          String?
+  labState                         String?
+  labPincode                       String?  @db.VarChar(10)
+  emailProvider                    String?
+  emailApiKey                      String?
+  emailFromEmail                   String?
+  emailFromName                    String?
+  smtpHost                         String?
+  smtpPort                         Int?
+  smtpUser                         String?
+  smtpPassword                     String?
+  smsProvider                      String?
+  smsApiKey                        String?
+  smsApiSecret                     String?
+  smsSenderId                      String?
+  callProvider                     String?
+  callApiKey                       String?
+  callApiSecret                    String?
+  callCallerId                     String?
+  enableAutomatedNotifications     Boolean  @default(true)
+  enablePatientNotifications       Boolean  @default(true)
+  enableDoctorNotifications        Boolean  @default(false)
+  enableAutoResultProcessing       Boolean  @default(true)
+  enableAutoApproval               Boolean  @default(false)
+  enableLiveTelemetry              Boolean  @default(true)
+  demoMode                         Boolean  @default(false)
+  createdAt                        DateTime @default(now())
+  updatedAt                        DateTime @default(now()) @updatedAt
+  defaultAnalyzer                  String?
+  defaultMethodology               String?
+  gstin                            String?  @db.VarChar(15)
+  isoCertification                 String?  @db.VarChar(100)
+  laboratoryDirector               String?
+  laboratoryDirectorQualification  String?
+  licenseNumber                    String?  @db.VarChar(100)
+  nablAccreditation                String?  @db.VarChar(100)
+  pathologistInCharge              String?
+  pathologistInChargeQualification String?
+  reportIdPrefix                   String?  @default("REP")
+  whatsappAIEnabled                Boolean  @default(false)
+  whatsappAccessToken              String?
+  whatsappBusinessProfileId        String?
+  whatsappPhoneNumberId            String?
+  whatsappProvider                 String?
+  whatsappVerifyToken              String?
+  whatsappWebhookUrl               String?
+
+  @@map("laboratory_settings")
+}
+
+model CriticalValueAcknowledgment {
+  id                    String         @id @default(cuid())
+  resultId              String
+  resultValueId         String?
+  acknowledgedBy        String
+  notifiedPerson        String?
+  notifiedPersonContact String?
+  notificationMode      String?
+  notificationTime      DateTime?
+  notes                 String?
+  acknowledgmentReason  String?
+  createdAt             DateTime       @default(now())
+  testParameterId       String?
+  acknowledgedByUser    User           @relation(fields: [acknowledgedBy], references: [id])
+  result                Result         @relation(fields: [resultId], references: [id], onDelete: Cascade)
+  resultValue           ResultValue?   @relation(fields: [resultValueId], references: [id], onDelete: Cascade)
+  testParameter         TestParameter? @relation(fields: [testParameterId], references: [id])
+
+  @@index([resultId])
+  @@index([resultValueId])
+  @@index([acknowledgedBy])
+  @@index([createdAt])
+  @@map("critical_value_acknowledgments")
+}
+
+model ResultAmendment {
+  id                         String    @id @default(cuid())
+  resultId                   String
+  amendedBy                  String
+  amendmentReason            String
+  amendmentType              String
+  versionNumber              Int
+  previousValue              Json?
+  newValue                   Json?
+  changedFields              String[]
+  fieldChanges               Json?
+  approvedById               String?
+  approvedAt                 DateTime?
+  requiresReportRegeneration Boolean   @default(true)
+  reportRegeneratedAt        DateTime?
+  createdAt                  DateTime  @default(now())
+  amendedByUser              User      @relation("AmendmentCreator", fields: [amendedBy], references: [id])
+  approvedByUser             User?     @relation("AmendmentApprover", fields: [approvedById], references: [id])
+  result                     Result    @relation(fields: [resultId], references: [id], onDelete: Cascade)
+
+  @@index([resultId])
+  @@index([amendedBy])
+  @@index([approvedById])
+  @@index([createdAt])
+  @@map("result_amendments")
+}
+
+model WhatsAppScheduledMessage {
+  id                String            @id @default(cuid())
+  patientId         String?
+  phoneNumber       String            @db.VarChar(15)
+  templateName      String
+  templateId        String?
+  messageContent    String?
+  language          String?           @default("en")
+  components        Json?
+  scheduledFor      DateTime
+  sentAt            DateTime?
+  status            String            @default("PENDING")
+  priority          String?           @default("NORMAL")
+  retryCount        Int               @default(0)
+  maxRetries        Int               @default(3)
+  errorMessage      String?
+  externalMessageId String?
+  conversationId    String?
+  createdAt         DateTime          @default(now())
+  updatedAt         DateTime          @updatedAt
+  campaignId        String?
+  campaign          WhatsAppCampaign? @relation("CampaignMessages", fields: [campaignId], references: [id])
+  patient           Patient?          @relation(fields: [patientId], references: [id])
+  template          WhatsAppTemplate? @relation(fields: [templateId], references: [id])
+
+  @@index([patientId])
+  @@index([scheduledFor])
+  @@index([status])
+  @@index([phoneNumber])
+  @@index([campaignId])
+  @@map("whatsapp_scheduled_messages")
+}
+
+model WhatsAppIncomingMessage {
+  id                String    @id @default(cuid())
+  patientId         String?
+  phoneNumber       String    @db.VarChar(15)
+  messageContent    String
+  messageType       String
+  mediaUrl          String?
+  mediaMimeType     String?
+  externalMessageId String    @unique
+  externalFrom      String?
+  externalTo        String?
+  conversationId    String?
+  processed         Boolean   @default(false)
+  processedAt       DateTime?
+  processedBy       String?
+  autoReplySent     Boolean   @default(false)
+  autoReplyId       String?
+  createdAt         DateTime  @default(now())
+  patient           Patient?  @relation(fields: [patientId], references: [id])
+
+  @@index([patientId])
+  @@index([phoneNumber])
+  @@index([externalMessageId])
+  @@index([processed])
+  @@index([createdAt])
+  @@map("whatsapp_incoming_messages")
+}
+
+model WhatsAppConversation {
+  id                     String              @id @default(cuid())
+  patientId              String?
+  phoneNumber            String              @db.VarChar(15)
+  status                 String              @default("ACTIVE")
+  lastMessageAt          DateTime            @default(now())
+  lastMessagePreview     String?
+  messageCount           Int                 @default(0)
+  unreadCount            Int                 @default(0)
+  assignedTo             String?
+  assignedAt             DateTime?
+  externalConversationId String?
+  externalFrom           String?
+  tags                   String[]
+  notes                  String?
+  createdAt              DateTime            @default(now())
+  updatedAt              DateTime            @updatedAt
+  patient                Patient?            @relation(fields: [patientId], references: [id])
+  sentiments             WhatsAppSentiment[]
+
+  @@index([patientId])
+  @@index([phoneNumber])
+  @@index([status])
+  @@index([lastMessageAt])
+  @@index([assignedTo])
+  @@map("whatsapp_conversations")
+}
+
+model WhatsAppTemplate {
+  id                   String                        @id @default(cuid())
+  name                 String                        @unique
+  displayName          String
+  category             String
+  language             String                        @default("en")
+  components           Json
+  templateId           String?
+  templateStatus       String                        @default("PENDING")
+  isActive             Boolean                       @default(true)
+  createdBy            String?
+  createdAt            DateTime                      @default(now())
+  updatedAt            DateTime                      @updatedAt
+  lastSyncedAt         DateTime?
+  notificationTriggers WhatsAppNotificationTrigger[]
+  scheduledMessages    WhatsAppScheduledMessage[]
+  creator              User?                         @relation("WhatsAppTemplateCreator", fields: [createdBy], references: [id])
+
+  @@index([category])
+  @@index([templateStatus])
+  @@index([isActive])
+  @@map("whatsapp_templates")
+}
+
+model WhatsAppAutoReplyRule {
+  id                 String   @id @default(cuid())
+  name               String
+  description        String?
+  triggerType        String
+  triggerData        Json
+  responseType       String
+  responseText       String
+  templateId         String?
+  interactiveType    String?
+  interactiveData    Json?
+  delaySeconds       Int      @default(0)
+  maxResponsesPerDay Int?
+  cooldownSeconds    Int?
+  priority           Int      @default(0)
+  patientSegment     Json?
+  isActive           Boolean  @default(true)
+  aiEnabled          Boolean  @default(false)
+  aiModel            String?
+  createdBy          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  creator            User?    @relation("AutoReplyCreator", fields: [createdBy], references: [id])
+
+  @@index([isActive])
+  @@index([triggerType])
+  @@map("whatsapp_auto_reply_rules")
+}
+
+model WhatsAppNotificationTrigger {
+  id              String           @id @default(cuid())
+  name            String
+  description     String?
+  eventType       String
+  eventFilter     Json?
+  templateId      String
+  variableMapping Json?
+  recipientType   String           @default("PATIENT")
+  recipientFilter Json?
+  sendImmediately Boolean          @default(true)
+  delayMinutes    Int?
+  isActive        Boolean          @default(true)
+  lastTriggeredAt DateTime?
+  triggerCount    Int              @default(0)
+  createdBy       String?
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  creator         User?            @relation("TriggerCreator", fields: [createdBy], references: [id])
+  template        WhatsAppTemplate @relation(fields: [templateId], references: [id])
+
+  @@index([eventType])
+  @@index([isActive])
+  @@map("whatsapp_notification_triggers")
+}
+
+model WhatsAppCampaign {
+  id             String                     @id @default(cuid())
+  name           String
+  description    String?
+  campaignType   String
+  templateId     String?
+  messageContent String?
+  targetAudience Json
+  recipientCount Int                        @default(0)
+  scheduledFor   DateTime?
+  sentAt         DateTime?
+  status         String                     @default("DRAFT")
+  sentCount      Int                        @default(0)
+  deliveredCount Int                        @default(0)
+  failedCount    Int                        @default(0)
+  costEstimate   Decimal?                   @db.Decimal(10, 2)
+  actualCost     Decimal?                   @db.Decimal(10, 2)
+  aBTestEnabled  Boolean                    @default(false)
+  aBTestVariants Json?
+  createdBy      String?
+  createdAt      DateTime                   @default(now())
+  updatedAt      DateTime                   @updatedAt
+  creator        User?                      @relation("CampaignCreator", fields: [createdBy], references: [id])
+  messages       WhatsAppScheduledMessage[] @relation("CampaignMessages")
+
+  @@index([status])
+  @@index([scheduledFor])
+  @@map("whatsapp_campaigns")
+}
+
+model WhatsAppAnalytics {
+  id                String   @id @default(cuid())
+  date              DateTime
+  period            String
+  sentCount         Int      @default(0)
+  deliveredCount    Int      @default(0)
+  readCount         Int      @default(0)
+  failedCount       Int      @default(0)
+  cost              Decimal  @default(0) @db.Decimal(10, 2)
+  templateBreakdown Json?
+  metrics           Json?
+  createdAt         DateTime @default(now())
+
+  @@unique([date, period])
+  @@index([date])
+  @@map("whatsapp_analytics")
+}
+
+model WhatsAppSentiment {
+  id               String               @id @default(cuid())
+  conversationId   String
+  messageCount     Int                  @default(0)
+  overallSentiment String
+  sentimentScore   Decimal              @default(0) @db.Decimal(5, 2)
+  emotions         Json?
+  keywords         Json?
+  issues           Json?
+  analyzedAt       DateTime             @default(now())
+  conversation     WhatsAppConversation @relation(fields: [conversationId], references: [id])
+
+  @@index([conversationId])
+  @@index([analyzedAt])
+  @@map("whatsapp_sentiments")
+}
+
+model ReportShareLink {
+  id          String   @id @default(cuid())
+  reportId    String
+  token       String   @unique
+  expiresAt   DateTime
+  accessCount Int      @default(0)
+  maxAccess   Int?
+  createdBy   String
+  revoked     Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  creator     User     @relation("ShareLinkCreator", fields: [createdBy], references: [id])
+  report      Report   @relation(fields: [reportId], references: [id])
+
+  @@index([token])
+  @@index([reportId])
+  @@index([expiresAt])
+  @@map("report_share_links")
+}
+
+model ReportAddendum {
+  id          String   @id @default(cuid())
+  reportId    String
+  content     String
+  addedBy     String
+  isPrivate   Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  addedByUser User     @relation("AddendumCreator", fields: [addedBy], references: [id])
+  report      Report   @relation("ReportAddendums", fields: [reportId], references: [id])
+
+  @@index([reportId])
+  @@map("report_addendums")
+}
+
+model PatientHistoryEntry {
+  id          String   @id @default(cuid())
+  patientId   String
+  reportId    String
+  entryType   String
+  notes       String?
+  addedBy     String
+  createdAt   DateTime @default(now())
+  addedByUser User     @relation("HistoryEntryCreator", fields: [addedBy], references: [id])
+  patient     Patient  @relation("PatientHistory", fields: [patientId], references: [id])
+  report      Report   @relation("PatientHistoryReports", fields: [reportId], references: [id])
+
+  @@index([patientId])
+  @@index([reportId])
+  @@map("patient_history_entries")
+}
+
+model PatientVerification {
+  id        String   @id @default(cuid())
+  patientId String
+  type      String
+  codeHash  String
+  expiresAt DateTime
+  verified  Boolean  @default(false)
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+  patient   Patient  @relation("PatientVerifications", fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, type, verified])
+  @@index([codeHash])
+  @@index([expiresAt])
+  @@map("patient_verifications")
+}
+
+model PatientMedicalHistory {
+  id            String    @id @default(cuid())
+  patientId     String
+  condition     String
+  diagnosedDate DateTime?
+  notes         String?
+  severity      String    @default("MODERATE")
+  status        String    @default("ACTIVE")
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+  patient       Patient   @relation("PatientMedicalHistories", fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, diagnosedDate])
+  @@map("patient_medical_histories")
+}
+
+model PatientConsent {
+  id            String    @id @default(cuid())
+  patientId     String
+  consentType   String
+  consentGiven  Boolean   @default(false)
+  consentText   String
+  consentDate   DateTime  @default(now())
+  revokedAt     DateTime?
+  consentedById String?
+  createdAt     DateTime  @default(now())
+  consentedBy   User?     @relation("ConsentCollector", fields: [consentedById], references: [id], map: "patient_consents_consentedsById_fkey")
+  patient       Patient   @relation("PatientConsents", fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([patientId, consentDate])
+  @@index([consentType])
+  @@map("patient_consents")
+}
+
+model PaymentAllocation {
+  id             String   @id @default(cuid())
+  paymentId      String   @unique
+  amount         Decimal  @db.Decimal(10, 2)
+  allocationType String
+  referenceId    String
+  referenceType  String
+  createdAt      DateTime @default(now())
+  payment        Payment  @relation(fields: [paymentId], references: [id], onDelete: Cascade)
+
+  @@index([allocationType])
+  @@index([referenceId])
+  @@map("payment_allocations")
+}
+
+model Refund {
+  id            String          @id @default(cuid())
+  refundNumber  String          @unique
+  paymentId     String
+  amount        Decimal         @db.Decimal(10, 2)
+  reason        String
+  status        RefundStatus    @default(PENDING)
+  refundMethod  PaymentMethod
+  refundTo      String?
+  approvalId    String?
+  processedAt   DateTime?
+  processedById String?
+  transactionId String?
+  utr           String?
+  remarks       String?
+  requestedById String
+  requestedAt   DateTime        @default(now())
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  approval      RefundApproval? @relation(fields: [approvalId], references: [id])
+  payment       Payment         @relation(fields: [paymentId], references: [id])
+  processedBy   User?           @relation("RefundProcessor", fields: [processedById], references: [id])
+  requestedBy   User            @relation("RefundRequester", fields: [requestedById], references: [id])
+
+  @@index([paymentId])
+  @@index([status])
+  @@index([requestedById])
+  @@index([refundNumber])
+  @@map("refunds")
+}
+
+model RefundApproval {
+  id             String   @id @default(cuid())
+  refundId       String   @unique
+  approverId     String
+  approvalStatus String
+  approvalNotes  String?
+  approvedAt     DateTime @default(now())
+  createdAt      DateTime @default(now())
+  approver       User     @relation(fields: [approverId], references: [id], onDelete: Cascade)
+  refund         Refund[]
+
+  @@index([refundId])
+  @@index([approverId])
+  @@map("refund_approvals")
+}
+
+model PatientAdvance {
+  id              String   @id @default(cuid())
+  patientId       String
+  amount          Decimal  @db.Decimal(10, 2)
+  balance         Decimal  @db.Decimal(10, 2)
+  transactionType String
+  referenceId     String?
+  referenceType   String?
+  reason          String?
+  receivedById    String?
+  createdAt       DateTime @default(now())
+  patient         Patient  @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  receivedBy      User?    @relation("AdvanceReceiver", fields: [receivedById], references: [id])
+
+  @@index([patientId])
+  @@index([transactionType])
+  @@index([createdAt])
+  @@map("patient_advances")
+}
+
+model PatientWallet {
+  id           String              @id @default(cuid())
+  patientId    String              @unique
+  balance      Decimal             @default(0) @db.Decimal(10, 2)
+  isActive     Boolean             @default(true)
+  createdAt    DateTime            @default(now())
+  updatedAt    DateTime            @updatedAt
+  patient      Patient             @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  transactions WalletTransaction[]
+
+  @@index([patientId])
+  @@map("patient_wallets")
+}
+
+model WalletTransaction {
+  id              String        @id @default(cuid())
+  walletId        String
+  amount          Decimal       @db.Decimal(10, 2)
+  transactionType String
+  balanceBefore   Decimal       @db.Decimal(10, 2)
+  balanceAfter    Decimal       @db.Decimal(10, 2)
+  referenceId     String?
+  referenceType   String?
+  description     String?
+  createdAt       DateTime      @default(now())
+  wallet          PatientWallet @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+  @@index([transactionType])
+  @@index([createdAt])
+  @@map("wallet_transactions")
+}
+
+model CashCounter {
+  id               String               @id @default(cuid())
+  counterNumber    String               @unique
+  counterName      String
+  branchId         String?
+  location         String?
+  status           CounterStatus        @default(CLOSED)
+  openingBalance   Decimal              @default(0) @db.Decimal(10, 2)
+  currentBalance   Decimal              @default(0) @db.Decimal(10, 2)
+  assignedUserId   String?
+  openedAt         DateTime?
+  closedAt         DateTime?
+  expectedCash     Decimal              @default(0) @db.Decimal(10, 2)
+  actualCash       Decimal              @default(0) @db.Decimal(10, 2)
+  variance         Decimal              @default(0) @db.Decimal(10, 2)
+  varianceReason   String?
+  denominationData Json?
+  notes            String?
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  sessions         CashCounterSession[]
+  assignedUser     User?                @relation("CounterAssigned", fields: [assignedUserId], references: [id])
+  drawers          CashDrawer[]
+  payments         Payment[]
+
+  @@index([branchId])
+  @@index([status])
+  @@index([assignedUserId])
+  @@map("cash_counters")
+}
+
+model CashCounterSession {
+  id             String      @id @default(cuid())
+  counterId      String
+  userId         String
+  openingBalance Decimal     @db.Decimal(10, 2)
+  closingBalance Decimal?    @db.Decimal(10, 2)
+  expectedCash   Decimal?    @db.Decimal(10, 2)
+  actualCash     Decimal?    @db.Decimal(10, 2)
+  variance       Decimal?    @db.Decimal(10, 2)
+  varianceReason String?
+  openedAt       DateTime    @default(now())
+  closedAt       DateTime?
+  notes          String?
+  createdAt      DateTime    @default(now())
+  counter        CashCounter @relation(fields: [counterId], references: [id], onDelete: Cascade)
+  user           User        @relation("CounterSessionUser", fields: [userId], references: [id])
+
+  @@index([counterId])
+  @@index([userId])
+  @@index([openedAt])
+  @@map("cash_counter_sessions")
+}
+
+model CashDrawer {
+  id               String         @id @default(cuid())
+  drawerNumber     String         @unique
+  counterId        String
+  drawerName       String
+  currentBalance   Decimal        @default(0) @db.Decimal(10, 2)
+  denominationData Json?
+  status           String         @default("ACTIVE")
+  createdAt        DateTime       @default(now())
+  updatedAt        DateTime       @updatedAt
+  counter          CashCounter    @relation(fields: [counterId], references: [id])
+  movements        CashMovement[] @relation("CashDrawerMovements")
+  payments         Payment[]
+
+  @@index([counterId])
+  @@map("cash_drawers")
+}
+
+model CashMovement {
+  id            String           @id @default(cuid())
+  drawerId      String
+  movementType  CashMovementType
+  amount        Decimal          @db.Decimal(10, 2)
+  reason        String
+  referenceId   String?
+  referenceType String?
+  performedById String
+  performedAt   DateTime         @default(now())
+  createdAt     DateTime         @default(now())
+  drawer        CashDrawer       @relation("CashDrawerMovements", fields: [drawerId], references: [id])
+  performedBy   User             @relation("CashMovementPerformer", fields: [performedById], references: [id])
+
+  @@index([drawerId])
+  @@index([movementType])
+  @@index([performedAt])
+  @@map("cash_movements")
+}
+
+model Settlement {
+  id               String                  @id @default(cuid())
+  settlementNumber String                  @unique
+  provider         String
+  providerType     String
+  grossAmount      Decimal                 @db.Decimal(10, 2)
+  fees             Decimal                 @default(0) @db.Decimal(10, 2)
+  netAmount        Decimal                 @db.Decimal(10, 2)
+  settledAmount    Decimal?                @db.Decimal(10, 2)
+  difference       Decimal?                @db.Decimal(10, 2)
+  status           SettlementStatus        @default(EXPECTED)
+  settlementDate   DateTime?
+  referenceNumber  String?
+  utr              String?
+  metadata         Json?
+  notes            String?
+  createdAt        DateTime                @default(now())
+  updatedAt        DateTime                @updatedAt
+  transactions     SettlementTransaction[]
+
+  @@index([provider])
+  @@index([status])
+  @@index([settlementDate])
+  @@map("settlements")
+}
+
+model SettlementTransaction {
+  id            String     @id @default(cuid())
+  settlementId  String
+  paymentId     String
+  amount        Decimal    @db.Decimal(10, 2)
+  matchedAmount Decimal?   @db.Decimal(10, 2)
+  status        String     @default("MATCHED")
+  matchedAt     DateTime?
+  createdAt     DateTime   @default(now())
+  payment       Payment    @relation(fields: [paymentId], references: [id])
+  settlement    Settlement @relation(fields: [settlementId], references: [id], onDelete: Cascade)
+
+  @@index([settlementId])
+  @@index([paymentId])
+  @@map("settlement_transactions")
+}
+
+model ReconciliationRecord {
+  id             String               @id @default(cuid())
+  recordDate     DateTime
+  sourceType     String
+  sourceId       String
+  transactionId  String
+  amount         Decimal              @db.Decimal(10, 2)
+  status         ReconciliationStatus
+  matchedWith    String?
+  discrepancy    String?
+  notes          String?
+  reconciledAt   DateTime?
+  reconciledById String?
+  createdAt      DateTime             @default(now())
+  reconciledBy   User?                @relation("ReconciliationPerformer", fields: [reconciledById], references: [id])
+
+  @@unique([sourceType, sourceId, transactionId])
+  @@index([recordDate])
+  @@index([status])
+  @@map("reconciliation_records")
+}
+
+model CorporateAccount {
+  id               String    @id @default(cuid())
+  accountNumber    String    @unique
+  accountName      String
+  organizationName String
+  contactPerson    String?
+  contactPhone     String?   @db.VarChar(15)
+  contactEmail     String?
+  billingAddress   String?
+  creditLimit      Decimal   @default(0) @db.Decimal(10, 2)
+  currentBalance   Decimal   @default(0) @db.Decimal(10, 2)
+  paymentTerms     String?
+  isActive         Boolean   @default(true)
+  gstin            String?
+  panNumber        String?
+  notes            String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  payments         Payment[]
+
+  @@index([accountNumber])
+  @@index([isActive])
+  @@map("corporate_accounts")
+}
+
+model Receivable {
+  id                 String           @id @default(cuid())
+  invoiceId          String           @unique
+  patientId          String?
+  corporateAccountId String?
+  totalAmount        Decimal          @db.Decimal(10, 2)
+  paidAmount         Decimal          @default(0) @db.Decimal(10, 2)
+  outstandingAmount  Decimal          @db.Decimal(10, 2)
+  dueDate            DateTime
+  overdueDays        Int              @default(0)
+  status             ReceivableStatus @default(PENDING)
+  lastReminderAt     DateTime?
+  reminderCount      Int              @default(0)
+  notes              String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  @@index([invoiceId])
+  @@index([patientId])
+  @@index([corporateAccountId])
+  @@index([dueDate])
+  @@index([status])
+  @@map("receivables")
+}
+
+model Receipt {
+  id              String    @id @default(cuid())
+  receiptNumber   String    @unique
+  paymentId       String    @unique
+  receiptType     String
+  qrCode          String?
+  verificationUrl String?
+  printedAt       DateTime?
+  emailedAt       DateTime?
+  smsedAt         DateTime?
+  createdAt       DateTime  @default(now())
+
+  @@index([paymentId])
+  @@index([receiptNumber])
+  @@map("receipts")
+}
+
+model PaymentAuditLog {
+  id         String   @id @default(cuid())
+  userId     String
+  action     String
+  entityType String
+  entityId   String
+  oldValues  Json?
+  newValues  Json?
+  reason     String?
+  ipAddress  String?
+  userAgent  String?
+  branchId   String?
+  counterId  String?
+  createdAt  DateTime @default(now())
+  user       User     @relation("PaymentAuditUser", fields: [userId], references: [id])
+
+  @@index([userId])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([createdAt])
+  @@map("payment_audit_logs")
+}
+
+model abdm_care_contexts {
+  id                   String    @id
+  patientId            String
+  careContextReference String    @unique
+  display              String
+  orderId              String?
+  hiTypes              String[]  @default([])
+  isLinked             Boolean   @default(false)
+  linkedAt             DateTime?
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @default(now())
+  patients             Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([isLinked])
+  @@index([orderId])
+  @@index([patientId])
+}
+
+model abdm_consents {
+  id            String    @id
+  consentId     String    @unique
+  patientId     String
+  status        String    @default("REQUESTED")
+  hiTypes       String[]  @default([])
+  dateFrom      DateTime?
+  dateTo        DateTime?
+  expiryDate    DateTime?
+  purpose       String?
+  consentDetail Json?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now())
+  patients      Patient   @relation(fields: [patientId], references: [id], onDelete: Cascade)
+
+  @@index([expiryDate])
+  @@index([patientId])
+  @@index([status])
+}
+
+model abdm_transactions {
+  id            String   @id
+  requestId     String   @unique
+  transactionId String?
+  action        String
+  status        String   @default("INITIATED")
+  patientId     String?
+  requestData   Json?
+  responseData  Json?
+  error         String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @default(now())
+
+  @@index([action])
+  @@index([createdAt])
+  @@index([patientId])
+  @@index([status])
+}
+
+enum UserRole {
+  ADMIN
+  FRONT_DESK
+  LAB_TECH
+  PATHOLOGIST
+  DOCTOR
+  SUPER_ADMIN
+  BRANCH_ADMIN
+  ACCOUNTANT
+  AUDITOR
+}
+
+enum DoctorType {
+  REFERRING_DOCTOR
+  INTERNAL_PATHOLOGIST
+  CONSULTANT_PATHOLOGIST
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+enum AccountStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  LOCKED
+}
+
+enum OrderStatus {
+  DRAFT
+  REGISTERED
+  SAMPLE_COLLECTED
+  PROCESSING
+  COMPLETED
+  CANCELLED
+  IN_PROGRESS
+  PARTIALLY_COMPLETED
+}
+
+enum PaymentStatus {
+  PENDING
+  PARTIAL
+  PAID
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  UPI
+  NET_BANKING
+  CHEQUE
+  BANK_TRANSFER
+  ADVANCE
+  WALLET
+  CORPORATE_CREDIT
+  OTHER
+}
+
+enum ResultStatus {
+  PENDING
+  ENTERED
+  VERIFIED
+  APPROVED
+  PUBLISHED
+}
+
+enum ResultFlag {
+  LOW
+  NORMAL
+  HIGH
+  CRITICAL
+}
+
+enum ParameterType {
+  NUMERIC
+  TEXT
+  BOOLEAN
+  OPTION
+}
+
+enum SampleType {
+  BLOOD
+  URINE
+  SERUM
+  PLASMA
+  STOOL
+  SWAB
+  SPUTUM
+  CSF
+  TISSUE
+  OTHER
+}
+
+enum SampleStatus {
+  PENDING
+  COLLECTED
+  RECEIVED
+  PROCESSING
+  COMPLETED
+  REJECTED
+}
+
+enum SampleTrackingEventType {
+  ORDER_REGISTERED
+  SAMPLE_COLLECTED
+  SAMPLE_RECEIVED
+  SAMPLE_PROCESSING
+  SAMPLE_COMPLETED
+  SAMPLE_REJECTED
+  RESULT_ENTERED
+  RESULT_VERIFIED
+  RESULT_APPROVED
+  REPORT_GENERATED
+  REPORT_SENT
+  REPORT_DELIVERED
+}
+
+enum AnalyzerProtocol {
+  ASTM
+  HL7
+  HTTP_API
+  TCP_IP
+  SERIAL_RS232
+  VENDOR_SPECIFIC
+}
+
+enum AnalyzerStatus {
+  ONLINE
+  OFFLINE
+  IDLE
+  BUSY
+  ERROR
+  MAINTENANCE
+  CALIBRATION_REQUIRED
+}
+
+enum AnalyzerConnectionType {
+  NETWORK
+  SERIAL
+  USB
+  BLUETOOTH
+  MANUAL
+}
+
+enum CalibrationStatus {
+  VALID
+  DUE
+  OVERDUE
+  FAILED
+  IN_PROGRESS
+}
+
+enum MaintenanceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+  CANCELLED
+}
+
+enum AnalyzerJobStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  RETRYING
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum ReportStatus {
+  DRAFT
+  GENERATED
+  PUBLISHED
+  CANCELLED
+}
+
+enum CommunicationType {
+  EMAIL
+  SMS
+  CALL
+  WHATSAPP
+}
+
+enum CommunicationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  CANCELLED
+}
+
+enum NotificationEventType {
+  PATIENT_REGISTRATION
+  ORDER_CREATED
+  SAMPLE_COLLECTED
+  SAMPLE_RECEIVED
+  TEST_COMPLETED
+  RESULT_READY
+  RESULT_APPROVED
+  INVOICE_GENERATED
+  PAYMENT_RECEIVED
+  APPOINTMENT_SCHEDULED
+  APPOINTMENT_REMINDER
+}
+
+enum RefundStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  PROCESSING
+  COMPLETED
+  FAILED
+}
+
+enum CounterStatus {
+  OPEN
+  CLOSED
+  LOCKED
+}
+
+enum CashMovementType {
+  DEPOSIT
+  WITHDRAWAL
+  TRANSFER_IN
+  TRANSFER_OUT
+  ADJUSTMENT
+  REFUND
+}
+
+enum SettlementStatus {
+  EXPECTED
+  PROCESSING
+  SETTLED
+  MISMATCH
+  FAILED
+}
+
+enum ReconciliationStatus {
+  PENDING
+  MATCHED
+  UNMATCHED
+  DISCREPANCY
+  RESOLVED
+}
+
+enum ReceivableStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  WRITE_OFF
+}

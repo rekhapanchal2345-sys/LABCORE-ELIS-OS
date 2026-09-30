@@ -1,0 +1,105 @@
+import { Router } from "express";
+import { UserRole } from "@prisma/client";
+
+import { authenticate } from "../../../middleware/auth.middleware";
+import { authorize } from "../../../middleware/rbac.middleware";
+import { validate } from "../../../middleware/validate.middleware";
+
+import {
+  create,
+  list,
+  getOne,
+  recordHistory,
+  userActivity,
+} from "./audit.controller";
+
+import {
+  auditIdSchema,
+  auditQuerySchema,
+  createAuditSchema,
+} from "./audit.validation";
+
+const router = Router();
+
+// =======================================================
+// ALL AUDIT ROUTES REQUIRE LOGIN
+// =======================================================
+
+router.use(
+  authenticate
+);
+
+// =======================================================
+// CREATE AUDIT LOG
+// Usually internal/system use
+// =======================================================
+
+router.post(
+  "/",
+  authorize(
+    UserRole.ADMIN
+  ),
+  validate({
+    body:
+      createAuditSchema,
+  }),
+  create
+);
+
+// =======================================================
+// LIST AUDIT LOGS
+// =======================================================
+
+router.get(
+  "/",
+  authorize(
+    UserRole.ADMIN
+  ),
+  validate({
+    query:
+      auditQuerySchema,
+  }),
+  list
+);
+
+// =======================================================
+// GET AUDIT LOG
+// =======================================================
+
+router.get(
+  "/:id",
+  authorize(
+    UserRole.ADMIN
+  ),
+  validate({
+    params:
+      auditIdSchema,
+  }),
+  getOne
+);
+
+// =======================================================
+// RECORD HISTORY
+// =======================================================
+
+router.get(
+  "/record/:recordId",
+  authorize(
+    UserRole.ADMIN
+  ),
+  recordHistory
+);
+
+// =======================================================
+// USER ACTIVITY
+// =======================================================
+
+router.get(
+  "/user/:userId",
+  authorize(
+    UserRole.ADMIN
+  ),
+  userActivity
+);
+
+export default router;

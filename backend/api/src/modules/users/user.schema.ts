@@ -1,0 +1,239 @@
+import { z } from "zod";
+
+/**
+ * Prisma UserRole:
+ *
+ * ADMIN
+ * FRONT_DESK
+ * LAB_TECH
+ * PATHOLOGIST
+ * DOCTOR
+ */
+
+export const userRoleSchema = z.enum([
+  "ADMIN",
+  "FRONT_DESK",
+  "LAB_TECH",
+  "PATHOLOGIST",
+  "DOCTOR",
+]);
+
+/**
+ * Prisma AccountStatus:
+ *
+ * ACTIVE
+ * INACTIVE
+ * SUSPENDED
+ */
+
+export const accountStatusSchema =
+  z.enum([
+    "ACTIVE",
+    "INACTIVE",
+    "SUSPENDED",
+  ]);
+
+/**
+ * Create User
+ */
+export const createUserSchema = {
+  body: z.object({
+    employeeCode: z
+      .string()
+      .trim()
+      .min(
+        1,
+        "Employee code is required."
+      )
+      .max(50),
+
+    fullName: z
+      .string()
+      .trim()
+      .min(
+        2,
+        "Full name must contain at least 2 characters."
+      )
+      .max(150),
+
+    email: z
+      .string()
+      .trim()
+      .email("Invalid email address.")
+      .max(255)
+      .transform((value) =>
+        value.toLowerCase()
+      ),
+
+    phone: z
+      .string()
+      .trim()
+      .regex(
+        /^[0-9+\-\s()]{7,15}$/,
+        "Invalid phone number."
+      )
+      .nullable()
+      .optional(),
+
+    password: z
+      .string()
+      .min(
+        8,
+        "Password must contain at least 8 characters."
+      )
+      .max(100),
+
+    role: userRoleSchema,
+
+    status:
+      accountStatusSchema
+        .optional()
+        .default("ACTIVE"),
+
+    specialization: z
+      .string()
+      .trim()
+      .max(150)
+      .nullable()
+      .optional(),
+  }),
+};
+
+/**
+ * Update User
+ *
+ * Password is optional here.
+ * If password is omitted, existing password
+ * remains unchanged.
+ */
+export const updateUserSchema = {
+  params: z.object({
+    id: z
+      .string()
+      .trim()
+      .min(
+        1,
+        "User ID is required."
+      ),
+  }),
+
+  body: z.object({
+    employeeCode: z
+      .string()
+      .trim()
+      .min(1)
+      .max(50)
+      .optional(),
+
+    fullName: z
+      .string()
+      .trim()
+      .min(2)
+      .max(150)
+      .optional(),
+
+    email: z
+      .string()
+      .trim()
+      .email(
+        "Invalid email address."
+      )
+      .max(255)
+      .transform((value) =>
+        value.toLowerCase()
+      )
+      .optional(),
+
+    phone: z
+      .string()
+      .trim()
+      .regex(
+        /^[0-9+\-\s()]{7,15}$/,
+        "Invalid phone number."
+      )
+      .nullable()
+      .optional(),
+
+    password: z
+      .string()
+      .min(
+        8,
+        "Password must contain at least 8 characters."
+      )
+      .max(100)
+      .optional(),
+
+    role: userRoleSchema.optional(),
+
+    status:
+      accountStatusSchema.optional(),
+
+    specialization: z
+      .string()
+      .trim()
+      .max(150)
+      .nullable()
+      .optional(),
+  }),
+};
+
+/**
+ * User ID
+ */
+export const userIdSchema = {
+  params: z.object({
+    id: z
+      .string()
+      .trim()
+      .min(
+        1,
+        "User ID is required."
+      ),
+  }),
+};
+
+/**
+ * User List / Search
+ */
+export const userListSchema = {
+  query: z.object({
+    search: z
+      .string()
+      .trim()
+      .max(150)
+      .optional(),
+
+    role: userRoleSchema.optional(),
+
+    status:
+      accountStatusSchema.optional(),
+
+    page: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .default(1),
+
+    limit: z.coerce
+      .number()
+      .int()
+      .min(1)
+      .max(100)
+      .default(20),
+  }),
+};
+
+export type CreateUserInput =
+  z.infer<
+    typeof createUserSchema.body
+  >;
+
+export type UpdateUserInput =
+  z.infer<
+    typeof updateUserSchema.body
+  >;
+
+export type UserListInput =
+  z.infer<
+    typeof userListSchema.query
+  >;

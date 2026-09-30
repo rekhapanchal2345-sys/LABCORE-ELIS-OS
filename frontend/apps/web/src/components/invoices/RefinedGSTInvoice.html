@@ -1,0 +1,813 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>TAX INVOICE - LabCore ELIS</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=Inter:wght@400;500;600&display=swap');
+
+    :root {
+      /* Theme Colors - Deep Accent Color Swappable */
+      --color-accent: #0D4F4A; /* Deep Teal - can be swapped to #111B3E (Ink Navy) */
+      --color-accent-light: #1A6B65;
+      --color-accent-tint: rgba(13, 79, 74, 0.08);
+      --color-accent-border: rgba(13, 79, 74, 0.2);
+      
+      /* Text Colors */
+      --color-text-primary: #1A1A1A;
+      --color-text-secondary: #4A4A4A;
+      --color-text-muted: #6B6B6B;
+      
+      /* Background Colors */
+      --color-base: #FAFAF8;
+      --color-white: #FFFFFF;
+      --color-gray-light: #F5F5F5;
+      
+      /* Border Colors */
+      --color-border: #E0E0E0;
+      --color-border-light: #F0F0F0;
+      
+      /* Status Colors */
+      --color-success: #0D4F4A;
+      --color-success-bg: rgba(13, 79, 74, 0.1);
+      --color-warning: #B45309;
+      --color-warning-bg: rgba(180, 83, 9, 0.1);
+      --color-error: #B91C1C;
+      --color-error-bg: rgba(185, 28, 28, 0.1);
+
+      /* Typography */
+      --font-serif: 'Cormorant Garamond', Georgia, serif;
+      --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+
+      /* Spacing - Consistent Rhythm */
+      --spacing-section: 32px;
+      --spacing-field: 8px;
+      --spacing-tight: 20px;
+      --spacing-snug: 24px;
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: var(--font-sans);
+      font-size: 11px;
+      color: var(--color-text-primary);
+      background: var(--color-base);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* A4 Page Container */
+    .invoice-page {
+      width: 210mm;
+      min-height: 297mm;
+      margin: 0 auto;
+      padding: 15mm;
+      background: white;
+      position: relative;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+    }
+
+    /* Die-line Frame */
+    .invoice-page::before {
+      content: '';
+      position: absolute;
+      top: 8mm;
+      left: 8mm;
+      right: 8mm;
+      bottom: 8mm;
+      border: 2px solid var(--color-accent);
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.6;
+    }
+
+    /* Content Container */
+    .invoice-content {
+      position: relative;
+      z-index: 2;
+    }
+
+    /* Header Section */
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: var(--spacing-section);
+      padding-bottom: var(--spacing-section);
+      border-bottom: 1px solid var(--color-border);
+    }
+
+    .company-branding {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+
+    .accent-bar {
+      width: 2px;
+      height: 48px;
+      background: var(--color-accent);
+    }
+
+    .company-info {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .company-name {
+      font-family: var(--font-serif);
+      font-size: 26px;
+      font-weight: 500;
+      color: var(--color-accent);
+      letter-spacing: 0.3px;
+      margin-bottom: 4px;
+      line-height: 1.1;
+    }
+
+    .company-tagline {
+      font-size: 9px;
+      color: var(--color-text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      font-weight: 500;
+    }
+
+    .invoice-meta {
+      text-align: right;
+      position: relative;
+    }
+
+    .invoice-title {
+      font-family: var(--font-serif);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+
+    .invoice-number-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      justify-content: flex-end;
+      margin-bottom: 8px;
+    }
+
+    .invoice-number {
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--color-text-primary);
+      letter-spacing: 0.5px;
+    }
+
+    /* Status Badge - Proper Pill with Icon */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      border: 1px solid var(--color-accent-border);
+      background: var(--color-accent-tint);
+      color: var(--color-accent);
+    }
+
+    .status-badge svg {
+      width: 12px;
+      height: 12px;
+    }
+
+    .status-badge.paid {
+      border-color: var(--color-success);
+      background: var(--color-success-bg);
+      color: var(--color-success);
+    }
+
+    .status-badge.due {
+      border-color: var(--color-warning);
+      background: var(--color-warning-bg);
+      color: var(--color-warning);
+    }
+
+    .status-badge.overdue {
+      border-color: var(--color-error);
+      background: var(--color-error-bg);
+      color: var(--color-error);
+    }
+
+    .meta-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 24px;
+      font-size: 10px;
+      color: var(--color-text-secondary);
+      margin-top: 8px;
+    }
+
+    .meta-item {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+    }
+
+    .meta-label {
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--color-text-muted);
+      margin-bottom: 2px;
+      font-weight: 500;
+    }
+
+    .meta-value {
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    /* Section Labels - Small Caps with Accent Color */
+    .section-label {
+      font-size: 9px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--color-accent);
+      margin-bottom: 12px;
+      font-family: var(--font-sans);
+    }
+
+    /* Party Details - Equal Width Columns */
+    .party-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: var(--spacing-section);
+    }
+
+    .party-section {
+      padding: 0;
+    }
+
+    .party-name {
+      font-family: var(--font-serif);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+      margin-bottom: var(--spacing-field);
+      line-height: 1.3;
+    }
+
+    .party-detail {
+      font-size: 10px;
+      color: var(--color-text-secondary);
+      margin-bottom: var(--spacing-field);
+      line-height: 1.4;
+    }
+
+    .party-detail strong {
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    /* Table Section */
+    .table-section {
+      margin-bottom: var(--spacing-section);
+    }
+
+    .invoice-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 10px;
+    }
+
+    .invoice-table thead {
+      border-bottom: 2px solid var(--color-accent);
+    }
+
+    .invoice-table th {
+      font-family: var(--font-sans);
+      font-size: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--color-accent);
+      padding: 12px 16px;
+      text-align: left;
+      background: transparent;
+    }
+
+    .invoice-table th.text-right {
+      text-align: right;
+    }
+
+    .invoice-table th.text-center {
+      text-align: center;
+    }
+
+    .invoice-table td {
+      padding: 16px;
+      border-bottom: 1px solid var(--color-border-light);
+      color: var(--color-text-primary);
+      vertical-align: top;
+    }
+
+    .invoice-table td.text-right {
+      text-align: right;
+    }
+
+    .invoice-table td.text-center {
+      text-align: center;
+    }
+
+    .invoice-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Optional Zebra Striping */
+    .invoice-table tbody tr:nth-child(even) {
+      background: rgba(0, 0, 0, 0.02);
+    }
+
+    /* Tabular nums for numeric columns */
+    .tabular-nums {
+      font-feature-settings: "tnum";
+      font-variant-numeric: tabular-nums;
+    }
+
+    .amount {
+      font-weight: 500;
+    }
+
+    .total-amount {
+      font-weight: 600;
+    }
+
+    /* Summary Section - Snug Fit */
+    .summary-section {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: var(--spacing-section);
+    }
+
+    .summary-box {
+      width: 280px;
+      padding: var(--spacing-tight); /* 20px - snug fit */
+      background: var(--color-accent-tint);
+      border: 1px solid var(--color-accent);
+      position: relative;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: var(--spacing-field);
+      font-size: 10px;
+    }
+
+    .summary-row:last-child {
+      margin-bottom: 0;
+    }
+
+    .summary-row.total {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--color-accent);
+    }
+
+    .summary-label {
+      color: var(--color-text-secondary);
+      font-weight: 500;
+    }
+
+    .summary-value {
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .grand-total {
+      font-family: var(--font-serif);
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-accent);
+    }
+
+    .grand-total-value {
+      font-family: var(--font-serif);
+      font-size: 34px; /* Large serif numeral */
+      font-weight: 500;
+      color: var(--color-accent);
+      line-height: 1;
+    }
+
+    .amount-in-words {
+      font-size: 9px;
+      color: var(--color-text-muted);
+      font-style: italic;
+      margin-top: var(--spacing-field);
+      line-height: 1.3;
+      font-family: var(--font-serif);
+    }
+
+    .balance-due {
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px solid var(--color-border);
+    }
+
+    .balance-due .summary-label {
+      font-weight: 600;
+      color: var(--color-text-primary);
+    }
+
+    .balance-due .summary-value {
+      font-weight: 700;
+      color: var(--color-error);
+    }
+
+    /* QR Code Section */
+    .qr-section {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: var(--spacing-section);
+      padding: 20px;
+      background: var(--color-gray-light);
+      border: 1px solid var(--color-border);
+    }
+
+    .qr-code {
+      width: 64px;
+      height: 64px;
+      background: white;
+      border: 1px solid var(--color-border);
+      padding: 4px;
+    }
+
+    .qr-code img {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .qr-info {
+      flex: 1;
+    }
+
+    .qr-title {
+      font-size: 10px;
+      font-weight: 600;
+      color: var(--color-accent);
+      margin-bottom: 4px;
+    }
+
+    .qr-description {
+      font-size: 9px;
+      color: var(--color-text-secondary);
+      line-height: 1.4;
+    }
+
+    /* Bank Details - Tight 2-Column Grid */
+    .bank-details {
+      margin-bottom: var(--spacing-section);
+    }
+
+    .bank-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px 24px;
+    }
+
+    .bank-item {
+      font-size: 10px;
+    }
+
+    .bank-label {
+      font-size: 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--color-text-muted);
+      margin-bottom: 2px;
+      font-weight: 500;
+    }
+
+    .bank-value {
+      font-weight: 500;
+      color: var(--color-text-primary);
+    }
+
+    /* Footer - Tight Layout */
+    .footer {
+      margin-top: var(--spacing-section);
+      padding-top: var(--spacing-section);
+      border-top: 1px solid var(--color-border);
+      text-align: center;
+    }
+
+    .footer-content {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 24px;
+      margin-bottom: 16px;
+    }
+
+    .footer-section {
+      text-align: left;
+    }
+
+    .footer-text {
+      font-size: 11px;
+      color: var(--color-text-muted);
+      margin-bottom: 4px;
+      line-height: 1.4;
+    }
+
+    .footer-terms {
+      font-size: 9px;
+      color: var(--color-text-muted);
+      line-height: 1.4;
+    }
+
+    .footer-signature {
+      margin-top: 16px;
+      display: flex;
+      justify-content: flex-end;
+    }
+
+    .signature-line {
+      width: 180px;
+      border-top: 1px solid var(--color-accent);
+      padding-top: 8px;
+      text-align: center;
+    }
+
+    .signature-text {
+      font-size: 10px;
+      color: var(--color-text-muted);
+      font-weight: 500;
+    }
+
+    /* Print Media Query */
+    @media print {
+      body {
+        margin: 0;
+        background: white;
+      }
+
+      .invoice-page {
+        box-shadow: none;
+        margin: 0;
+        width: 100%;
+        page-break-after: always;
+      }
+
+      .invoice-page::before,
+      .status-badge {
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+
+    @page {
+      size: A4;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="invoice-page">
+    <div class="invoice-content">
+      <!-- Header -->
+      <header class="header">
+        <div class="company-branding">
+          <div class="accent-bar"></div>
+          <div class="company-info">
+            <h1 class="company-name">LABCORE ELIS</h1>
+            <p class="company-tagline">Enterprise Laboratory Information System</p>
+          </div>
+        </div>
+
+        <div class="invoice-meta">
+          <h2 class="invoice-title">Tax Invoice</h2>
+          <div class="invoice-number-row">
+            <span class="invoice-number">INV-2024-001234</span>
+            <span class="status-badge paid">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+              Paid
+            </span>
+          </div>
+          <div class="meta-row">
+            <div class="meta-item">
+              <span class="meta-label">Date</span>
+              <span class="meta-value">03 September 2026</span>
+            </div>
+            <div class="meta-item">
+              <span class="meta-label">Due Date</span>
+              <span class="meta-value">03 October 2026</span>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <!-- Party Details - Equal Width Columns -->
+      <div class="party-details">
+        <div class="party-section">
+          <p class="section-label">Bill To</p>
+          <h3 class="party-name">John Doe</h3>
+          <p class="party-detail"><strong>UHID:</strong> UHID-2024-789012</p>
+          <p class="party-detail"><strong>Phone:</strong> +91-9876543210</p>
+          <p class="party-detail"><strong>Email:</strong> john.doe@email.com</p>
+          <p class="party-detail">123 Healthcare Avenue, Medical District, City - 560001</p>
+        </div>
+
+        <div class="party-section">
+          <p class="section-label">Ship From</p>
+          <h3 class="party-name">LabCore ELIS</h3>
+          <p class="party-detail"><strong>GSTIN:</strong> 29ABCDE1234F1Z5</p>
+          <p class="party-detail"><strong>PAN:</strong> ABCDE1234F</p>
+          <p class="party-detail"><strong>Phone:</strong> +91-9876543210</p>
+          <p class="party-detail"><strong>Email:</strong> billing@labcore.com</p>
+          <p class="party-detail">123 Healthcare Avenue, Medical District, City - 560001</p>
+        </div>
+      </div>
+
+      <!-- Invoice Items Table -->
+      <div class="table-section">
+        <p class="section-label">Services / Tests</p>
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Description</th>
+              <th class="text-center">HSN/SAC</th>
+              <th class="text-center">Qty</th>
+              <th class="text-right">Rate</th>
+              <th class="text-right">Taxable</th>
+              <th class="text-center">CGST%</th>
+              <th class="text-right">CGST</th>
+              <th class="text-center">SGST%</th>
+              <th class="text-right">SGST</th>
+              <th class="text-right">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>1</td>
+              <td>
+                <strong>Complete Blood Count (CBC)</strong>
+                <br><span style="color: var(--color-text-muted); font-size: 9px;">CBC-001</span>
+              </td>
+              <td class="text-center">999312</td>
+              <td class="text-center">1</td>
+              <td class="text-right tabular-nums amount">₹500.00</td>
+              <td class="text-right tabular-nums amount">₹500.00</td>
+              <td class="text-center">9%</td>
+              <td class="text-right tabular-nums amount">₹45.00</td>
+              <td class="text-center">9%</td>
+              <td class="text-right tabular-nums amount">₹45.00</td>
+              <td class="text-right tabular-nums total-amount">₹590.00</td>
+            </tr>
+            <tr>
+              <td>2</td>
+              <td>
+                <strong>Lipid Profile</strong>
+                <br><span style="color: var(--color-text-muted); font-size: 9px;">LIP-002</span>
+              </td>
+              <td class="text-center">999312</td>
+              <td class="text-center">1</td>
+              <td class="text-right tabular-nums amount">₹800.00</td>
+              <td class="text-right tabular-nums amount">₹800.00</td>
+              <td class="text-center">9%</td>
+              <td class="text-right tabular-nums amount">₹72.00</td>
+              <td class="text-center">9%</td>
+              <td class="text-right tabular-nums amount">₹72.00</td>
+              <td class="text-right tabular-nums total-amount">₹944.00</td>
+            </tr>
+            <tr>
+              <td>3</td>
+              <td>
+                <strong>Thyroid Function Test</strong>
+                <br><span style="color: var(--color-text-muted); font-size: 9px;">TFT-003</span>
+              </td>
+              <td class="text-center">999312</td>
+              <td class="text-center">1</td>
+              <td class="text-right tabular-nums amount">₹650.00</td>
+              <td class="text-right tabular-nums amount">₹650.00</td>
+              <td class="text-center">9%</td>
+              <td class="text-right tabular-nums amount">₹58.50</td>
+              <td class="text-center">9%</td>
+              <td class="text-right tabular-nums amount">₹58.50</td>
+              <td class="text-right tabular-nums total-amount">₹767.00</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Summary Section - Snug Fit -->
+      <div class="summary-section">
+        <div class="summary-box">
+          <div class="summary-row">
+            <span class="summary-label">Subtotal</span>
+            <span class="summary-value tabular-nums">₹1,950.00</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Total Taxable Value</span>
+            <span class="summary-value tabular-nums">₹1,950.00</span>
+          </div>
+          <div class="summary-row">
+            <span class="summary-label">Total GST</span>
+            <span class="summary-value tabular-nums">₹351.00</span>
+          </div>
+          <div class="summary-row total">
+            <span class="summary-label grand-total">Grand Total</span>
+            <span class="summary-value grand-total-value tabular-nums">₹2,301</span>
+          </div>
+          <p class="amount-in-words">Two Thousand Three Hundred One Rupees Only</p>
+          <div class="balance-due">
+            <div class="summary-row">
+              <span class="summary-label">Amount Paid</span>
+              <span class="summary-value tabular-nums" style="color: var(--color-success);">₹2,301.00</span>
+            </div>
+            <div class="summary-row">
+              <span class="summary-label">Balance Due</span>
+              <span class="summary-value tabular-nums">₹0.00</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- QR Code Section -->
+      <div class="qr-section">
+        <div class="qr-code">
+          <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect fill='%23ffffff' width='100' height='100'/%3E%3Cpath fill='%230D4F4A' d='M10 10h30v30H10zM50 10h10v10H50zM70 10h20v20H70zM10 50h10v10H10zM30 50h10v10H30zM50 50h10v10H50zM70 50h10v10H70zM90 50h10v10H90zM10 70h10v10H10zM30 70h10v10H30zM50 70h30v30H50z'/%3E%3C/svg%3E" alt="QR Code">
+        </div>
+        <div class="qr-info">
+          <h4 class="qr-title">Invoice Verification</h4>
+          <p class="qr-description">Scan this QR code to verify invoice authenticity and GST compliance. Invoice: INV-2024-001234</p>
+        </div>
+      </div>
+
+      <!-- Bank Details - Tight 2-Column Grid -->
+      <div class="bank-details">
+        <p class="section-label">Bank Details</p>
+        <div class="bank-grid">
+          <div class="bank-item">
+            <p class="bank-label">Bank Name</p>
+            <p class="bank-value">ABC Bank</p>
+          </div>
+          <div class="bank-item">
+            <p class="bank-label">Account Number</p>
+            <p class="bank-value">1234567890123</p>
+          </div>
+          <div class="bank-item">
+            <p class="bank-label">IFSC Code</p>
+            <p class="bank-value">ABCD0123456</p>
+          </div>
+          <div class="bank-item">
+            <p class="bank-label">Branch</p>
+            <p class="bank-value">Main Branch, City</p>
+          </div>
+          <div class="bank-item">
+            <p class="bank-label">UPI ID</p>
+            <p class="bank-value">labcore@upi</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Footer - Tight Layout -->
+      <footer class="footer">
+        <div class="footer-content">
+          <div class="footer-section">
+            <p class="footer-text">This is a computer-generated tax invoice.</p>
+            <p class="footer-terms">
+              Payment due within 30 days. Subject to local jurisdiction.
+            </p>
+          </div>
+          <div class="footer-section" style="text-align: right;">
+            <div class="signature-line">
+              <p class="signature-text">For LabCore ELIS</p>
+              <p class="signature-text" style="font-size: 9px; margin-top: 2px;">Authorized Signatory</p>
+            </div>
+          </div>
+        </div>
+        <p class="footer-text" style="margin-top: 8px;">Generated on 03 September 2026</p>
+      </footer>
+    </div>
+  </div>
+</body>
+</html>

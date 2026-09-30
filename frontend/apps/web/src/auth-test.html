@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Auth Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            border: 1px solid #ccc;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .success {
+            background-color: #d4edda;
+            border-color: #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            border-color: #f5c6cb;
+        }
+        .info {
+            background-color: #d1ecf1;
+            border-color: #bee5eb;
+        }
+        button {
+            padding: 10px 15px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        pre {
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 3px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Authentication Test</h1>
+    
+    <div class="test-section info">
+        <h2>Current Auth State</h2>
+        <div id="authState">Loading...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Actions</h2>
+        <button onclick="testTokenStorage()">Test Token Storage</button>
+        <button onclick="testGetCurrentUser()">Test Get Current User</button>
+        <button onclick="clearAuth()">Clear Auth</button>
+        <button onclick="refreshPage()">Refresh Page</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Test Results</h2>
+        <div id="testResults"></div>
+    </div>
+
+    <script>
+        function log(message, type = 'info') {
+            const resultsDiv = document.getElementById('testResults');
+            const entry = document.createElement('div');
+            entry.className = `test-section ${type}`;
+            entry.innerHTML = `<pre>${message}</pre>`;
+            resultsDiv.insertBefore(entry, resultsDiv.firstChild);
+        }
+
+        function updateAuthState() {
+            const state = {
+                hasAccessToken: !!localStorage.getItem('accessToken'),
+                hasToken: !!localStorage.getItem('token'),
+                hasAuth: !!localStorage.getItem('labcore_auth'),
+                hasUser: !!localStorage.getItem('labcore_user'),
+                accessTokenPreview: localStorage.getItem('accessToken')?.substring(0, 20) + '...',
+                tokenPreview: localStorage.getItem('token')?.substring(0, 20) + '...',
+                userData: localStorage.getItem('labcore_user')
+            };
+            document.getElementById('authState').innerHTML = `<pre>${JSON.stringify(state, null, 2)}</pre>`;
+        }
+
+        function testTokenStorage() {
+            try {
+                // Test setting a token
+                const testToken = 'test-jwt-token-' + Date.now();
+                localStorage.setItem('accessToken', testToken);
+                localStorage.setItem('token', testToken);
+                
+                // Test retrieving
+                const retrieved = localStorage.getItem('accessToken');
+                const retrievedAlt = localStorage.getItem('token');
+                
+                const result = {
+                    success: retrieved === testToken && retrievedAlt === testToken,
+                    setToken: testToken,
+                    retrievedToken: retrieved,
+                    retrievedAltToken: retrievedAlt
+                };
+                
+                log('Token Storage Test: ' + JSON.stringify(result, null, 2), result.success ? 'success' : 'error');
+                updateAuthState();
+            } catch (error) {
+                log('Token Storage Test Error: ' + error.message, 'error');
+            }
+        }
+
+        async function testGetCurrentUser() {
+            try {
+                const token = localStorage.getItem('accessToken') || localStorage.getItem('token');
+                
+                if (!token) {
+                    log('Get Current User Test: No token available', 'error');
+                    return;
+                }
+
+                const response = await fetch('http://172.24.1.158:5000/api/auth/me', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                const result = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    ok: response.ok
+                };
+
+                if (response.ok) {
+                    const data = await response.json();
+                    result.data = data;
+                    log('Get Current User Test: SUCCESS\n' + JSON.stringify(result, null, 2), 'success');
+                } else {
+                    const error = await response.json();
+                    result.error = error;
+                    log('Get Current User Test: FAILED\n' + JSON.stringify(result, null, 2), 'error');
+                }
+            } catch (error) {
+                log('Get Current User Test Error: ' + error.message, 'error');
+            }
+        }
+
+        function clearAuth() {
+            localStorage.removeItem('accessToken');
+            localStorage.removeItem('token');
+            localStorage.removeItem('labcore_auth');
+            localStorage.removeItem('labcore_user');
+            log('Auth cleared from localStorage', 'info');
+            updateAuthState();
+        }
+
+        function refreshPage() {
+            location.reload();
+        }
+
+        // Initial state
+        updateAuthState();
+    </script>
+</body>
+</html>

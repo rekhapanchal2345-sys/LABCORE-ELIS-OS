@@ -1,0 +1,246 @@
+import { Server as SocketIOServer } from 'socket.io';
+import { Server as HTTPServer } from 'http';
+import jwt from 'jsonwebtoken';
+
+// WebSocket Service for Real-time Features
+export class WebSocketService {
+  private static io: SocketIOServer;
+  private static connectedClients: Map<string, Set<string>> = new Map(); // userId -> Set of socketIds
+  private static conversationRooms: Map<string, Set<string>> = new Map(); // conversationId -> Set of socketIds
+
+  /**
+   * Initialize WebSocket server
+   */
+  static initialize(httpServer: HTTPServer) {
+    this.io = new SocketIOServer(httpServer, {
+      cors: {
+        origin: process.env.FRONTEND_URL || 'http://localhost:3001',
+        methods: ['GET', 'POST'],
+        credentials: true
+      },
+      transports: ['websocket', 'polling']
+    });
+
+    this.io.on('connection', (socket) => {
+      console.log('[WebSocket] Client connected:', socket.id);
+
+      // Authentication middleware
+      socket.on('authenticate', async (token: string) => {
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key') as any;
+          const userId = decoded.userId || decoded.id;
+          
+          if (userId) {
+            socket.data.userId = userId;
+            
+            // Add to connected clients
+            if (!this.connectedClients.has(userId)) {
+              this.connectedClients.set(userId, new Set());
+            }
+            this.connectedClients.get(userId)!.add(socket.id);
+            
+            // Join user's personal room
+            socket.join(`user:${userId}`);
+            
+            console.log('[WebSocket] User authenticated:', userId);
+            socket.emit('authenticated', { success: true, userId });
+          } else {
+            socket.emit('authenticated', { success: false, error: 'Invalid token' });
+          }
+        } catch (error) {
+          console.error('[WebSocket] Authentication error:', error);
+          socket.emit('authenticated', { success: false, error: 'Authentication failed' });
+        }
+      });
+
+      // Join conversation room
+      socket.on('join_conversation', (conversationId: string) => {
+        try {
+          socket.join(`conversation:${conversationId}`);
+          
+          if (!this.conversationRooms.has(conversationId)) {
+            this.conversationRooms.set(conversationId, new Set());
+          }
+          this.conversationRooms.get(conversationId)!.add(socket.id);
+          
+          console.log('[WebSocket] Socket joined conversation:', conversationId);
+          socket.emit('joined_conversation', { conversationId });
+        } catch (error) {
+          console.error('[WebSocket] Error joining conversation:', error);
+        }
+      });
+
+      // Leave conversation room
+      socket.on('leave_conversation', (conversationId: string) => {
+        try {
+          socket.leave(`conversation:${conversationId}`);
+          
+          const room = this.conversationRooms.get(conversationId);
+          if (room) {
+            room.delete(socket.id);
+            if (room.size === 0) {
+              this.conversationRooms.delete(conversationId);
+            }
+          }
+          
+          console.log('[WebSocket] Socket left conversation:', conversationId);
+        } catch (error) {
+          console.error('[WebSocket] Error leaving conversation:', error);
+        }
+      });
+
+      // Typing indicator
+      socket.on('typing', (data: { conversationId: string; isTyping: boolean }) => {
+        try {
+          socket.to(`conversation:${data.conversationId}`).emit('user_typing', {
+            conversationId: data.conversationId,
+            isTyping: data.isTyping,
+            userId: socket.data.userId
+          });
+        } catch (error) {
+          console.error('[WebSocket] Error handling typing:', error);
+        }
+      });
+
+      // Message read receipt
+      socket.on('message_read', (data: { messageId: string; conversationId: string }) => {
+        try {
+          socket.to(`conversation:${data.conversationId}`).emit('message_read', {
+            messageId: data.messageId,
+            conversationId: data.conversationId,
+            readBy: socket.data.userId
+          });
+        } catch (error) {
+          console.error('[WebSocket] Error handling message read:', error);
+        }
+      });
+
+      // Disconnect handler
+      socket.on('disconnect', () => {
+        console.log('[WebSocket] Client disconnected:', socket.id);
+        
+        // Remove from connected clients
+        const userId = socket.data.userId;
+        if (userId) {
+          const userSockets = this.connectedClients.get(userId);
+          if (userSockets) {
+            userSockets.delete(socket.id);
+            if (userSockets.size === 0) {
+              this.connectedClients.delete(userId);
+            }
+          }
+        }
+        
+        // Remove from conversation rooms
+        this.conversationRooms.forEach((sockets, conversationId) => {
+          sockets.delete(socket.id);
+          if (sockets.size === 0) {
+            this.conversationRooms.delete(conversationId);
+          }
+        });
+      });
+    });
+
+    console.log('[WebSocket] Server initialized');
+  }
+
+  /**
+   * Broadcast new message to conversation
+   */
+  static broadcastNewMessage(conversationId: string, message: any) {
+    if (!this.io) return;
+    
+    this.io.to(`conversation:${conversationId}`).emit('new_message', {
+      conversationId,
+      message
+    });
+  }
+
+  /**
+   * Broadcast conversation update
+   */
+  static broadcastConversationUpdate(conversationId: string, update: any) {
+    if (!this.io) return;
+    
+    this.io.to(`conversation:${conversationId}`).emit('conversation_update', {
+      conversationId,
+      update
+    });
+  }
+
+  /**
+   * Broadcast campaign progress
+   */
+  static broadcastCampaignProgress(campaignId: string, progress: any) {
+    if (!this.io) return;
+    
+    this.io.to(`campaign:${campaignId}`).emit('campaign_progress', {
+      campaignId,
+      progress
+    });
+  }
+
+  /**
+   * Send notification to specific user
+   */
+  static sendNotificationToUser(userId: string, notification: any) {
+    if (!this.io) return;
+    
+    this.io.to(`user:${userId}`).emit('notification', notification);
+  }
+
+  /**
+   * Broadcast analytics update
+   */
+  static broadcastAnalyticsUpdate(data: any) {
+    if (!this.io) return;
+    
+    this.io.emit('analytics_update', data);
+  }
+
+  /**
+   * Get connected users count
+   */
+  static getConnectedUsersCount(): number {
+    return this.connectedClients.size;
+  }
+
+  /**
+   * Get conversation room size
+   */
+  static getConversationRoomSize(conversationId: string): number {
+    const room = this.conversationRooms.get(conversationId);
+    return room ? room.size : 0;
+  }
+
+  /**
+   * Check if user is connected
+   */
+  static isUserConnected(userId: string): boolean {
+    return this.connectedClients.has(userId) && this.connectedClients.get(userId)!.size > 0;
+  }
+
+  /**
+   * Get socket instance
+   */
+  static getIO(): SocketIOServer {
+    return this.io;
+  }
+}
+
+// Helper functions for common WebSocket operations
+export const broadcastWhatsAppMessage = (conversationId: string, message: any) => {
+  WebSocketService.broadcastNewMessage(conversationId, message);
+};
+
+export const broadcastConversationStatus = (conversationId: string, status: string) => {
+  WebSocketService.broadcastConversationUpdate(conversationId, { status });
+};
+
+export const sendUserNotification = (userId: string, notification: any) => {
+  WebSocketService.sendNotificationToUser(userId, notification);
+};
+
+export const broadcastCampaignUpdate = (campaignId: string, progress: any) => {
+  WebSocketService.broadcastCampaignProgress(campaignId, progress);
+};

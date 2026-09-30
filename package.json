@@ -1,0 +1,17 @@
+{
+  "dependencies": {
+    "@agentclientprotocol/sdk": "^1.4.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
+    "@types/jsbarcode": "^3.11.4",
+    "jsbarcode": "^3.12.3"
+  },
+  "name": "labcore-elis-backend-fixed",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "type": "commonjs"
+}
