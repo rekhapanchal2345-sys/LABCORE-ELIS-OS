@@ -14,6 +14,7 @@ import {
   Receipt,
   Users,
 } from "lucide-react";
+import { formatIndianRupees } from "@/lib/money";
 
 export type ReportType =
   | "DAY_BOOK"
@@ -42,11 +43,7 @@ export default function FinancialReportModal({
 
   // Format INR
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 2,
-    }).format(val);
+    return formatIndianRupees(val || 0);
   };
 
   // Filter payments by date range
@@ -168,47 +165,56 @@ export default function FinancialReportModal({
     }, 400);
   };
 
-  // CSV Export Handler
+  // CSV Export Handler with Formula Injection Sanitization (CWE-1236)
   const handleExportCSV = () => {
+    const sanitizeCsvCell = (val: any): string => {
+      if (val === null || val === undefined) return '""';
+      let str = String(val).replace(/"/g, '""');
+      if (/^[=+\-@\t\r%]/.test(str)) {
+        str = "'" + str;
+      }
+      return `"${str}"`;
+    };
+
     let rows: string[][] = [];
     let headers: string[] = [];
 
     if (selectedReport === "DAY_BOOK") {
       headers = ["Receipt #", "Txn ID", "Patient Name", "UHID", "Amount (₹)", "Method", "Date Time", "Cashier"];
       rows = filteredPayments.map((p) => [
-        `"${p.receiptNumber}"`,
-        `"${p.transactionId}"`,
-        `"${p.patientName}"`,
-        `"${p.patientUhid || ""}"`,
-        String(p.amount),
-        `"${p.method}"`,
-        `"${new Date(p.paidAt).toLocaleString()}"`,
-        `"${p.collectedBy || ""}"`,
+        sanitizeCsvCell(p.receiptNumber),
+        sanitizeCsvCell(p.transactionId),
+        sanitizeCsvCell(p.patientName),
+        sanitizeCsvCell(p.patientUhid || ""),
+        sanitizeCsvCell(p.amount),
+        sanitizeCsvCell(p.method),
+        sanitizeCsvCell(new Date(p.paidAt).toLocaleString()),
+        sanitizeCsvCell(p.collectedBy || ""),
       ]);
     } else if (selectedReport === "MODE_BREAKDOWN") {
       headers = ["Payment Mode", "Transaction Count", "Total Collected (₹)"];
       rows = Object.entries(modeData).map(([mode, d]) => [
-        `"${mode}"`,
-        String(d.count),
-        String(d.total),
+        sanitizeCsvCell(mode),
+        sanitizeCsvCell(d.count),
+        sanitizeCsvCell(d.total),
       ]);
     } else if (selectedReport === "CASHIER_AUDIT") {
       headers = ["Cashier", "Txn Count", "Cash Total (₹)", "Digital Total (₹)", "Grand Total (₹)"];
       rows = Object.entries(cashierData).map(([name, d]) => [
-        `"${name}"`,
-        String(d.count),
-        String(d.cash),
-        String(d.digital),
-        String(d.total),
+        sanitizeCsvCell(name),
+        sanitizeCsvCell(d.count),
+        sanitizeCsvCell(d.cash),
+        sanitizeCsvCell(d.digital),
+        sanitizeCsvCell(d.total),
       ]);
     } else {
       headers = ["Metric", "Amount (₹)"];
       rows = [
-        ["Total Collections", String(gstData.totalCollected)],
-        ["Taxable Amount", String(gstData.taxableValue)],
-        ["CGST (9%)", String(gstData.cgst)],
-        ["SGST (9%)", String(gstData.sgst)],
-        ["Total GST", String(gstData.gstTotal)],
+        [sanitizeCsvCell("Total Collections"), sanitizeCsvCell(gstData.totalCollected)],
+        [sanitizeCsvCell("Taxable Amount (SAC 999312)"), sanitizeCsvCell(gstData.taxableValue)],
+        [sanitizeCsvCell("CGST (9%)"), sanitizeCsvCell(gstData.cgst)],
+        [sanitizeCsvCell("SGST (9%)"), sanitizeCsvCell(gstData.sgst)],
+        [sanitizeCsvCell("Total GST Liability"), sanitizeCsvCell(gstData.gstTotal)],
       ];
     }
 

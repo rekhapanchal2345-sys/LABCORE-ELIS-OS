@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "tsc --noEmit",
+    "build": "prisma generate && tsc",
+    "typecheck": "tsc --noEmit",
     "dev": "ts-node-dev --respawn --transpile-only ./api/src/server.ts",
     "start": "node dist/api/src/server.js",
     "prisma:generate": "ts-node ./scripts/generate-prisma.ts",
@@ -46,7 +47,6 @@
     "@types/morgan": "^1.9.10",
     "@types/nodemailer": "^6.4.17",
     "@types/node": "^26.2.0",
-    "@types/socket.io": "^4.4.10",
     "prisma": "^7.9.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.9.3"

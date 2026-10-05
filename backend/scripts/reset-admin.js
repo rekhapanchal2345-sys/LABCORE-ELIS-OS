@@ -3,6 +3,34 @@ const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const bcrypt = require('bcryptjs');
 
+/** Reads the seed admin credentials, refusing to fall back to any default password. */
+function readAdminInput() {
+  const email = (process.env.ADMIN_EMAIL || '').toLowerCase();
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!email) {
+    throw new Error('ADMIN_EMAIL is not set. Add it to backend/.env first.');
+  }
+
+  if (!password) {
+    // A default password here would silently create a known-credential account.
+    throw new Error(
+      'ADMIN_PASSWORD is not set. Add a strong password to backend/.env first.'
+    );
+  }
+
+  return {
+    employeeCode: process.env.ADMIN_EMPLOYEE_CODE || 'ADMIN001',
+    fullName: process.env.ADMIN_FULL_NAME || 'System Administrator',
+    email,
+    password,
+    role: 'ADMIN',
+    phone: '',
+    status: 'ACTIVE',
+    specialization: 'System Administration'
+  };
+}
+
 const connectionString = process.env.DATABASE_URL;
 const adapter = new PrismaPg({ connectionString });
 const prisma = new PrismaClient({ adapter });
@@ -29,20 +57,11 @@ async function resetAdminUser() {
     }
 
     // New admin user configuration
-    const newAdminUser = {
-      employeeCode: process.env.ADMIN_EMPLOYEE_CODE || 'ADMIN001',
-      fullName: process.env.ADMIN_FULL_NAME || 'System Administrator',
-      email: process.env.ADMIN_EMAIL || 'admin@labcore.local',
-      password: process.env.ADMIN_PASSWORD || 'CHANGE_ME_IN_PRODUCTION',
-      role: 'ADMIN',
-      phone: '',
-      status: 'ACTIVE',
-      specialization: 'System Administration'
-    };
+    const newAdminUser = readAdminInput();
 
     console.log('Creating new admin user...');
     console.log(`Email: ${newAdminUser.email}`);
-    console.log(`Password: ${newAdminUser.password}`);
+    console.log('Password: [HIDDEN - set ADMIN_PASSWORD in your environment]');
 
     // Hash password
     const passwordHash = await bcrypt.hash(newAdminUser.password, 12);

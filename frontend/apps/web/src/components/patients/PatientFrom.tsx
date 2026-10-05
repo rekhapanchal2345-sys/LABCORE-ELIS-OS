@@ -73,7 +73,7 @@ export default function PatientForm({
       return;
     }
 
-    if (!form.gender || form.gender === "") {
+    if (!form.gender) {
       setError("Gender is required.");
       return;
     }

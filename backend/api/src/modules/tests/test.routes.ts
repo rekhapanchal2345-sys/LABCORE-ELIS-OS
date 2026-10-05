@@ -40,6 +40,17 @@ import {
 } from "./test.controller";
 
 import {
+  checkDuplicateController,
+  cloneTestController,
+  bulkUpdatePricesController,
+  bulkToggleActiveController,
+  bulkDeleteController,
+  reorderTestsController,
+  getTestAnalyticsController,
+  recalculatePackagePricingController,
+} from "./test.advanced.controller";
+
+import {
   createCategorySchema,
   updateCategorySchema,
   updateCategoryEnhancedSchema,
@@ -67,6 +78,17 @@ import {
 
   importCatalogSchema,
 } from "./test.validation";
+
+import {
+  checkDuplicateSchema,
+  cloneTestSchema,
+  bulkPriceUpdateSchema,
+  bulkToggleActiveSchema,
+  bulkDeleteSchema,
+  reorderTestsSchema,
+  testAnalyticsQuerySchema,
+  recalculatePackagePricingSchema,
+} from "./test.advanced.validation";
 
 const router = Router();
 
@@ -286,6 +308,72 @@ router.post(
     body: importCatalogSchema,
   }),
   importCatalogController
+);
+
+// =======================================================
+// PREMIUM FEATURES (BEFORE /:id WILDCARD)
+// =======================================================
+
+router.post(
+  "/premium/check-duplicate",
+  authorize(UserRole.ADMIN, UserRole.PATHOLOGIST),
+  validate({ body: checkDuplicateSchema }),
+  checkDuplicateController
+);
+
+router.post(
+  "/premium/bulk-price-update",
+  authorize(UserRole.ADMIN),
+  validate({ body: bulkPriceUpdateSchema }),
+  bulkUpdatePricesController
+);
+
+router.post(
+  "/premium/bulk-toggle-active",
+  authorize(UserRole.ADMIN),
+  validate({ body: bulkToggleActiveSchema }),
+  bulkToggleActiveController
+);
+
+router.post(
+  "/premium/bulk-delete",
+  authorize(UserRole.ADMIN),
+  validate({ body: bulkDeleteSchema }),
+  bulkDeleteController
+);
+
+router.post(
+  "/premium/reorder",
+  authorize(UserRole.ADMIN),
+  validate({ body: reorderTestsSchema }),
+  reorderTestsController
+);
+
+router.get(
+  "/premium/analytics",
+  authorize(UserRole.ADMIN, UserRole.PATHOLOGIST),
+  validate({ query: testAnalyticsQuerySchema }),
+  getTestAnalyticsController
+);
+
+router.post(
+  "/packages/:id/recalculate-pricing",
+  authorize(UserRole.ADMIN),
+  validate({
+    params: packageIdSchema,
+    body: recalculatePackagePricingSchema,
+  }),
+  recalculatePackagePricingController
+);
+
+router.post(
+  "/:id/clone",
+  authorize(UserRole.ADMIN, UserRole.PATHOLOGIST),
+  validate({
+    params: testIdSchema,
+    body: cloneTestSchema,
+  }),
+  cloneTestController
 );
 
 // =======================================================

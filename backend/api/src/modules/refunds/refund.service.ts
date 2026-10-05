@@ -1,9 +1,8 @@
 import prisma from "../../../config/database";
+import { getNextSequenceNumber } from "../../services/sequence.service";
 
-const generateRefundNumber = () => {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 1000);
-  return `REF-${timestamp}-${random}`;
+const generateRefundNumber = async (tx?: any) => {
+  return getNextSequenceNumber("CN", "MAIN", tx);
 };
 
 // =======================================================
@@ -68,9 +67,10 @@ export const createRefundRequest = async (
       );
     }
 
+    const refundNum = await generateRefundNumber();
     const refund = await prisma.refund.create({
       data: {
-        refundNumber: generateRefundNumber(),
+        refundNumber: refundNum,
         paymentId: data.paymentId,
         amount,
         reason: data.reason,

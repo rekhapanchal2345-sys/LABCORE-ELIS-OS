@@ -252,9 +252,10 @@ export function getAge(
 
 export function getPatientDisplayName(
   firstName?: string | null,
-  lastName?: string | null
+  lastName?: string | null,
+  middleName?: string | null
 ): string {
-  return [firstName, lastName]
+  return [firstName, middleName, lastName]
     .filter(Boolean)
     .join(" ")
     .trim() || "Unknown Patient";

@@ -5,7 +5,7 @@ export const createTemplateSchema = z.object({
   name: z.string().min(1, "Template name is required").max(512, "Template name too long"),
   displayName: z.string().min(1, "Display name is required").max(512, "Display name too long"),
   category: z.enum(["MARKETING", "UTILITY", "AUTHENTICATION"], {
-    errorMap: () => ({ message: "Category must be MARKETING, UTILITY, or AUTHENTICATION" })
+    error: "Category must be MARKETING, UTILITY, or AUTHENTICATION"
   }),
   language: z.string().min(2, "Language code is required").max(10, "Language code too long").default("en"),
   components: z.object({
@@ -16,7 +16,7 @@ export const createTemplateSchema = z.object({
 export const updateTemplateSchema = z.object({
   displayName: z.string().min(1, "Display name is required").max(512, "Display name too long").optional(),
   category: z.enum(["MARKETING", "UTILITY", "AUTHENTICATION"], {
-    errorMap: () => ({ message: "Category must be MARKETING, UTILITY, or AUTHENTICATION" })
+    error: "Category must be MARKETING, UTILITY, or AUTHENTICATION"
   }).optional(),
   language: z.string().min(2, "Language code is required").max(10, "Language code too long").optional(),
   components: z.object({
@@ -33,7 +33,7 @@ export const scheduleMessageSchema = z.object({
   messageType: z.enum(["text", "image", "document", "video", "audio"]).default("text"),
   messageBody: z.string().min(1, "Message body is required").max(4096, "Message body too long"),
   mediaUrl: z.string().url("Invalid media URL").optional(),
-  templateVariables: z.record(z.any()).optional(),
+  templateVariables: z.record(z.string(), z.any()).optional(),
   scheduledFor: z.string().or(z.date()).transform((val) => new Date(val)),
   timezone: z.string().default("UTC"),
   patientId: z.string().optional(),
@@ -46,7 +46,7 @@ export const bulkMessageSchema = z.object({
   messageType: z.enum(["text", "image", "document", "video", "audio"]).default("text"),
   messageBody: z.string().min(1, "Message body is required").max(4096, "Message body too long"),
   mediaUrl: z.string().url("Invalid media URL").optional(),
-  templateVariables: z.record(z.any()).optional(),
+  templateVariables: z.record(z.string(), z.any()).optional(),
   patientIds: z.array(z.string()).optional(),
 });
 
@@ -55,7 +55,7 @@ export const autoReplyRuleSchema = z.object({
   name: z.string().min(1, "Rule name is required").max(255, "Rule name too long"),
   description: z.string().max(1000, "Description too long").optional(),
   triggerType: z.enum(["KEYWORD", "PATTERN", "ALL", "STATE"], {
-    errorMap: () => ({ message: "Trigger type must be KEYWORD, PATTERN, ALL, or STATE" })
+    error: "Trigger type must be KEYWORD, PATTERN, ALL, or STATE"
   }),
   triggerData: z.object({
     keywords: z.array(z.string()).optional(),
@@ -63,7 +63,7 @@ export const autoReplyRuleSchema = z.object({
     states: z.array(z.string()).optional(),
   }).passthrough().optional(),
   responseType: z.enum(["TEXT", "TEMPLATE", "INTERACTIVE"], {
-    errorMap: () => ({ message: "Response type must be TEXT, TEMPLATE, or INTERACTIVE" })
+    error: "Response type must be TEXT, TEMPLATE, or INTERACTIVE"
   }),
   responseText: z.string().min(1, "Response text is required").max(4096, "Response text too long"),
   templateId: z.string().optional(),
@@ -82,14 +82,14 @@ export const autoReplyRuleSchema = z.object({
   maxResponsesPerDay: z.number().int().min(1).max(1000).optional(),
   cooldownSeconds: z.number().int().min(0).max(86400).optional(),
   priority: z.number().int().min(0).max(100).default(0),
-  patientSegment: z.record(z.any()).optional(),
+  patientSegment: z.record(z.string(), z.any()).optional(),
 });
 
 export const updateAutoReplyRuleSchema = z.object({
   name: z.string().min(1, "Rule name is required").max(255, "Rule name too long").optional(),
   description: z.string().max(1000, "Description too long").optional(),
   triggerType: z.enum(["KEYWORD", "PATTERN", "ALL", "STATE"], {
-    errorMap: () => ({ message: "Trigger type must be KEYWORD, PATTERN, ALL, or STATE" })
+    error: "Trigger type must be KEYWORD, PATTERN, ALL, or STATE"
   }).optional(),
   triggerData: z.object({
     keywords: z.array(z.string()).optional(),
@@ -97,7 +97,7 @@ export const updateAutoReplyRuleSchema = z.object({
     states: z.array(z.string()).optional(),
   }).passthrough().optional(),
   responseType: z.enum(["TEXT", "TEMPLATE", "INTERACTIVE"], {
-    errorMap: () => ({ message: "Response type must be TEXT, TEMPLATE, or INTERACTIVE" })
+    error: "Response type must be TEXT, TEMPLATE, or INTERACTIVE"
   }).optional(),
   responseText: z.string().min(1, "Response text is required").max(4096, "Response text too long").optional(),
   templateId: z.string().optional(),
@@ -116,7 +116,7 @@ export const updateAutoReplyRuleSchema = z.object({
   maxResponsesPerDay: z.number().int().min(1).max(1000).optional(),
   cooldownSeconds: z.number().int().min(0).max(86400).optional(),
   priority: z.number().int().min(0).max(100).optional(),
-  patientSegment: z.record(z.any()).optional(),
+  patientSegment: z.record(z.string(), z.any()).optional(),
   isActive: z.boolean().optional(),
 });
 
@@ -125,11 +125,11 @@ export const notificationTriggerSchema = z.object({
   name: z.string().min(1, "Trigger name is required").max(255, "Trigger name too long"),
   description: z.string().max(1000, "Description too long").optional(),
   eventType: z.string().min(1, "Event type is required").max(100, "Event type too long"),
-  eventFilter: z.record(z.any()).optional(),
+  eventFilter: z.record(z.string(), z.any()).optional(),
   templateId: z.string().min(1, "Template ID is required"),
-  variableMapping: z.record(z.string()).optional(),
+  variableMapping: z.record(z.string(), z.string()).optional(),
   recipientType: z.enum(["PATIENT", "DOCTOR", "CUSTOM"]).default("PATIENT"),
-  recipientFilter: z.record(z.any()).optional(),
+  recipientFilter: z.record(z.string(), z.any()).optional(),
   sendImmediately: z.boolean().default(true),
   delayMinutes: z.number().int().min(0).max(10080).optional(), // Max 1 week
 });
@@ -138,7 +138,7 @@ export const notificationTriggerSchema = z.object({
 export const updateConversationSchema = z.object({
   status: z.enum(["ACTIVE", "CLOSED", "ARCHIVED"]).optional(),
   currentState: z.string().max(100, "State too long").optional(),
-  stateData: z.record(z.any()).optional(),
+  stateData: z.record(z.string(), z.any()).optional(),
   chatbotEnabled: z.boolean().optional(),
   autoReplyEnabled: z.boolean().optional(),
 });
@@ -193,7 +193,7 @@ export const idSchema = z.object({
 // Trigger Notification Validation Schema
 export const triggerNotificationRequestSchema = z.object({
   eventType: z.string().min(1, "Event type is required"),
-  eventData: z.record(z.any()).optional(),
+  eventData: z.record(z.string(), z.any()).optional(),
 });
 
 // Campaign Validation Schemas
@@ -201,7 +201,7 @@ export const createCampaignSchema = z.object({
   name: z.string().min(1, "Campaign name is required").max(255, "Campaign name too long"),
   description: z.string().max(1000, "Description too long").optional(),
   campaignType: z.enum(["MARKETING", "REMINDER", "ANNOUNCEMENT"], {
-    errorMap: () => ({ message: "Campaign type must be MARKETING, REMINDER, or ANNOUNCEMENT" })
+    error: "Campaign type must be MARKETING, REMINDER, or ANNOUNCEMENT"
   }),
   templateId: z.string().optional(),
   messageContent: z.string().min(1, "Message content is required").max(4096, "Message content too long").optional(),

@@ -41,6 +41,7 @@ import {
 } from "lucide-react";
 import { reportsApi } from "@/lib/api";
 import { downloadPDF, generateReportPDF, mergePDFs } from "@/lib/pdf-operations";
+import { formatPatientFullName } from "@/lib/patient-utils";
 
 interface ReportRow {
   id: string;
@@ -622,78 +623,78 @@ export default function ReportsManagementTable({
       )}
 
       {/* Reports worklist */}
-      <div className="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-[0_18px_45px_rgba(30,41,99,0.12)]">
-        <div className="bg-gradient-to-r from-[#0b0b2d] via-[#201052] to-[#35106b] px-5 py-5 text-white">
+      <div className="overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 shadow-2xl shadow-slate-950/80">
+        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 px-5 py-5">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex items-center gap-3">
-              <span className="rounded-xl border border-cyan-300/40 bg-cyan-400/15 p-3 text-cyan-300"><FileText className="h-5 w-5" /></span>
+              <span className="rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-3 text-cyan-400 shadow-lg shadow-cyan-500/10"><FileText className="h-5 w-5" /></span>
               <div>
-                <h2 className="text-sm font-bold tracking-wide">Diagnostic report worklist</h2>
-                <p className="text-xs text-indigo-200">Verification-first reporting and delivery control</p>
+                <h2 className="text-sm font-bold tracking-wide text-white">Diagnostic report worklist</h2>
+                <p className="text-xs text-slate-400">Verification-first reporting and delivery control</p>
               </div>
             </div>
             <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-wider">
-              <span className="rounded-full border border-cyan-300/40 bg-cyan-400/10 px-3 py-1.5 text-cyan-200">{reports.length} visible</span>
-              <span className="rounded-full border border-emerald-300/40 bg-emerald-400/10 px-3 py-1.5 text-emerald-200">{reports.filter(isVerified).length} verified</span>
-              <span className="rounded-full border border-rose-300/40 bg-rose-400/10 px-3 py-1.5 text-rose-200">{reports.filter(r => r.deliveryStatus === "UNDELIVERED").length} action</span>
-              <span className="rounded-full border border-amber-300/40 bg-amber-400/10 px-3 py-1.5 text-amber-100">{reports.filter((r) => getApprovalEscalation(r)).length} approval escalation</span>
+              <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-3 py-1.5 text-cyan-300 shadow-sm shadow-cyan-500/10">{reports.length} visible</span>
+              <span className="rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1.5 text-emerald-300 shadow-sm shadow-emerald-500/10">{reports.filter(isVerified).length} verified</span>
+              <span className="rounded-full border border-rose-500/30 bg-rose-500/10 px-3 py-1.5 text-rose-300 shadow-sm shadow-rose-500/10">{reports.filter(r => r.deliveryStatus === "UNDELIVERED").length} action</span>
+              <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1.5 text-amber-300 shadow-sm shadow-amber-500/10">{reports.filter((r) => getApprovalEscalation(r)).length} approval escalation</span>
             </div>
           </div>
-          <div className="mt-5 flex flex-wrap gap-2 border-t border-white/10 pt-4 text-[10px] font-semibold text-indigo-100">
-            <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> Verified report</span>
-            <span className="flex items-center gap-1.5"><CircleDot className="h-3.5 w-3.5 text-amber-300" /> Delivery watch</span>
-            <span className="flex items-center gap-1.5"><ScanLine className="h-3.5 w-3.5 text-cyan-300" /> Reference linked</span>
-            <span className="ml-auto hidden text-indigo-300 md:block">Operational dispatch lane</span>
+          <div className="mt-5 flex flex-wrap gap-2 border-t border-slate-800 pt-4 text-[10px] font-semibold text-slate-400">
+            <span className="flex items-center gap-1.5"><ShieldCheck className="h-3.5 w-3.5 text-emerald-400" /> Verified report</span>
+            <span className="flex items-center gap-1.5"><CircleDot className="h-3.5 w-3.5 text-amber-400" /> Delivery watch</span>
+            <span className="flex items-center gap-1.5"><ScanLine className="h-3.5 w-3.5 text-cyan-400" /> Reference linked</span>
+            <span className="ml-auto hidden text-slate-500 md:block">Operational dispatch lane</span>
           </div>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-[#0b0b2d] text-white">
+            <thead className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800">
               <tr>
-                <th className="border-r border-indigo-300/20 px-4 py-4 text-left">
+                <th className="border-r border-slate-800 px-4 py-4 text-left">
                   <input
                     type="checkbox"
                     checked={isAllSelected}
                     onChange={(e) => handleSelectAll(e.target.checked)}
-                    className="rounded border-gray-300"
+                    className="rounded border-slate-600 bg-slate-800 accent-cyan-500"
                   />
                 </th>
-                <th className="border-r border-indigo-300/20 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.12em]">
-                  <div>Report Reference</div><span className="text-[9px] font-medium normal-case tracking-normal text-cyan-300">Accession + verified chain</span>
+                <th className="border-r border-slate-800 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.12em] text-slate-300">
+                  <div>Report Reference</div><span className="text-[9px] font-medium normal-case tracking-normal text-cyan-400">Accession + verified chain</span>
                 </th>
-                <th className="border-r border-indigo-300/20 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.12em]">
-                  <div>Patient Info</div><span className="text-[9px] font-medium normal-case tracking-normal text-cyan-300">Identity + contact</span>
+                <th className="border-r border-slate-800 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.12em] text-slate-300">
+                  <div>Patient Info</div><span className="text-[9px] font-medium normal-case tracking-normal text-cyan-400">Identity + contact</span>
                 </th>
-                <th className="border-r border-indigo-300/20 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.12em]">
-                  <div>Tests / Package</div><span className="text-[9px] font-medium normal-case tracking-normal text-cyan-300">Clinical scope</span>
+                <th className="border-r border-slate-800 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.12em] text-slate-300">
+                  <div>Tests / Package</div><span className="text-[9px] font-medium normal-case tracking-normal text-cyan-400">Clinical scope</span>
                 </th>
-                <th className="border-r border-indigo-300/20 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.12em]">
-                  <div>Approved Date & Doctor</div><span className="text-[9px] font-medium normal-case tracking-normal text-cyan-300">Verified audit trail</span>
+                <th className="border-r border-slate-800 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.12em] text-slate-300">
+                  <div>Approved Date &amp; Doctor</div><span className="text-[9px] font-medium normal-case tracking-normal text-cyan-400">Verified audit trail</span>
                 </th>
-                <th className="border-r border-indigo-300/20 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.12em]">
-                  <div>Delivery Status</div><span className="text-[9px] font-medium normal-case tracking-normal text-cyan-300">Dispatch state</span>
+                <th className="border-r border-slate-800 px-4 py-4 text-left text-xs font-bold uppercase tracking-[0.12em] text-slate-300">
+                  <div>Delivery Status</div><span className="text-[9px] font-medium normal-case tracking-normal text-cyan-400">Dispatch state</span>
                 </th>
-                <th className="px-4 py-4 text-right text-xs font-bold uppercase tracking-[0.12em]">
-                  <div>Actions</div><span className="text-[9px] font-medium normal-case tracking-normal text-cyan-300">Workflow controls</span>
+                <th className="px-4 py-4 text-right text-xs font-bold uppercase tracking-[0.12em] text-slate-300">
+                  <div>Actions</div><span className="text-[9px] font-medium normal-case tracking-normal text-cyan-400">Workflow controls</span>
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody className="divide-y divide-slate-800/70">
               {loading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-16 text-center text-gray-500">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-                    <p className="mt-2 text-sm text-gray-600">Loading reports...</p>
+                  <td colSpan={7} className="px-6 py-16 text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-cyan-500 mx-auto"></div>
+                    <p className="mt-2 text-sm text-slate-400">Loading reports...</p>
                   </td>
                 </tr>
               ) : reports.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-16 text-center">
-                    <FileText className="mx-auto h-12 w-12 text-gray-300" />
-                    <p className="mt-2 text-sm font-semibold text-gray-900">
+                    <FileText className="mx-auto h-12 w-12 text-slate-600" />
+                    <p className="mt-2 text-sm font-semibold text-slate-300">
                       No reports found
                     </p>
-                    <p className="mt-1 text-sm text-gray-500">
+                    <p className="mt-1 text-sm text-slate-500">
                       Published laboratory reports will appear here.
                     </p>
                   </td>
@@ -703,38 +704,38 @@ export default function ReportsManagementTable({
                   <React.Fragment key={report.id}>
                   <tr className={`group border-t transition ${
                     getApprovalEscalation(report)?.critical
-                      ? "border-rose-200 bg-rose-50/70 hover:bg-rose-100/70"
+                      ? "border-l-4 border-l-rose-500 border-t-slate-800 bg-rose-950/20 hover:bg-rose-950/30"
                       : getApprovalEscalation(report)
-                        ? "border-amber-200 bg-amber-50/60 hover:bg-amber-100/60"
+                        ? "border-l-4 border-l-amber-500 border-t-slate-800 bg-amber-950/20 hover:bg-amber-950/30"
                         : isVerified(report)
-                          ? "border-emerald-100 bg-emerald-50/20 hover:bg-emerald-50/40"
-                          : "border-indigo-100 hover:bg-indigo-50/50"
+                          ? "border-l-4 border-l-emerald-500 border-t-slate-800 bg-slate-950 hover:bg-slate-900/60"
+                          : "border-t-slate-800 bg-slate-950 hover:bg-slate-900/60"
                   }`}>
-                    <td className="border-r border-indigo-100 px-4 py-5 align-top">
+                    <td className="border-r border-slate-800 px-4 py-5 align-top">
                       <input
                         type="checkbox"
                         checked={selectedReports.has(report.id)}
                         onChange={() => handleSelectReport(report.id)}
-                        className="rounded border-gray-300"
+                        className="rounded border-slate-600 bg-slate-800 accent-cyan-500"
                       />
                     </td>
-                    <td className="border-r border-indigo-100 px-4 py-5 align-top">
-                      <div className="flex items-start gap-2"><span className="mt-0.5 rounded-lg bg-indigo-100 p-1.5 text-indigo-700"><FileText className="h-3.5 w-3.5" /></span><div><div className="flex items-center gap-1 text-sm font-bold text-indigo-950">
+                    <td className="border-r border-slate-800 px-4 py-5 align-top">
+                      <div className="flex items-start gap-2"><span className="mt-0.5 rounded-lg border border-cyan-500/20 bg-cyan-500/10 p-1.5 text-cyan-400"><FileText className="h-3.5 w-3.5" /></span><div><div className="flex items-center gap-1 font-mono text-sm font-bold text-white">
                         {report.reportReferenceId}
-                        <button type="button" onClick={() => handleCopyReference(report)} className="rounded p-1 text-slate-400 hover:bg-indigo-100 hover:text-indigo-700" title="Copy report reference">
+                        <button type="button" onClick={() => handleCopyReference(report)} className="rounded p-1 text-slate-500 hover:bg-slate-800 hover:text-cyan-400" title="Copy report reference">
                           <Copy className="h-3 w-3" />
                         </button>
                       </div>
-                      {copiedReference === report.id && <span className="text-[10px] font-semibold text-emerald-600">Copied</span>}
-                      <div className="mt-1 text-[11px] text-slate-500">
+                      {copiedReference === report.id && <span className="text-[10px] font-semibold text-emerald-400">Copied</span>}
+                      <div className="mt-1 font-mono text-[11px] text-slate-500">
                         {report.order.orderNumber}
                       </div>
                       <div className="mt-2 flex flex-wrap items-center gap-1.5">
-                        <span className="rounded-md border border-indigo-200 bg-indigo-50 px-1.5 py-0.5 text-[9px] font-black text-indigo-700">
+                        <span className="rounded-md border border-cyan-500/30 bg-cyan-500/10 px-1.5 py-0.5 text-[9px] font-black text-cyan-300">
                           {getVersionLabel(report)}
                         </span>
                         {isCritical(report) && (
-                          <span className="inline-flex items-center gap-1 rounded-md border border-rose-200 bg-rose-50 px-1.5 py-0.5 text-[9px] font-black uppercase text-rose-700" title="Critical value requires attention">
+                          <span className="inline-flex items-center gap-1 rounded-md border border-rose-500/30 bg-rose-500/10 px-1.5 py-0.5 text-[9px] font-black uppercase text-rose-300" title="Critical value requires attention">
                             <AlertOctagon className="h-3 w-3" /> Critical
                           </span>
                         )}
@@ -742,32 +743,32 @@ export default function ReportsManagementTable({
                       {getVerificationBadge(report)}
                       </div></div>
                     </td>
-                    <td className="border-r border-indigo-100 px-4 py-5 align-top">
-                      <div className="flex items-start gap-2"><span className="rounded-full bg-violet-100 px-2 py-1 text-[10px] font-bold text-violet-700">{report.order.patient.firstName.slice(0, 2).toUpperCase()}</span><div><div className="text-sm font-bold text-slate-900">
-                        {report.order.patient.firstName} {report.order.patient.lastName}
+                    <td className="border-r border-slate-800 px-4 py-5 align-top">
+                      <div className="flex items-start gap-2"><span className="h-8 w-8 rounded-full bg-gradient-to-tr from-cyan-600 to-blue-600 flex items-center justify-center text-white font-bold text-xs ring-1 ring-cyan-500/30 shadow-md shadow-cyan-600/20">{report.order.patient.firstName.slice(0, 2).toUpperCase()}</span><div><div className="text-sm font-bold text-slate-200">
+                        {formatPatientFullName(report.order.patient)}
                       </div>
-                      <div className="text-[11px] text-slate-500">
+                      <div className="font-mono text-[11px] text-slate-500">
                         UHID: {report.order.patient.uhid}
                       </div>
                       <div className="text-[11px] text-slate-500">
                         {report.order.patient.phone}
                       </div></div></div>
                     </td>
-                    <td className="border-r border-indigo-100 px-4 py-5 align-top">
-                      <div className="flex items-start gap-2"><FlaskConical className="mt-0.5 h-4 w-4 text-cyan-600" /><div><div className="text-sm font-semibold text-slate-900">
+                    <td className="border-r border-slate-800 px-4 py-5 align-top">
+                      <div className="flex items-start gap-2"><FlaskConical className="mt-0.5 h-4 w-4 text-cyan-400" /><div><div className="text-sm font-semibold text-slate-200">
                         {report.test.testName}
                       </div>
-                      <div className="mt-1 inline-flex rounded-full bg-cyan-50 px-2 py-1 text-[10px] font-bold text-cyan-700">
+                      <div className="mt-1 inline-flex rounded-full border border-cyan-500/20 bg-cyan-500/10 px-2 py-1 font-mono text-[10px] font-bold text-cyan-300">
                         {report.test.testCode} • {report.test.sampleType}
                       </div></div></div>
                       {isCritical(report) && (
-                        <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-rose-200 bg-gradient-to-r from-rose-50 to-orange-50 px-2 py-1.5 text-[10px] font-bold text-rose-700">
+                        <div className="mt-2 flex items-center gap-1.5 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2 py-1.5 text-[10px] font-bold text-rose-300">
                           <AlertOctagon className="h-3.5 w-3.5" /> Critical value alert · priority review
                         </div>
                       )}
                     </td>
-                    <td className="border-r border-indigo-100 px-4 py-5 align-top">
-                      <div className="flex items-start gap-2"><CalendarClock className="mt-0.5 h-4 w-4 text-amber-600" /><div><div className="text-sm font-semibold text-slate-900">
+                    <td className="border-r border-slate-800 px-4 py-5 align-top">
+                      <div className="flex items-start gap-2"><CalendarClock className="mt-0.5 h-4 w-4 text-amber-400" /><div><div className="font-mono text-sm font-semibold text-slate-200">
                         {formatDate(report.publishedAt)}
                       </div>
                       <div className="mt-1 flex items-center gap-1 text-[11px] text-slate-500"><UserRound className="h-3 w-3" />
@@ -775,7 +776,7 @@ export default function ReportsManagementTable({
                       </div>
                       {getTat(report) !== null && (
                         <div className={`mt-2 inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-bold ${
-                          getTat(report)! > 24 ? "border-rose-200 bg-rose-50 text-rose-700" : "border-cyan-200 bg-cyan-50 text-cyan-700"
+                          getTat(report)! > 24 ? "border-rose-500/30 bg-rose-500/10 text-rose-300" : "border-cyan-500/30 bg-cyan-500/10 text-cyan-300"
                         }`}>
                           <TimerReset className="h-3 w-3" /> TAT {getTat(report)!.toFixed(1)}h{getTat(report)! > 24 ? " · SLA breach" : ""}
                         </div>
@@ -783,37 +784,37 @@ export default function ReportsManagementTable({
                       <div className="group/signature relative mt-2 inline-flex">
                         <span className={`inline-flex cursor-help items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-black ${
                           report.approvedBy
-                            ? "border-emerald-200 bg-emerald-50 text-emerald-700"
-                            : "border-slate-200 bg-slate-50 text-slate-500"
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                            : "border-slate-700 bg-slate-800/50 text-slate-400"
                         }`}>
                           <PenLine className="h-3 w-3" />
                           {report.approvedBy ? "Doctor signature attached" : "Signature pending"}
                         </span>
-                        <div className="pointer-events-none invisible absolute bottom-full left-0 z-30 mb-2 w-64 translate-y-1 rounded-2xl border border-slate-200 bg-white p-3 text-left opacity-0 shadow-xl transition-all duration-150 group-hover/signature:visible group-hover/signature:translate-y-0 group-hover/signature:opacity-100">
-                          <div className="flex items-center gap-2 border-b border-slate-100 pb-2">
+                        <div className="pointer-events-none invisible absolute bottom-full left-0 z-30 mb-2 w-64 translate-y-1 rounded-2xl border border-slate-700 bg-slate-900 p-3 text-left opacity-0 shadow-2xl shadow-slate-950/80 transition-all duration-150 group-hover/signature:visible group-hover/signature:translate-y-0 group-hover/signature:opacity-100">
+                          <div className="flex items-center gap-2 border-b border-slate-800 pb-2">
                             <span className={`flex h-7 w-7 items-center justify-center rounded-lg ${
-                              report.approvedBy ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700"
+                              report.approvedBy ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30" : "bg-amber-500/10 text-amber-400 border border-amber-500/30"
                             }`}>
                               <PenLine className="h-3.5 w-3.5" />
                             </span>
                             <div>
-                              <p className="text-[10px] font-black uppercase tracking-wider text-slate-400">Doctor signature preview</p>
-                              <p className={`text-xs font-black ${report.approvedBy ? "text-emerald-700" : "text-amber-700"}`}>
+                              <p className="text-[10px] font-black uppercase tracking-wider text-slate-500">Doctor signature preview</p>
+                              <p className={`text-xs font-black ${report.approvedBy ? "text-emerald-400" : "text-amber-400"}`}>
                                 {report.approvedBy ? "Digitally signed" : "Not signed yet"}
                               </p>
                             </div>
                           </div>
                           {report.approvedBy ? (
-                            <div className="mt-2 rounded-xl bg-gradient-to-br from-slate-50 to-cyan-50 px-3 py-2">
+                            <div className="mt-2 rounded-xl border border-slate-700 bg-slate-800/80 px-3 py-2">
                               {report.approvedBy.signatureUrl ? (
                                 <img src={report.approvedBy.signatureUrl} alt="Doctor digital signature" className="h-9 max-w-full object-contain" />
                               ) : (
-                                <p className="font-serif text-lg italic text-indigo-800">✓ {report.approvedBy.fullName}</p>
+                                <p className="font-serif text-lg italic text-cyan-300">✓ {report.approvedBy.fullName}</p>
                               )}
                               <p className="mt-1 text-[9px] text-slate-500">
                                 {report.approvedBy.fullName} • {report.approvedBy.employeeCode}
                               </p>
-                              <p className="mt-1 text-[9px] font-semibold text-emerald-700">Verified in report audit chain</p>
+                              <p className="mt-1 text-[9px] font-semibold text-emerald-400">Verified in report audit chain</p>
                             </div>
                           ) : (
                             <p className="mt-2 text-[10px] leading-relaxed text-slate-500">
@@ -825,30 +826,30 @@ export default function ReportsManagementTable({
                       {getApprovalEscalation(report) && (
                         <div className={`mt-2 inline-flex items-center gap-1 rounded-lg border px-2 py-1 text-[10px] font-black ${
                           getApprovalEscalation(report)?.critical
-                            ? "border-rose-200 bg-rose-100 text-rose-700"
-                            : "border-amber-200 bg-amber-100 text-amber-700"
+                            ? "border-rose-500/30 bg-rose-500/10 text-rose-300"
+                            : "border-amber-500/30 bg-amber-500/10 text-amber-300"
                         }`}>
                           <AlertTriangle className="h-3 w-3" />
                           Approval pending • {getApprovalEscalation(report)?.hours}h
                           <span className="uppercase tracking-wider">{getApprovalEscalation(report)?.critical ? "Escalate now" : "Review"}</span>
                         </div>
                       )}
-                      <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-emerald-700">
+                      <div className="mt-2 flex items-center gap-1 text-[10px] font-semibold text-emerald-400">
                         <ShieldCheck className="h-3 w-3" />
                         {isVerified(report) ? "Audit chain verified" : "Awaiting verification"}
                       </div>
                       <div className="mt-2 flex items-center gap-2">
-                        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-1.5 w-20 overflow-hidden rounded-full bg-slate-800">
                           <div
                             className={`h-full rounded-full ${isVerified(report) ? "bg-emerald-500" : "bg-amber-400"}`}
                             style={{ width: `${getVerificationConfidence(report)}%` }}
                           />
                         </div>
-                        <span className="text-[10px] font-bold text-slate-400">{getVerificationConfidence(report)}% confidence</span>
+                        <span className="text-[10px] font-bold text-slate-500">{getVerificationConfidence(report)}% confidence</span>
                       </div>
                       </div></div>
                     </td>
-                    <td className="border-r border-indigo-100 px-4 py-5 align-top">
+                    <td className="border-r border-slate-800 px-4 py-5 align-top">
                       {(() => {
                         const deliveryChannel = getDeliveryChannel(report);
                         const ChannelIcon = deliveryChannel.Icon;
@@ -860,13 +861,13 @@ export default function ReportsManagementTable({
                         );
                       })()}
                       {getDeliveryStatusBadge(report.deliveryStatus)}
-                      <div className="mt-2 flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-2 py-2">
+                      <div className="mt-2 flex items-center gap-1.5 rounded-xl border border-slate-700/60 bg-slate-900/80 px-2 py-2">
                         {getReadReceipt(report.deliveryStatus).map((step, index) => (
                           <React.Fragment key={step.label}>
-                            <span className={`inline-flex items-center gap-1 text-[9px] font-black ${step.active ? "text-emerald-700" : "text-slate-400"}`}>
+                            <span className={`inline-flex items-center gap-1 text-[9px] font-black ${step.active ? "text-emerald-400" : "text-slate-600"}`}>
                               <CheckCheck className="h-3 w-3" />{step.label}
                             </span>
-                            {index < 2 && <span className="h-px flex-1 bg-slate-200" />}
+                            {index < 2 && <span className="h-px flex-1 bg-slate-700" />}
                           </React.Fragment>
                         ))}
                       </div>
@@ -874,13 +875,13 @@ export default function ReportsManagementTable({
                         <button
                           type="button"
                           onClick={() => handleRetryDelivery(report)}
-                          className="mt-2 inline-flex items-center gap-1 rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-[10px] font-black text-rose-700 transition hover:bg-rose-100"
+                          className="mt-2 inline-flex items-center gap-1 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2 py-1 text-[10px] font-black text-rose-300 transition hover:bg-rose-500/20"
                         >
                           <RotateCcw className="h-3 w-3" /> Retry / Resend
                         </button>
                       )}
                       <div className="mt-3 flex items-center gap-2">
-                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-100">
+                        <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-slate-800">
                           <div
                             className={`h-full rounded-full ${
                               getDeliveryProgress(report.deliveryStatus) === 100
@@ -892,11 +893,11 @@ export default function ReportsManagementTable({
                             style={{ width: `${getDeliveryProgress(report.deliveryStatus)}%` }}
                           />
                         </div>
-                        <span className="text-[10px] font-bold text-slate-500">
+                        <span className="font-mono text-[10px] font-bold text-slate-500">
                           {getDeliveryProgress(report.deliveryStatus)}%
                         </span>
                       </div>
-                      <p className="mt-1 text-[10px] text-slate-400">
+                      <p className="mt-1 text-[10px] text-slate-500">
                         {report.deliveryMethod || "Dispatch channel pending"}
                       </p>
                     </td>
@@ -904,7 +905,7 @@ export default function ReportsManagementTable({
                       <div className="flex flex-wrap justify-end gap-1.5">
                         <button
                           onClick={() => toggleExpanded(report.id)}
-                          className={`rounded-lg border p-2 transition-all ${expandedReports.has(report.id) ? "border-indigo-300 bg-indigo-100 text-indigo-800" : "border-slate-200 bg-white text-slate-500 hover:bg-indigo-50"}`}
+                          className={`rounded-lg border p-2 transition-all ${expandedReports.has(report.id) ? "border-cyan-500/40 bg-cyan-500/15 text-cyan-300 shadow-md shadow-cyan-500/10" : "border-slate-700 bg-slate-800/50 text-slate-400 hover:bg-slate-800 hover:text-cyan-300"}`}
                           title="Verification details"
                           aria-expanded={expandedReports.has(report.id)}
                         >
@@ -917,7 +918,7 @@ export default function ReportsManagementTable({
                             event.stopPropagation();
                             onViewReport(report.orderId);
                           }}
-                          className="rounded-lg border border-indigo-200 bg-white p-2 text-indigo-600 transition-all hover:bg-indigo-50 hover:text-indigo-900"
+                          className="rounded-lg border border-cyan-500/30 bg-cyan-500/10 p-2 text-cyan-400 transition-all hover:bg-cyan-500/20 hover:text-cyan-200"
                           title="Open verified report"
                           aria-label={`Open report ${report.reportReferenceId}`}
                         >
@@ -925,7 +926,7 @@ export default function ReportsManagementTable({
                         </button>
                         <button
                           onClick={() => handleDownloadReport(report)}
-                          className="rounded-lg border border-cyan-200 bg-cyan-50 p-2 text-cyan-700 transition-all hover:bg-cyan-100"
+                          className="rounded-lg border border-blue-500/30 bg-blue-500/10 p-2 text-blue-400 transition-all hover:bg-blue-500/20 hover:text-blue-200"
                           title="Download PDF"
                         >
                           <Download className="h-4 w-4" />
@@ -934,46 +935,46 @@ export default function ReportsManagementTable({
                           <button
                             type="button"
                             onClick={() => setOpenActionMenu(openActionMenu === report.id ? null : report.id)}
-                            className="rounded-lg border border-violet-200 bg-violet-50 p-2 text-violet-700 transition-all hover:bg-violet-100"
+                            className="rounded-lg border border-violet-500/30 bg-violet-500/10 p-2 text-violet-400 transition-all hover:bg-violet-500/20 hover:text-violet-200"
                             title="Advanced report actions"
                             aria-expanded={openActionMenu === report.id}
                           >
                             <MoreVertical className="h-4 w-4" />
                           </button>
                           {openActionMenu === report.id && (
-                            <div className="absolute right-0 z-40 mt-2 w-80 overflow-hidden rounded-2xl border border-indigo-100 bg-white text-left shadow-2xl ring-1 ring-indigo-950/5 premium-dropdown">
-                              <div className="premium-dropdown-header px-4 py-3 text-white">
+                            <div className="absolute right-0 z-40 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 text-left shadow-2xl shadow-slate-950/80 premium-dropdown">
+                              <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border-b border-slate-800 px-4 py-3">
                                 <div className="flex items-center justify-between gap-3">
                                   <div>
-                                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-200">Premium command menu</p>
-                                    <p className="mt-1 text-xs font-bold">Advanced report actions</p>
+                                    <p className="text-[10px] font-black uppercase tracking-[0.16em] text-cyan-400">Premium command menu</p>
+                                    <p className="mt-1 text-xs font-bold text-white">Advanced report actions</p>
                                   </div>
-                                  <ShieldCheck className="h-5 w-5 text-cyan-200" />
+                                  <ShieldCheck className="h-5 w-5 text-cyan-400" />
                                 </div>
-                                <p className="mt-2 truncate text-[10px] text-indigo-200">{report.reportReferenceId} · audit-aware workflow</p>
+                                <p className="mt-2 truncate text-[10px] text-slate-500">{report.reportReferenceId} · audit-aware workflow</p>
                               </div>
                               <div className="max-h-[min(68vh,30rem)] overflow-y-auto p-2 premium-scrollbar">
                               {advancedActionGroups.map((group) => (
                                 <div key={group.label} className="py-1">
-                                  <p className="px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-indigo-400">{group.label}</p>
+                                  <p className="px-3 py-1 text-[9px] font-black uppercase tracking-[0.16em] text-slate-500">{group.label}</p>
                                   {group.actions.map(([key, label, Icon, description]) => (
                                     <button
                                       key={key}
                                       type="button"
                                       onClick={() => handleAdvancedAction(key, report)}
-                                      className="premium-action-item group/action flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left"
+                                      className="group/action flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left hover:bg-slate-800 transition-colors"
                                     >
-                                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition group-hover/action:bg-indigo-100">
+                                      <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-slate-700 bg-slate-800 text-slate-400 transition group-hover/action:border-cyan-500/30 group-hover/action:bg-cyan-500/10 group-hover/action:text-cyan-400">
                                         {React.createElement(Icon, { className: "h-4 w-4" })}
                                       </span>
-                                      <span className="min-w-0"><span className="block text-xs font-bold text-slate-800">{label}</span><span className="block text-[10px] text-slate-400">{description}</span></span>
+                                      <span className="min-w-0"><span className="block text-xs font-bold text-slate-200">{label}</span><span className="block text-[10px] text-slate-500">{description}</span></span>
                                     </button>
                                   ))}
                                 </div>
                               ))}
                               </div>
-                              <div className="border-t border-slate-100 bg-slate-50 px-3 py-2">
-                                <p className="text-[9px] font-semibold text-slate-500">
+                              <div className="border-t border-slate-800 bg-slate-950/80 px-3 py-2">
+                                <p className="text-[9px] font-semibold text-slate-600">
                                   Actions are logged against {report.reportReferenceId}. Sensitive PDF tools require authorization.
                                 </p>
                               </div>
@@ -981,20 +982,20 @@ export default function ReportsManagementTable({
                           )}
                         </div>
                         <div className="relative group">
-                          <button className="rounded-lg border border-gray-200 p-2 text-gray-600 hover:bg-gray-50 hover:text-gray-900 transition-all">
+                          <button className="rounded-lg border border-slate-700 bg-slate-800/50 p-2 text-slate-400 hover:bg-slate-800 hover:text-slate-200 transition-all">
                             <Printer className="h-4 w-4" />
                           </button>
-                          <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 hidden group-hover:block z-10">
+                          <div className="absolute right-0 mt-2 w-48 rounded-xl border border-slate-700 bg-slate-900 shadow-2xl shadow-slate-950/80 hidden group-hover:block z-10 overflow-hidden">
                             <div className="py-1">
                               <button
                                 onClick={() => handlePrintReport(report, "standard")}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                className="block w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
                               >
                                 With Lab Header
                               </button>
                               <button
                                 onClick={() => handlePrintReport(report, "letterhead")}
-                                className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                                className="block w-full text-left px-4 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors"
                               >
                                 On Pre-printed Letterhead
                               </button>
@@ -1003,37 +1004,37 @@ export default function ReportsManagementTable({
                         </div>
                       </div>
                       {actionNotice && (
-                        <div className="fixed bottom-5 right-5 z-50 rounded-2xl border border-cyan-200 bg-gradient-to-r from-[#07152f] to-[#0b6b68] px-4 py-3 text-xs font-bold text-white shadow-2xl">
+                        <div className="fixed bottom-5 right-5 z-50 rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-slate-950 to-slate-900 px-4 py-3 text-xs font-bold text-white shadow-2xl shadow-slate-950/80 backdrop-blur-md">
                           {actionNotice}
                         </div>
                       )}
                     </td>
                   </tr>
                   {expandedReports.has(report.id) && (
-                    <tr className="bg-gradient-to-r from-indigo-50/70 via-white to-cyan-50/60">
-                      <td colSpan={7} className="border-t border-indigo-100 px-6 py-5">
+                    <tr className="bg-slate-900/40">
+                      <td colSpan={7} className="border-t border-slate-800 px-6 py-5">
                         <div className="grid gap-4 md:grid-cols-[1.2fr_1fr_1fr]">
-                          <div className="rounded-xl border border-indigo-100 bg-white p-4 shadow-sm">
-                            <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-800">
+                          <div className="rounded-xl border border-slate-700/60 bg-slate-900/80 p-4 shadow-lg">
+                            <div className="mb-3 flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-cyan-400">
                               <History className="h-4 w-4" /> Verification timeline
                             </div>
-                            <div className="space-y-2 text-xs text-slate-600">
-                              <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500" /> Report generated <span className="ml-auto text-slate-400">{formatDate(report.publishedAt)}</span></div>
-                              <div className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${isVerified(report) ? "bg-emerald-500" : "bg-amber-400"}`} /> {isVerified(report) ? "Pathologist verification complete" : "Awaiting pathologist verification"} <span className="ml-auto font-semibold text-slate-400">{getVerificationConfidence(report)}%</span></div>
-                              <div className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full ${report.deliveryStatus !== "UNDELIVERED" ? "bg-cyan-500" : "bg-rose-500"}`} /> Delivery checkpoint <span className="ml-auto text-slate-400">{report.deliveryStatus.replaceAll("_", " ")}</span></div>
+                            <div className="space-y-2 text-xs text-slate-400">
+                              <div className="flex items-center gap-2"><span className="h-2 w-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" /> Report generated <span className="ml-auto font-mono text-slate-500">{formatDate(report.publishedAt)}</span></div>
+                              <div className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full shadow-sm ${isVerified(report) ? "bg-emerald-500 shadow-emerald-500/50" : "bg-amber-400 shadow-amber-400/50"}`} /> {isVerified(report) ? "Pathologist verification complete" : "Awaiting pathologist verification"} <span className="ml-auto font-mono font-semibold text-slate-500">{getVerificationConfidence(report)}%</span></div>
+                              <div className="flex items-center gap-2"><span className={`h-2 w-2 rounded-full shadow-sm ${report.deliveryStatus !== "UNDELIVERED" ? "bg-cyan-500 shadow-cyan-500/50" : "bg-rose-500 shadow-rose-500/50"}`} /> Delivery checkpoint <span className="ml-auto font-mono text-slate-500">{report.deliveryStatus.replaceAll("_", " ")}</span></div>
                             </div>
                           </div>
-                          <div className="rounded-xl border border-emerald-100 bg-emerald-50/60 p-4">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Verified identity</p>
-                            <p className="mt-2 text-sm font-bold text-slate-900">{report.order.patient.firstName} {report.order.patient.lastName}</p>
-                            <p className="mt-1 text-xs text-slate-500">UHID {report.order.patient.uhid}</p>
-                            <p className="mt-3 text-xs font-semibold text-emerald-700">{isVerified(report) ? "Audit chain verified" : "Verification action required"}</p>
+                          <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-emerald-400">Verified identity</p>
+                            <p className="mt-2 text-sm font-bold text-slate-200">{formatPatientFullName(report.order.patient)}</p>
+                            <p className="mt-1 font-mono text-xs text-slate-500">UHID {report.order.patient.uhid}</p>
+                            <p className="mt-3 text-xs font-semibold text-emerald-400">{isVerified(report) ? "Audit chain verified" : "Verification action required"}</p>
                           </div>
-                          <div className="rounded-xl border border-cyan-100 bg-cyan-50/60 p-4">
-                            <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-700">Dispatch intelligence</p>
-                            <p className="mt-2 text-sm font-bold text-slate-900">{report.test.testName}</p>
-                            <p className="mt-1 text-xs text-slate-500">{report.test.testCode} · {report.test.sampleType}</p>
-                            <p className="mt-3 text-xs font-semibold text-cyan-700">{report.deliveryMethod || "Channel pending"}</p>
+                          <div className="rounded-xl border border-cyan-500/20 bg-cyan-500/5 p-4">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-400">Dispatch intelligence</p>
+                            <p className="mt-2 text-sm font-bold text-slate-200">{report.test.testName}</p>
+                            <p className="mt-1 font-mono text-xs text-slate-500">{report.test.testCode} · {report.test.sampleType}</p>
+                            <p className="mt-3 text-xs font-semibold text-cyan-400">{report.deliveryMethod || "Channel pending"}</p>
                           </div>
                         </div>
                       </td>

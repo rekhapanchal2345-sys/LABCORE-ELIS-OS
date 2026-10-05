@@ -3,6 +3,7 @@ import React, { useState, useEffect, useMemo, useCallback } from "react";
 import QRCode from "qrcode";
 import jsPDF from "jspdf";
 import { communicationApi } from "@/lib/api";
+import { formatPatientFullName } from "@/lib/patient-utils";
 import {
   MessageSquare, Mail, Send, Share2, Check, CheckCheck, CheckCircle2,
   Copy, Phone, ExternalLink, QrCode, Sparkles, AlertTriangle, FileText,
@@ -26,7 +27,7 @@ interface ReportDispatchModalProps {
     id: string; orderId: string; orderNumber: string;
     reportReferenceId: string; testName: string; testCode: string;
     status: string; publishedAt: string; criticalFlag?: boolean;
-    patient: { id: string; firstName: string; lastName: string; uhid: string; phone?: string; email?: string };
+    patient: { id: string; firstName: string; middleName?: string; lastName: string; uhid: string; phone?: string; email?: string };
     doctor?: { id: string; fullName: string; email?: string; phone?: string } | null;
     approvedBy?: { fullName: string; employeeCode: string } | null;
     deliveryStatus: string; reportUrl?: string;
@@ -184,7 +185,7 @@ export default function ReportDispatchModal({ isOpen, onClose, report, onSuccess
   const origin = typeof window !== "undefined" ? window.location.origin : "https://labcore.in";
   const reportUrl = report.reportUrl || `${origin}/reports/order/${report.orderId}`;
   const isCritical = !!(report.criticalFlag || report.status.toUpperCase().includes("CRITICAL") || report.status.toUpperCase().includes("PANIC"));
-  const fullName = `${report.patient.firstName} ${report.patient.lastName}`;
+  const fullName = formatPatientFullName(report.patient);
   const today = new Date().toLocaleDateString("en-IN", { weekday: "short", day: "2-digit", month: "short", year: "numeric" });
 
   useEffect(() => {

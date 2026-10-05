@@ -28,10 +28,12 @@ export default function ApprovalMetrics({
       value: pendingApproval,
       description: "Awaiting pathologist digital sign-off",
       icon: "⏳",
-      color: "bg-blue-500/10 text-blue-700 border-blue-200",
-      accent: "from-blue-600 to-indigo-600",
-      valueColor: "text-blue-950",
+      accentBorder: "border-l-cyan-500",
+      iconBg: "border-cyan-500/30 bg-cyan-500/10 text-cyan-300 shadow-cyan-500/10",
+      valueColor: "text-white",
+      badgeCn: "border-cyan-500/30 bg-cyan-500/10 text-cyan-300",
       badge: "In Queue",
+      glow: "shadow-cyan-500/10",
     },
     {
       key: "critical",
@@ -39,11 +41,13 @@ export default function ApprovalMetrics({
       value: criticalValues,
       description: "Verbal doctor call notification required",
       icon: "🚨",
-      color: "bg-red-500/10 text-red-700 border-red-200",
-      accent: "from-red-600 to-rose-700",
-      valueColor: "text-red-950",
+      accentBorder: "border-l-rose-500",
+      iconBg: "border-rose-500/30 bg-rose-500/10 text-rose-300 shadow-rose-500/10",
+      valueColor: criticalValues > 0 ? "text-rose-300" : "text-white",
+      badgeCn: criticalValues > 0 ? "border-rose-500/30 bg-rose-500/10 text-rose-300 animate-pulse" : "border-slate-700 bg-slate-800 text-slate-400",
       badge: criticalValues > 0 ? "URGENT ATTENTION" : "All Normal",
       isAlert: criticalValues > 0,
+      glow: criticalValues > 0 ? "shadow-rose-500/10" : "shadow-slate-950/50",
     },
     {
       key: "approved",
@@ -51,10 +55,12 @@ export default function ApprovalMetrics({
       value: approvedToday,
       description: "Signed reports ready for patient dispatch",
       icon: "✓",
-      color: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
-      accent: "from-emerald-600 to-teal-600",
-      valueColor: "text-emerald-950",
+      accentBorder: "border-l-emerald-500",
+      iconBg: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300 shadow-emerald-500/10",
+      valueColor: "text-white",
+      badgeCn: "border-emerald-500/30 bg-emerald-500/10 text-emerald-300",
       badge: "Today's TAT: 98%",
+      glow: "shadow-emerald-500/10",
     },
     {
       key: "rerun",
@@ -62,10 +68,12 @@ export default function ApprovalMetrics({
       value: rejectedRerun,
       description: "Re-sampling or technician clarification",
       icon: "↺",
-      color: "bg-amber-500/10 text-amber-700 border-amber-200",
-      accent: "from-amber-500 to-orange-600",
-      valueColor: "text-amber-950",
+      accentBorder: "border-l-amber-500",
+      iconBg: "border-amber-500/30 bg-amber-500/10 text-amber-300 shadow-amber-500/10",
+      valueColor: "text-white",
+      badgeCn: "border-amber-500/30 bg-amber-500/10 text-amber-300",
       badge: "Rework Queue",
+      glow: "shadow-amber-500/10",
     },
   ];
 
@@ -75,14 +83,14 @@ export default function ApprovalMetrics({
         {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={i}
-            className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm space-y-3"
+            className="rounded-2xl border border-slate-800 bg-slate-950 p-5 space-y-3 border-l-4 border-l-slate-700"
           >
             <div className="flex items-center justify-between">
-              <div className="h-10 w-10 animate-pulse rounded-xl bg-gray-200" />
-              <div className="h-8 w-16 animate-pulse rounded bg-gray-200" />
+              <div className="h-10 w-10 animate-pulse rounded-xl bg-slate-800" />
+              <div className="h-8 w-16 animate-pulse rounded bg-slate-800" />
             </div>
-            <div className="h-4 w-28 animate-pulse rounded bg-gray-200" />
-            <div className="h-3 w-40 animate-pulse rounded bg-gray-100" />
+            <div className="h-4 w-28 animate-pulse rounded bg-slate-800" />
+            <div className="h-3 w-40 animate-pulse rounded bg-slate-900" />
           </div>
         ))}
       </div>
@@ -98,22 +106,20 @@ export default function ApprovalMetrics({
           <div
             key={metric.key}
             onClick={() => onSelectMetric && onSelectMetric(metric.key)}
-            className={`group relative overflow-hidden rounded-2xl border bg-white p-5 shadow-sm transition-all duration-200 cursor-pointer ${
+            className={`group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 p-5 shadow-2xl transition-all duration-200 cursor-pointer border-l-4 ${metric.accentBorder} ${metric.glow} ${
               isSelected
-                ? "border-blue-500 ring-2 ring-blue-500/30 shadow-md transform -translate-y-0.5"
-                : "border-gray-200/80 hover:border-gray-300 hover:shadow-md hover:-translate-y-0.5"
+                ? "ring-1 ring-cyan-500/30 shadow-lg -translate-y-0.5"
+                : "hover:border-slate-700 hover:shadow-xl hover:-translate-y-0.5"
             }`}
           >
-            {/* Top gradient accent line */}
-            <div
-              className={`absolute top-0 left-0 right-0 h-1 bg-gradient-to-r ${metric.accent} ${
-                isSelected ? "opacity-100" : "opacity-0 group-hover:opacity-100"
-              } transition-opacity`}
-            />
+            {/* Top glow pulse for selected/critical */}
+            {(isSelected || metric.isAlert) && (
+              <div className={`absolute top-0 left-0 right-0 h-px ${metric.isAlert ? "bg-rose-500/60" : "bg-cyan-500/40"}`} />
+            )}
 
             <div className="flex items-start justify-between">
               <div
-                className={`flex h-12 w-12 items-center justify-center rounded-2xl border text-xl font-bold shadow-inner ${metric.color} ${
+                className={`flex h-12 w-12 items-center justify-center rounded-2xl border text-xl font-bold shadow-md ${metric.iconBg} ${
                   metric.isAlert ? "animate-pulse" : ""
                 }`}
               >
@@ -121,15 +127,11 @@ export default function ApprovalMetrics({
               </div>
 
               <div className="text-right">
-                <div className={`text-3xl font-black tracking-tight ${metric.valueColor}`}>
+                <div className={`font-mono text-3xl font-black tracking-tight ${metric.valueColor}`}>
                   {metric.value}
                 </div>
                 <span
-                  className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                    metric.isAlert
-                      ? "bg-red-100 text-red-700 animate-pulse"
-                      : "bg-gray-100 text-gray-600"
-                  }`}
+                  className={`mt-1 inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-bold ${metric.badgeCn}`}
                 >
                   {metric.badge}
                 </span>
@@ -137,10 +139,10 @@ export default function ApprovalMetrics({
             </div>
 
             <div className="mt-3">
-              <h3 className="text-sm font-bold text-gray-900 group-hover:text-blue-600 transition-colors">
+              <h3 className="text-sm font-bold text-slate-200 group-hover:text-cyan-300 transition-colors">
                 {metric.title}
               </h3>
-              <p className="mt-0.5 text-xs text-gray-500 line-clamp-1">
+              <p className="mt-0.5 text-xs text-slate-500 line-clamp-1">
                 {metric.description}
               </p>
             </div>
@@ -150,4 +152,3 @@ export default function ApprovalMetrics({
     </div>
   );
 }
-

@@ -82,7 +82,7 @@ export class WhatsAppAIService {
     issues: string[];
   }> {
     try {
-      const conversation = await prisma.whatsappConversation.findUnique({
+      const conversation = await prisma.whatsAppConversation.findUnique({
         where: { id: conversationId },
         include: {
           incomingMessages: {
@@ -200,18 +200,18 @@ export class WhatsAppAIService {
       let detectedIntent: string | null = null;
       let maxMatches = 0;
       
-      Object.entries(intents).forEach(([intent, keywords]) => {
+      for (const [intent, keywords] of Object.entries(intents)) {
         const matches = keywords.filter(keyword => lowerMessage.includes(keyword)).length;
         if (matches > maxMatches) {
           maxMatches = matches;
           detectedIntent = intent;
         }
-      });
+      }
       
       // Generate response based on intent
       let response = '';
       let confidence = 0.5;
-      const suggestedActions: string[] = [];
+      let suggestedActions: string[] = [];
       
       switch (detectedIntent) {
         case 'appointment':
@@ -404,7 +404,7 @@ export class WhatsAppAIService {
         case 'follow_up':
           if (patient.orders.length > 0) {
             const lastOrder = patient.orders[0];
-            const testNames = lastOrder.items.map(item => item.test.testName).join(', ');
+            const testNames = lastOrder.items.map((item: any) => item.test?.testName).filter(Boolean).join(', ');
             suggestions.push(
               `Hi ${patient.firstName}, following up on your recent tests for ${testNames}. Do you have any questions?`,
               `Hello ${patient.firstName}, we hope you're doing well. Any updates on your recent test results?`
@@ -471,7 +471,7 @@ export class WhatsAppAIService {
     }>;
   }> {
     try {
-      const conversation = await prisma.whatsappConversation.findUnique({
+      const conversation = await prisma.whatsAppConversation.findUnique({
         where: { id: conversationId },
         include: {
           incomingMessages: {

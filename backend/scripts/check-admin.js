@@ -32,7 +32,15 @@ async function checkAndCreateAdmin() {
       console.log('\n✅ Admin user exists:', adminUser.email);
       
       // Test password verification
-      const testPassword = process.env.ADMIN_PASSWORD || 'CHANGE_ME_IN_PRODUCTION';
+      const testPassword = process.env.ADMIN_PASSWORD;
+
+      if (!testPassword) {
+        // No default: a fallback password would be published in this repo.
+        throw new Error(
+          'ADMIN_PASSWORD is not set. Add it to backend/.env first.'
+        );
+      }
+
       const isValid = await bcrypt.compare(testPassword, adminUser.passwordHash);
       console.log('Password verification check completed:', isValid ? '✅ Valid' : '❌ Invalid');
       
@@ -46,7 +54,15 @@ async function checkAndCreateAdmin() {
       
       if (existingAdmin) {
         const adminEmail = process.env.ADMIN_EMAIL || 'admin@labcore.local';
-        const adminPassword = process.env.ADMIN_PASSWORD || 'CHANGE_ME_IN_PRODUCTION';
+        const adminPassword = process.env.ADMIN_PASSWORD;
+
+        if (!adminPassword) {
+          // No default: a fallback password would be published in this repo.
+          throw new Error(
+            'ADMIN_PASSWORD is not set. Add a strong password to backend/.env first.'
+          );
+        }
+
         const adminFullName = process.env.ADMIN_FULL_NAME || 'System Administrator';
         const passwordHash = await bcrypt.hash(adminPassword, 12);
         
@@ -67,7 +83,15 @@ async function checkAndCreateAdmin() {
       } else {
         // Create new admin with different employee code
         const adminEmail = process.env.ADMIN_EMAIL || 'admin@labcore.local';
-        const adminPassword = process.env.ADMIN_PASSWORD || 'CHANGE_ME_IN_PRODUCTION';
+        const adminPassword = process.env.ADMIN_PASSWORD;
+
+        if (!adminPassword) {
+          // No default: a fallback password would be published in this repo.
+          throw new Error(
+            'ADMIN_PASSWORD is not set. Add a strong password to backend/.env first.'
+          );
+        }
+
         const adminFullName = process.env.ADMIN_FULL_NAME || 'System Administrator';
         const passwordHash = await bcrypt.hash(adminPassword, 12);
         

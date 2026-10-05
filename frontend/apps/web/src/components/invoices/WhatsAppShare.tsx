@@ -41,10 +41,10 @@ export default function WhatsAppShare({
   const [generatedPdfUrl, setGeneratedPdfUrl] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const laboratoryInfo = labInfo || {
-    name: "LABCORE ELIS",
-    phone: "+91-9876543210",
-    email: "billing@labcore.com"
+  const laboratoryInfo = {
+    name: labInfo?.name || "LABCORE ELIS",
+    phone: labInfo?.phone || "+91-9876543210",
+    email: labInfo?.email || "billing@labcore.com"
   };
 
   const formatCurrency = (amount?: number) => {

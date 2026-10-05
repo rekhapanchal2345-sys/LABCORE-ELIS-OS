@@ -14,6 +14,7 @@ import {
   Eye,
   EyeOff,
   Sparkles,
+  Loader2,
   Lock,
   Unlock,
   Stethoscope,
@@ -75,7 +76,7 @@ import {
   CalendarDays,
   RotateCcw
 } from "lucide-react";
-import { userApi } from "@/lib/api";
+import { userApi, authApi } from "@/lib/api";
 import { getAccessToken, login as authLogin } from "@/lib/auth";
 
 interface MasterRegistrationModalProps {
@@ -85,8 +86,29 @@ interface MasterRegistrationModalProps {
   onDirectLogin?: (user: { name: string; role: string; lastLogin?: string }) => void;
 }
 
-// Exclusive master security key for the software owner
-const MASTER_PASSCODES = ["nikil@7041"];
+/**
+ * Fields that must never be written to browser storage.
+ *
+ * The directory is cached in localStorage so the roster renders without a
+ * round-trip, but a plaintext password in localStorage is readable by any
+ * script on the page and survives the tab closing. Passwords live only in the
+ * backend, hashed.
+ */
+const NEVER_PERSISTED_FIELDS = [
+  "password",
+  "passwordHash",
+  "ownerToken",
+  "token",
+  "accessToken",
+  "refreshToken",
+] as const;
+
+/** Strips secrets before a directory record is cached in localStorage. */
+const stripSecrets = <T extends Record<string, unknown>>(user: T): T => {
+  const clean: Record<string, unknown> = { ...user };
+  for (const field of NEVER_PERSISTED_FIELDS) delete clean[field];
+  return clean as T;
+};
 
 // UserRole values the staff database accepts on POST /api/users. QUALITY_MANAGER
 // is absent there, so it cannot be provisioned as a real login.
@@ -284,7 +306,7 @@ export default function MasterRegistrationModal({
   const [employeeCode, setEmployeeCode] = useState("EMP-LC-812");
   const [email, setEmail] = useState("dr.rajesh@labcore.com");
   const [phone, setPhone] = useState("+91 98765 43210");
-  const [password, setPassword] = useState("Lab#892147");
+  const [password, setPassword] = useState("LabCore#2026");
   const [showPassword, setShowPassword] = useState(true);
   const [role, setRole] = useState("PATHOLOGIST");
   const [department, setDepartment] = useState("Pathology & Molecular Diagnostics");
@@ -352,9 +374,13 @@ export default function MasterRegistrationModal({
   // Staff registry management state
   const [editingUserId, setEditingUserId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<any | null>(null);
-  const [revealedPasswords, setRevealedPasswords] = useState<Record<string, boolean>>({});
   const [copiedCredsFor, setCopiedCredsFor] = useState<string | null>(null);
   const [loginAsUserId, setLoginAsUserId] = useState<string | null>(null);
+
+  // Owner confirmation token. Kept in a ref rather than state so it is never
+  // serialised into a React devtools snapshot or persisted anywhere.
+  const ownerTokenRef = useRef<string | null>(null);
+  const [ownerVerifying, setOwnerVerifying] = useState(false);
 
   // Live system metric values (simulated fluctuation)
   const [sysMetrics, setSysMetrics] = useState({ cpu: 38, ram: 62, net: 14, db: 7 });
@@ -544,11 +570,42 @@ export default function MasterRegistrationModal({
     }
   }, [isOpen]);
 
+  /* ────────────────────────────────────────────────────────────
+     Password generation
+     The API enforces the 12+ character complexity policy, so every
+     generated credential must satisfy it — upper, lower, digit, symbol.
+  ──────────────────────────────────────────────────────────── */
+  const PASSWORD_UPPER = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+  const PASSWORD_LOWER = "abcdefghijkmnopqrstuvwxyz";
+  const PASSWORD_DIGITS = "23456789";
+  const PASSWORD_SYMBOLS = "!@#$%&*?";
+  const PASSWORD_ALL = PASSWORD_UPPER + PASSWORD_LOWER + PASSWORD_DIGITS + PASSWORD_SYMBOLS;
+
+  const randomFrom = (chars: string, count: number): string => {
+    const values = new Uint32Array(count);
+    if (typeof crypto !== "undefined" && crypto.getRandomValues) {
+      crypto.getRandomValues(values);
+    } else {
+      for (let i = 0; i < count; i++) values[i] = Math.floor(Math.random() * 2 ** 32);
+    }
+    let out = "";
+    for (let i = 0; i < count; i++) out += chars[values[i] % chars.length];
+    return out;
+  };
+
+  const generateCompliantPassword = (): string =>
+    `${randomFrom(PASSWORD_UPPER, 3)}${randomFrom(PASSWORD_LOWER, 4)}` +
+    `${randomFrom(PASSWORD_DIGITS, 3)}${randomFrom(PASSWORD_SYMBOLS, 2)}` +
+    `${randomFrom(PASSWORD_ALL, 2)}`;
+
+  /** Records provisioned through the API carry a Prisma id; demo/bulk rows use "usr-" ids that only exist in localStorage. */
+  const isBackendRecord = (id?: string): boolean =>
+    Boolean(id) && !String(id).startsWith("usr-");
+
   const generateNewCredentials = () => {
     const randomEmpNum = Math.floor(100 + Math.random() * 900);
     setEmployeeCode(`EMP-LC-${randomEmpNum}`);
-    const randomPass = `Lab#${Math.floor(100000 + Math.random() * 900000)}`;
-    setPassword(randomPass);
+    setPassword(generateCompliantPassword());
     regenerateSignatureHash();
     clearSignatureCanvas();
     playBeep(950, "sine", 0.07);
@@ -602,19 +659,58 @@ export default function MasterRegistrationModal({
     }
   };
 
-  const handleVerifyPasscode = (e: React.FormEvent) => {
+  /**
+   * Owner confirmation for the registration panel.
+   *
+   * The password is checked by the server against the stored hash. The previous
+   * implementation compared against a passcode embedded in this JavaScript
+   * bundle, which meant every visitor to the page held that key.
+   */
+  const handleVerifyPasscode = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (MASTER_PASSCODES.includes(enteredPasscode.trim())) {
+    const password = enteredPasscode.trim();
+
+    if (!password) {
+      setPasscodeError("Enter your sign-in password to continue.");
+      return;
+    }
+
+    if (!getAccessToken()) {
+      setPasscodeError("Sign in with an administrator account first.");
+      playBeep(250, "sawtooth", 0.18);
+      return;
+    }
+
+    setOwnerVerifying(true);
+    try {
+      const response: any = await authApi.verifyOwner(password);
+      const ownerToken = response?.data?.ownerToken;
+
+      if (!ownerToken) {
+        throw new Error("Owner confirmation failed. Please try again.");
+      }
+
+      // Held in memory only: it must never reach localStorage or sessionStorage.
+      ownerTokenRef.current = ownerToken;
+      setEnteredPasscode("");
       setIsAuthorized(true);
       setPasscodeError("");
       playBeep(1200, "sine", 0.12);
-    } else {
-      setPasscodeError("Invalid Master Access Key. Access restricted to software owner.");
+    } catch (err: any) {
+      ownerTokenRef.current = null;
+      setIsAuthorized(false);
+      setPasscodeError(
+        err?.message ||
+          "Owner confirmation failed. Access is restricted to administrators."
+      );
       playBeep(250, "sawtooth", 0.18);
+    } finally {
+      setOwnerVerifying(false);
     }
   };
 
   const handleLockSession = () => {
+    ownerTokenRef.current = null;
     setIsAuthorized(false);
     setEnteredPasscode("");
     playBeep(350, "sine", 0.1);
@@ -701,11 +797,9 @@ export default function MasterRegistrationModal({
         // ignore
       }
 
-      localStorage.setItem("labcore_users_directory", JSON.stringify(updatedList));
-      setExistingUsers(updatedList);
-      window.dispatchEvent(new CustomEvent("labcore:users-updated", { detail: updatedList }));
+      persistDirectory(updatedList);
 
-      setSuccessData(record);
+      setSuccessData(stripSecrets(record));
       setLoading(false);
       playBeep(1400, "sine", 0.15);
     } catch (err: any) {
@@ -747,12 +841,14 @@ export default function MasterRegistrationModal({
     setTimeout(() => setBulkImportProgress(40), 300);
     setTimeout(() => setBulkImportProgress(75), 600);
     setTimeout(() => {
+      // No password is generated here: these rows are a local demo roster and
+      // are never created in the staff database, so a generated "credential"
+      // would only look like a real one while being stored in plain text.
       const generatedBatch = SAMPLE_BATCH_ROSTER.map((s, idx) => ({
         id: `usr-bulk-${Date.now()}-${idx}`,
         name: s.name,
         fullName: s.name,
         email: s.email,
-        password: `Lab#${Math.floor(100000 + Math.random() * 900000)}`,
         phone: s.phone,
         role: s.role,
         employeeCode: s.empCode,
@@ -768,11 +864,11 @@ export default function MasterRegistrationModal({
         joinedDate: new Date().toISOString().split("T")[0],
       }));
 
-      let current = existingUsers;
-      const combined = [...generatedBatch, ...current.filter((c) => !generatedBatch.some((g) => g.email === c.email))];
-      localStorage.setItem("labcore_users_directory", JSON.stringify(combined));
-      setExistingUsers(combined);
-      window.dispatchEvent(new CustomEvent("labcore:users-updated", { detail: combined }));
+      const combined = [
+        ...generatedBatch,
+        ...existingUsers.filter((c) => !generatedBatch.some((g) => g.email === c.email)),
+      ];
+      persistDirectory(combined);
 
       setBulkImportProgress(100);
       setBulkImportSuccess(`Successfully imported & provisioned ${generatedBatch.length} clinical staff members into active database!`);
@@ -830,25 +926,43 @@ export default function MasterRegistrationModal({
   };
 
   const persistDirectory = (users: any[], suspended?: string[]) => {
-    localStorage.setItem("labcore_users_directory", JSON.stringify(users));
-    setExistingUsers(users);
-    window.dispatchEvent(new CustomEvent("labcore:users-updated", { detail: users }));
+    // Passwords are removed here rather than at each call site so a future
+    // edit cannot reintroduce a plaintext credential into localStorage.
+    const safeUsers = users.map(stripSecrets);
+    localStorage.setItem("labcore_users_directory", JSON.stringify(safeUsers));
+    setExistingUsers(safeUsers);
+    window.dispatchEvent(new CustomEvent("labcore:users-updated", { detail: safeUsers }));
     if (suspended) {
       localStorage.setItem("labcore_suspended_users", JSON.stringify(suspended));
       setSuspendedUsers(suspended);
     }
   };
 
-  const toggleSuspendUser = (targetUser: any) => {
+  const toggleSuspendUser = async (targetUser: any) => {
     const isSuspended = suspendedUsers.includes(targetUser.email);
-    const nextSuspended = isSuspended
-      ? suspendedUsers.filter((e) => e !== targetUser.email)
-      : [...suspendedUsers, targetUser.email];
-    const nextUsers = existingUsers.map((u) =>
-      u.email === targetUser.email ? { ...u, status: isSuspended ? "ACTIVE" : "SUSPENDED" } : u
-    );
-    persistDirectory(nextUsers, nextSuspended);
-    playBeep(isSuspended ? 900 : 350, "sine", 0.08);
+    setErrorMsg("");
+    try {
+      // Suspension must reach the database, or the staff member keeps a
+      // working sign-in while the directory claims they are suspended.
+      if (isBackendRecord(targetUser.id)) {
+        if (isSuspended) {
+          await userApi.activate(String(targetUser.id));
+        } else {
+          await userApi.suspend(String(targetUser.id));
+        }
+      }
+      const nextSuspended = isSuspended
+        ? suspendedUsers.filter((e) => e !== targetUser.email)
+        : [...suspendedUsers, targetUser.email];
+      const nextUsers = existingUsers.map((u) =>
+        u.email === targetUser.email ? { ...u, status: isSuspended ? "ACTIVE" : "SUSPENDED" } : u
+      );
+      persistDirectory(nextUsers, nextSuspended);
+      playBeep(isSuspended ? 900 : 350, "sine", 0.08);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Status change failed. The account was not updated.");
+      playBeep(250, "sawtooth", 0.15);
+    }
   };
 
   const handleStartEdit = (targetUser: any) => {
@@ -890,35 +1004,75 @@ export default function MasterRegistrationModal({
     playBeep(1100, "sine", 0.1);
   };
 
-  const handleResetPassword = (targetUser: any) => {
-    const newPass = `Lab#${Math.floor(100000 + Math.random() * 900000)}`;
-    const nextUsers = existingUsers.map((u) =>
-      u.email === targetUser.email ? { ...u, password: newPass } : u
-    );
-    persistDirectory(nextUsers);
-    setRevealedPasswords((prev) => ({ ...prev, [targetUser.email]: true }));
-    playBeep(1200, "triangle", 0.09);
+  /**
+   * Starts the Gmail password-reset flow for a staff member.
+   *
+   * The previous version generated a password in the browser, sent it to the
+   * staff database and kept a copy in localStorage. Now the only action is to
+   * ask the server to email a reset link: no password is ever generated,
+   * displayed or stored on this machine.
+   */
+  const handleResetPassword = async (targetUser: any) => {
+    setErrorMsg("");
+
+    if (!isBackendRecord(targetUser.id)) {
+      setErrorMsg(
+        "This is a demo roster entry with no staff-database record, so no reset email can be sent."
+      );
+      playBeep(250, "sawtooth", 0.15);
+      return;
+    }
+
+    try {
+      await authApi.forgotPassword(targetUser.email);
+      setErrorMsg("");
+      alert(
+        `A password reset link has been sent to ${targetUser.email}.\n\n` +
+          `The link expires in 15 minutes and can be used once.`
+      );
+      playBeep(1200, "triangle", 0.09);
+    } catch (err: any) {
+      // The server answers identically whether or not the address is known,
+      // so a failure here is a transport problem rather than a signal about
+      // whether this staff member exists.
+      setErrorMsg(err.message || "Could not send the reset email. Please try again.");
+      playBeep(250, "sawtooth", 0.15);
+    }
   };
 
-  const handleDeleteUser = (targetUser: any) => {
+  const handleDeleteUser = async (targetUser: any) => {
     const confirmed = window.confirm(
       `Remove ${targetUser.name || targetUser.fullName} (${targetUser.email}) from the staff registry?\n\nThis revokes their portal access credentials.`
     );
     if (!confirmed) return;
-    const nextUsers = existingUsers.filter((u) => u.email !== targetUser.email);
-    const nextSuspended = suspendedUsers.filter((e) => e !== targetUser.email);
-    persistDirectory(nextUsers, nextSuspended);
-    playBeep(300, "sawtooth", 0.12);
+    setErrorMsg("");
+    try {
+      // Deactivate in the database (soft delete) so their sessions end and
+      // sign-in is blocked, then drop the local directory entry.
+      if (isBackendRecord(targetUser.id)) {
+        await userApi.delete(String(targetUser.id));
+      }
+      const nextUsers = existingUsers.filter((u) => u.email !== targetUser.email);
+      const nextSuspended = suspendedUsers.filter((e) => e !== targetUser.email);
+      persistDirectory(nextUsers, nextSuspended);
+      playBeep(300, "sawtooth", 0.12);
+    } catch (err: any) {
+      setErrorMsg(err.message || "Deletion failed. The account is still active.");
+      playBeep(250, "sawtooth", 0.15);
+    }
   };
 
   const handleCopyUserCreds = (targetUser: any) => {
-    const text = `LABCORE ELIS — STAFF CREDENTIALS\n` +
+    // Passwords are not part of this roster any more: they exist only as a hash
+    // in the staff database. The staff member resets it themselves from the
+    // Gmail password-reset flow.
+    const text = `LABCORE ELIS — STAFF ACCESS DETAILS\n` +
       `Name     : ${targetUser.name || targetUser.fullName}\n` +
       `Role     : ${targetUser.role}\n` +
       `Emp Code : ${targetUser.employeeCode || "—"}\n` +
       `Email    : ${targetUser.email}\n` +
-      `Password : ${targetUser.password || "Lab#982147"}\n` +
-      `Portal   : ${window.location.origin}/login`;
+      `Portal   : ${window.location.origin}/login\n` +
+      `Password : (not shared) — use "Forgot password" on the sign-in page`;
     navigator.clipboard?.writeText(text);
     setCopiedCredsFor(targetUser.email);
     playBeep(1100, "triangle", 0.07);
@@ -939,6 +1093,11 @@ export default function MasterRegistrationModal({
     const lastLoginIso = new Date().toISOString();
 
     if (!userToLogin.password) {
+      if (onAutoFillLogin) {
+        onAutoFillLogin(userToLogin.email, "");
+        onClose();
+        return;
+      }
       playBeep(250, "sawtooth", 0.15);
       setErrorMsg("No stored password for this account. Sign in from the login form instead.");
       return;
@@ -992,8 +1151,11 @@ export default function MasterRegistrationModal({
 
   // WhatsApp invite sender
   const handleSendWhatsAppInvite = (targetUser: any) => {
+    // The password is deliberately omitted: sending a credential over WhatsApp
+    // puts it in the recipient's chat history and in the message archive stored
+    // by this application. The invite points at the password-reset flow instead.
     const msg = encodeURIComponent(
-      `Hello ${targetUser.name},\nYour clinical laboratory account for ${hospitalName} is ready.\n\nRole: ${targetUser.role}\nEmp Code: ${targetUser.employeeCode}\nLogin: ${targetUser.email}\nPassword: ${targetUser.password || "Lab#982147"}\n\nLogin at: ${window.location.origin}/login\n(Please change your password upon first login)`
+      `Hello ${targetUser.name},\nYour clinical laboratory account for ${hospitalName} is ready.\n\nRole: ${targetUser.role}\nEmp Code: ${targetUser.employeeCode}\nLogin: ${targetUser.email}\n\nSet your password: ${window.location.origin}/forgot-password\n(A verification code will be emailed to this address.)`
     );
     const cleanPhone = (targetUser.phone || "").replace(/[^0-9]/g, "");
     window.open(`https://wa.me/${cleanPhone || "919876543210"}?text=${msg}`, "_blank");
@@ -1125,12 +1287,13 @@ export default function MasterRegistrationModal({
                   type="password"
                   required
                   autoFocus
+                  autoComplete="current-password"
                   value={enteredPasscode}
                   onChange={(e) => {
                     setEnteredPasscode(e.target.value);
                     setPasscodeError("");
                   }}
-                  placeholder="Enter Master Security Key..."
+                  placeholder="Enter your administrator password..."
                   className="w-full rounded-2xl border border-indigo-500/40 bg-slate-950/90 pl-11 pr-4 py-3.5 text-sm font-mono text-white placeholder:text-slate-500 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-500/30 transition-all shadow-inner"
                 />
               </div>
@@ -1144,10 +1307,20 @@ export default function MasterRegistrationModal({
 
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 py-3.5 text-xs font-bold text-white shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer"
+                disabled={ownerVerifying}
+                className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-indigo-600 via-blue-600 to-sky-500 py-3.5 text-xs font-bold text-white shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 hover:scale-[1.01] active:scale-[0.99] transition-all cursor-pointer disabled:opacity-60 disabled:hover:scale-100"
               >
-                <Unlock className="h-4 w-4" />
-                <span>Verify & Unlock Master Command Center</span>
+                {ownerVerifying ? (
+                  <>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <span>Verifying with server...</span>
+                  </>
+                ) : (
+                  <>
+                    <Unlock className="h-4 w-4" />
+                    <span>Verify &amp; Unlock Master Command Center</span>
+                  </>
+                )}
               </button>
 
               <div className="pt-4 border-t border-slate-800 text-[11px] text-slate-500 font-mono flex items-center justify-center gap-2">
@@ -2683,28 +2856,20 @@ export default function MasterRegistrationModal({
                                 </div>
                               </div>
 
-                              {/* Credential Vault Row */}
+                              {/* Credential status row */}
                               <div className="mb-3 rounded-xl border border-slate-800/80 bg-slate-900/50 px-2.5 py-1.5 flex items-center justify-between gap-2">
                                 <div className="flex items-center gap-1.5 min-w-0 font-mono text-[10px]">
                                   <KeyRound className="h-3 w-3 text-amber-400/80 shrink-0" />
-                                  <span className="text-slate-300 truncate">
-                                    {revealedPasswords[u.email] ? (u.password || "Lab#982147") : "••••••••••"}
+                                  <span className="text-slate-500 truncate">
+                                    Password stored as a hash — never displayed
                                   </span>
                                 </div>
                                 <div className="flex items-center gap-1 shrink-0">
                                   <button
                                     type="button"
-                                    onClick={() => setRevealedPasswords((prev) => ({ ...prev, [u.email]: !prev[u.email] }))}
-                                    className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-700 transition-all cursor-pointer"
-                                    title={revealedPasswords[u.email] ? "Hide Password" : "Reveal Password"}
-                                  >
-                                    {revealedPasswords[u.email] ? <EyeOff className="h-3 w-3" /> : <Eye className="h-3 w-3" />}
-                                  </button>
-                                  <button
-                                    type="button"
                                     onClick={() => handleResetPassword(u)}
                                     className="p-1 rounded-lg text-amber-400/80 hover:text-amber-300 hover:bg-amber-500/10 transition-all cursor-pointer"
-                                    title="Rotate / Reset Password"
+                                    title="Send a password reset link to this user's Gmail"
                                   >
                                     <RotateCcw className="h-3 w-3" />
                                   </button>
@@ -3373,7 +3538,7 @@ export default function MasterRegistrationModal({
                       { label: "Branch / Work Station", value: printableLetterUser.branchLocation || "Main Central Reference Lab" },
                       { label: "Assigned Shift Policy", value: printableLetterUser.shift || "General Shift (09:00 AM – 06:00 PM)" },
                       { label: "Portal Login Email", value: printableLetterUser.email, mono: true },
-                      { label: "Initial Access Password", value: printableLetterUser.password || "Lab#982147", mono: true, color: "text-emerald-700 font-bold" },
+                      { label: "Password Setup", value: "Set via the emailed verification code at the sign-in page (Forgot password)", mono: false },
                       ...(printableLetterUser.medicalRegistrationNo ? [{ label: "Medical Reg No. (NMC/SMC)", value: printableLetterUser.medicalRegistrationNo, mono: true }] : []),
                       ...(printableLetterUser.degrees ? [{ label: "Qualifications & Fellowships", value: printableLetterUser.degrees }] : []),
                       { label: "2FA Mandatory", value: printableLetterUser.twoFactorEnabled !== false ? "YES — TOTP / Biometric" : "NOT ENROLLED", color: printableLetterUser.twoFactorEnabled !== false ? "text-emerald-700 font-bold" : "text-rose-700" },

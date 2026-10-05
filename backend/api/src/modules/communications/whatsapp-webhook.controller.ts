@@ -5,7 +5,7 @@ import {
 } from "express";
 import crypto from "crypto";
 import prisma from "../../lib/prisma";
-import { verifyWebhookSignature } from "../../lib/communication-providers";
+import { verifyWebhookSignature, sendWhatsApp } from "../../lib/communication-providers";
 
 export const verifyWebhook = async (
   req: Request,
@@ -198,7 +198,7 @@ async function processIncomingMessage(message: any, metadata: any) {
     }
 
     // Find or create conversation
-    let conversation = await prisma.whatsappConversation.findFirst({
+    let conversation = await prisma.whatsAppConversation.findFirst({
       where: { phoneNumber: from }
     });
 
@@ -208,7 +208,7 @@ async function processIncomingMessage(message: any, metadata: any) {
         where: { phone: from }
       });
 
-      conversation = await prisma.whatsappConversation.create({
+      conversation = await prisma.whatsAppConversation.create({
         data: {
           phoneNumber: from,
           patientId: patient?.id,
@@ -218,7 +218,7 @@ async function processIncomingMessage(message: any, metadata: any) {
       });
     } else {
       // Update last activity
-      await prisma.whatsappConversation.update({
+      await prisma.whatsAppConversation.update({
         where: { id: conversation.id },
         data: {
           lastActivity: new Date(),
@@ -228,23 +228,17 @@ async function processIncomingMessage(message: any, metadata: any) {
     }
 
     // Store incoming message
-    const incomingMessage = await prisma.whatsappIncomingMessage.create({
+    const incomingMessage = await prisma.whatsAppIncomingMessage.create({
       data: {
+        phoneNumber: from,
         senderPhone: from,
-        senderType: "individual",
-        messageBody,
+        messageContent: messageBody,
         messageType,
         mediaUrl,
         mediaMimeType,
-        mediaFilename,
-        interactiveType,
-        interactiveData,
-        replyToMessageId,
-        webhookTimestamp: timestamp,
-        webhookMessageId: messageId,
-        webhookPayload: message,
-        conversationId: conversation.id,
-        patientId: conversation.patientId
+        externalMessageId: messageId,
+        externalFrom: from,
+        conversationId: conversation?.id
       }
     });
 
@@ -309,7 +303,7 @@ async function processMessageStatus(status: any) {
     }
 
     // Update scheduled message if this was a scheduled message
-    const scheduledMessage = await prisma.whatsappScheduledMessage.findFirst({
+    const scheduledMessage = await prisma.whatsAppScheduledMessage.findFirst({
       where: { providerMessageId: messageId }
     });
 
@@ -332,7 +326,7 @@ async function processMessageStatus(status: any) {
           break;
       }
 
-      await prisma.whatsappScheduledMessage.update({
+      await prisma.whatsAppScheduledMessage.update({
         where: { id: scheduledMessage.id },
         data: updateData
       });
@@ -366,12 +360,12 @@ async function processTemplateStatusWebhook(change: any) {
     const newStatus = value.event_type; // APPROVED, REJECTED, PAUSED, etc.
 
     if (templateId) {
-      const template = await prisma.whatsappTemplate.findFirst({
+      const template = await prisma.whatsAppTemplate.findFirst({
         where: { templateId }
       });
 
       if (template) {
-        await prisma.whatsappTemplate.update({
+        await prisma.whatsAppTemplate.update({
           where: { id: template.id },
           data: {
             templateStatus: newStatus,
@@ -490,8 +484,6 @@ async function shouldTriggerRule(rule: any, conversation: any, incomingMessage: 
 
 async function executeAutoReply(rule: any, conversation: any, incomingMessage: any) {
   try {
-    const { sendWhatsApp } = await import("../../lib/communication-providers");
-
     // Replace variables in response text
     let responseText = rule.responseText;
     responseText = responseText.replace(/\{patient_name\}/g, conversation.patientId ? "Patient" : "there");

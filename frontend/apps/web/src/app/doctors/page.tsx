@@ -6,7 +6,7 @@ import DashboardLayout from "@/components/layout/dashboardlayout";
 import DoctorTable, { Doctor } from "@/components/doctors/DoctorTable";
 import DoctorQuickViewModal, { DoctorProfileData } from "@/components/doctors/DoctorQuickViewModal";
 import DoctorCommissionPayoutModal from "@/components/doctors/DoctorCommissionPayoutModal";
-import DoctorModalForm from "@/components/doctors/DoctorModalForm";
+import RegisterDoctorWizard from "@/components/doctors/RegisterDoctorWizard";
 import { doctorApi } from "@/lib/api";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { showSuccess, showError } from "@/lib/notifications";
@@ -55,7 +55,7 @@ export default function DoctorsPage() {
   const [totalPages, setTotalPages] = useState(1);
 
   // Search, Filters & Tabs
-  const [activeTab, setActiveTab] = useState<"all" | "referring" | "pathologists" | "pending_payouts">("all");
+  const [activeTab, setActiveTab] = useState<"all" | "referring" | "pathologists" | "partners" | "pending_payouts">("all");
   const [searchTerm, setSearchTerm] = useState("");
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [filterSpecialization, setFilterSpecialization] = useState("");
@@ -101,6 +101,8 @@ export default function DoctorsPage() {
         params.doctorType = "REFERRING_DOCTOR";
       } else if (activeTab === "pathologists") {
         params.doctorType = "PATHOLOGIST";
+      } else if (activeTab === "partners") {
+        params.typeGroup = "partners";
       }
 
       const response = await doctorApi.getAll(params);
@@ -189,6 +191,12 @@ export default function DoctorsPage() {
       d.doctorType === "INTERNAL_PATHOLOGIST" ||
       d.doctorType === "CONSULTANT_PATHOLOGIST" ||
       (d.specialization || "").toLowerCase().includes("pathol")
+  ).length;
+  const partnersCount = doctors.filter(
+    (d) =>
+      d.doctorType === "HOSPITAL_PARTNER" ||
+      d.doctorType === "CLINIC_PARTNER" ||
+      Boolean((d as any).organizationId)
   ).length;
 
   const totalReferrals = doctors.reduce(
@@ -459,6 +467,18 @@ export default function DoctorsPage() {
             </button>
 
             <button
+              onClick={() => { setActiveTab("partners"); setPage(1); }}
+              className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                activeTab === "partners"
+                  ? "bg-teal-600 text-white shadow-sm"
+                  : "bg-white text-slate-700 hover:bg-slate-100 border border-slate-200"
+              }`}
+            >
+              <Building className="w-3.5 h-3.5" />
+              Hospital / Clinic Partners ({partnersCount})
+            </button>
+
+            <button
               onClick={() => { setActiveTab("pending_payouts"); setPage(1); }}
               className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                 activeTab === "pending_payouts"
@@ -635,12 +655,19 @@ export default function DoctorsPage() {
           onPayoutSuccess={() => fetchDoctors()}
         />
 
-        {/* MODAL 3: IN-PAGE FAST ADD / EDIT DOCTOR MODAL */}
-        <DoctorModalForm
+        {/* MODAL 3: ENTERPRISE 8-STEP DOCTOR REGISTRATION & COMPLIANCE WIZARD */}
+        <RegisterDoctorWizard
           isOpen={showAddEditModal}
-          onClose={() => setShowAddEditModal(false)}
-          doctor={doctorToEdit}
-          onSuccess={() => fetchDoctors()}
+          onClose={() => {
+            setShowAddEditModal(false);
+            setDoctorToEdit(null);
+          }}
+          doctor={doctorToEdit as any}
+          onSuccess={() => {
+            fetchDoctors();
+            setShowAddEditModal(false);
+            setDoctorToEdit(null);
+          }}
         />
 
       </DashboardLayout>

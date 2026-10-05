@@ -5,6 +5,7 @@ import prisma from "../../../config/database";
 import { authenticate } from "../../../middleware/auth.middleware";
 import { authorize } from "../../../middleware/rbac.middleware";
 import { validate } from "../../../middleware/validate.middleware";
+import { pathParam } from "../../utils/request-meta";
 
 import {
   orderReport,
@@ -112,7 +113,7 @@ router.get(
   ),
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const { id } = req.params;
+      const id = pathParam(req, "id");
       
       // Fetch the report by ID
       const report = await prisma.report.findUnique({

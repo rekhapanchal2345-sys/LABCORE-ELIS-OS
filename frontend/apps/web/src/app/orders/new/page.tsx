@@ -8,6 +8,7 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { orderApi, patientApi, doctorApi, testApi } from "@/lib/api";
 import { PatientQuickRegisterModal } from "@/components/orders/PatientQuickRegisterModal";
 import { DoctorQuickAddModal } from "@/components/orders/DoctorQuickAddModal";
+import RegisterDoctorWizard from "@/components/doctors/RegisterDoctorWizard";
 import {
   StatusBadge,
   PriorityBadge,
@@ -2150,6 +2151,36 @@ export default function NewOrderWizardPage() {
             </div>
           </div>
         )}
+
+        {/* Quick Patient Registration Modal */}
+        <PatientQuickRegisterModal
+          isOpen={showPatientRegisterModal}
+          onClose={() => setShowPatientRegisterModal(false)}
+          onPatientCreated={(newPatient) => {
+            setPatients((prev) => [newPatient, ...prev]);
+            setSelectedPatient(newPatient);
+            setShowPatientRegisterModal(false);
+            showToast(`Patient ${newPatient.firstName} ${newPatient.lastName} registered!`, "success");
+          }}
+        />
+
+        {/* Quick Doctor Registration Wizard */}
+        <RegisterDoctorWizard
+          isOpen={showDoctorAddModal}
+          onClose={() => setShowDoctorAddModal(false)}
+          onSuccess={() => {
+            setShowDoctorAddModal(false);
+            doctorApi.getAll({ limit: 10, sortBy: "createdAt", sortOrder: "desc" }).then((res: any) => {
+              const list = res?.data?.doctors || res?.data || [];
+              if (list.length > 0) {
+                setDoctors(list);
+                setSelectedDoctor(list[0]);
+                setIsSelfReferral(false);
+                showToast(`Doctor ${list[0].fullName} linked to order!`, "success");
+              }
+            });
+          }}
+        />
 
         {/* Post-Registration Multi-Channel Communication Hub Modal */}
         {showPostCommunicationHub && createdOrderSummary && (

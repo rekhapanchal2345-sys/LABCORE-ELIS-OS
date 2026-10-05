@@ -1,4 +1,5 @@
 import prisma from "../../../config/database";
+import type { CashMovementType } from "@prisma/client";
 
 // =======================================================
 // CREATE CASH COUNTER
@@ -314,7 +315,7 @@ export const getCashCounterById = async (id: string) => {
 export const addCashMovement = async (
   data: {
     drawerId: string;
-    movementType: string;
+    movementType: CashMovementType;
     amount: number;
     reason: string;
     referenceId?: string;

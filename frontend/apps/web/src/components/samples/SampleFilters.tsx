@@ -68,15 +68,15 @@ export default function SampleFilters({
     Boolean(dateTo);
 
   return (
-    <section className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+    <section className="rounded-2xl border border-slate-800 bg-slate-950 p-5 shadow-2xl">
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         <div className="lg:col-span-2">
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Search
           </label>
 
           <div className="relative">
-            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
               🔍
             </span>
 
@@ -85,20 +85,20 @@ export default function SampleFilters({
               value={search}
               onChange={handleSearch}
               placeholder="Sample, barcode, patient..."
-              className="w-full rounded-lg border border-gray-300 py-2.5 pl-10 pr-3 text-sm outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+              className="w-full rounded-xl border border-slate-800 bg-slate-900/90 py-2.5 pl-10 pr-3 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-colors"
             />
           </div>
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Status
           </label>
 
           <select
             value={status}
             onChange={handleStatus}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+            className="w-full rounded-xl border border-slate-800 bg-slate-900/90 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-colors"
           >
             <option value="">All statuses</option>
             <option value="pending">Pending</option>
@@ -112,14 +112,14 @@ export default function SampleFilters({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Sample Type
           </label>
 
           <select
             value={sampleType}
             onChange={handleSampleType}
-            className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+            className="w-full rounded-xl border border-slate-800 bg-slate-900/90 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-colors"
           >
             <option value="">All types</option>
             <option value="Blood">Blood</option>
@@ -133,7 +133,7 @@ export default function SampleFilters({
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
             From
           </label>
 
@@ -141,12 +141,12 @@ export default function SampleFilters({
             type="date"
             value={dateFrom}
             onChange={handleDateFrom}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+            className="w-full rounded-xl border border-slate-800 bg-slate-900/90 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-colors"
           />
         </div>
 
         <div>
-          <label className="mb-1.5 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
             To
           </label>
 
@@ -154,22 +154,21 @@ export default function SampleFilters({
             type="date"
             value={dateTo}
             onChange={handleDateTo}
-            className="w-full rounded-lg border border-gray-300 px-3 py-2.5 text-sm outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-100"
+            className="w-full rounded-xl border border-slate-800 bg-slate-900/90 px-3 py-2.5 text-sm text-slate-100 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-colors"
           />
         </div>
       </div>
 
-      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
-        <p className="text-xs text-gray-500">
-          Filter samples by barcode, patient, status,
-          type and collection date.
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800/80 pt-4">
+        <p className="text-xs text-slate-400">
+          Filter samples by barcode, patient, status, type and collection date.
         </p>
 
         <button
           type="button"
           onClick={onReset}
           disabled={!hasFilters}
-          className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-40"
+          className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-xs font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors disabled:cursor-not-allowed disabled:opacity-40"
         >
           Reset Filters
         </button>

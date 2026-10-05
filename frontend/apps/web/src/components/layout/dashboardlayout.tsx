@@ -15,17 +15,26 @@ export default function DashboardLayout({
   children,
   title = "Dashboard",
 }: DashboardLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  // Start collapsed on narrow viewports: the sidebar renders as a fixed 260px
+  // overlay there, so opening it by default covers the page content on load.
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
 
   useEffect(() => {
     setIsMounted(true);
+
+    if (typeof window === "undefined") return;
+    // Desktop keeps the rail permanently visible.
+    if (window.innerWidth > 900) {
+      setSidebarOpen(true);
+    }
   }, []);
 
   useEffect(() => {
-    // Set light theme for application (only on client side)
+    // Professional light theme
     if (typeof window !== 'undefined') {
       document.documentElement.setAttribute('data-theme', 'light');
+      document.documentElement.classList.remove('dark');
     }
     
     return () => {
@@ -50,7 +59,7 @@ export default function DashboardLayout({
 
       {/* Main Area */}
       <div
-        className={`min-h-screen transition-all duration-300 ease-in-out ${sidebarOpen ? 'ml-[260px]' : 'ml-0'} dashboard-main`}
+        className={`flex flex-col h-screen transition-all duration-300 ease-in-out ${sidebarOpen ? 'ml-[260px]' : 'ml-0'} dashboard-main`}
       >
         {/* Header */}
         <Header
@@ -59,7 +68,7 @@ export default function DashboardLayout({
         />
 
         {/* Page Content */}
-        <main className="page-container">
+        <main className="flex-1 min-h-0 overflow-auto page-container">
           {children}
         </main>
       </div>

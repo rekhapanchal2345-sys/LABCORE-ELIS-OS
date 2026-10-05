@@ -21,7 +21,6 @@ import {
 import { ApiError } from "@/lib/api";
 
 import {
-  checkBiometricSupport,
   startBiometricAuthentication,
 } from "@/lib/webauthn";
 import {
@@ -59,20 +58,20 @@ import MasterRegistrationModal from "@/components/auth/MasterRegistrationModal";
    BOOT SPLASH — sci-fi system initialization sequence
 ───────────────────────────────────────────────────────────────── */
 const BOOT_LINES = [
-  { ms: 0,    text: "LabCore ELIS v4.2.1 — Secure Boot Initiated",       ok: false },
-  { ms: 220,  text: "Loading kernel modules…",                           ok: false },
-  { ms: 480,  text: "[  OK  ] AES-256 encryption module loaded",           ok: true  },
-  { ms: 680,  text: "[  OK  ] Database connection pool established",        ok: true  },
-  { ms: 880,  text: "[  OK  ] NABH compliance layer initialized",           ok: true  },
-  { ms: 1080, text: "[  OK  ] HL7 FHIR gateway ready on port 7432",         ok: true  },
-  { ms: 1300, text: "Verifying system integrity…",                         ok: false },
-  { ms: 1560, text: "[  OK  ] Checksum verified — 0xF4A7B9C2D1E6",         ok: true  },
-  { ms: 1780, text: "[  OK  ] Role-based access control enabled",            ok: true  },
-  { ms: 1980, text: "[  OK  ] Audit trail activated",                       ok: true  },
-  { ms: 2180, text: "Mounting laboratory data stores…",                    ok: false },
-  { ms: 2400, text: "[  OK  ] Sample tracking daemon running",              ok: true  },
-  { ms: 2600, text: "[  OK  ] Report generation engine ready",              ok: true  },
-  { ms: 2780, text: "\u2588 All systems nominal — launching auth portal",      ok: false },
+  { ms: 0, text: "LabCore ELIS v4.2.1 — Secure Boot Initiated", ok: false },
+  { ms: 220, text: "Loading kernel modules…", ok: false },
+  { ms: 480, text: "[  OK  ] AES-256 encryption module loaded", ok: true },
+  { ms: 680, text: "[  OK  ] Database connection pool established", ok: true },
+  { ms: 880, text: "[  OK  ] NABH compliance layer initialized", ok: true },
+  { ms: 1080, text: "[  OK  ] HL7 FHIR gateway ready on port 7432", ok: true },
+  { ms: 1300, text: "Verifying system integrity…", ok: false },
+  { ms: 1560, text: "[  OK  ] Checksum verified — 0xF4A7B9C2D1E6", ok: true },
+  { ms: 1780, text: "[  OK  ] Role-based access control enabled", ok: true },
+  { ms: 1980, text: "[  OK  ] Audit trail activated", ok: true },
+  { ms: 2180, text: "Mounting laboratory data stores…", ok: false },
+  { ms: 2400, text: "[  OK  ] Sample tracking daemon running", ok: true },
+  { ms: 2600, text: "[  OK  ] Report generation engine ready", ok: true },
+  { ms: 2780, text: "\u2588 All systems nominal — launching auth portal", ok: false },
 ];
 
 function BootSplash({ onDone }: { onDone: () => void }) {
@@ -95,7 +94,7 @@ function BootSplash({ onDone }: { onDone: () => void }) {
     });
 
     timers.push(setTimeout(() => { setGlitch(true); setTimeout(() => setGlitch(false), 120); }, 2700));
-    timers.push(setTimeout(() => { setGlitch(true); setTimeout(() => setGlitch(false), 80);  }, 2820));
+    timers.push(setTimeout(() => { setGlitch(true); setTimeout(() => setGlitch(false), 80); }, 2820));
 
     timers.push(
       setTimeout(() => {
@@ -124,8 +123,8 @@ function BootSplash({ onDone }: { onDone: () => void }) {
       <svg className="absolute inset-0 w-full h-full opacity-[0.03] pointer-events-none">
         <defs>
           <pattern id="bh" x="0" y="0" width="56" height="100" patternUnits="userSpaceOnUse">
-            <polygon points="28,2 54,16 54,44 28,58 2,44 2,16" fill="none" stroke="#6366f1" strokeWidth="0.8"/>
-            <polygon points="28,52 54,66 54,94 28,108 2,94 2,66" fill="none" stroke="#6366f1" strokeWidth="0.8"/>
+            <polygon points="28,2 54,16 54,44 28,58 2,44 2,16" fill="none" stroke="#6366f1" strokeWidth="0.8" />
+            <polygon points="28,52 54,66 54,94 28,108 2,94 2,66" fill="none" stroke="#6366f1" strokeWidth="0.8" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#bh)" />
@@ -177,8 +176,8 @@ function BootSplash({ onDone }: { onDone: () => void }) {
                   color: line.ok
                     ? "rgba(52,211,153,0.85)"
                     : line.text.startsWith("█")
-                    ? "rgba(167,139,250,0.9)"
-                    : "rgba(255,255,255,0.4)",
+                      ? "rgba(167,139,250,0.9)"
+                      : "rgba(255,255,255,0.4)",
                 }}
               >
                 {line.ok && <CheckCircle2 className="h-3 w-3 mt-0.5 shrink-0 text-emerald-400" />}
@@ -411,8 +410,8 @@ function SciFiBackground() {
       <svg className="absolute inset-0 w-full h-full opacity-[0.035]" xmlns="http://www.w3.org/2000/svg">
         <defs>
           <pattern id="hex" x="0" y="0" width="56" height="100" patternUnits="userSpaceOnUse">
-            <polygon points="28,2 54,16 54,44 28,58 2,44 2,16" fill="none" stroke="rgba(139,92,246,1)" strokeWidth="0.8"/>
-            <polygon points="28,52 54,66 54,94 28,108 2,94 2,66" fill="none" stroke="rgba(139,92,246,1)" strokeWidth="0.8"/>
+            <polygon points="28,2 54,16 54,44 28,58 2,44 2,16" fill="none" stroke="rgba(139,92,246,1)" strokeWidth="0.8" />
+            <polygon points="28,52 54,66 54,94 28,108 2,94 2,66" fill="none" stroke="rgba(139,92,246,1)" strokeWidth="0.8" />
           </pattern>
         </defs>
         <rect width="100%" height="100%" fill="url(#hex)" />
@@ -461,17 +460,17 @@ function SciFiBackground() {
 
       {/* Corner circuit lines — top left */}
       <svg className="absolute top-0 left-0 opacity-20" width="200" height="200" viewBox="0 0 200 200">
-        <path d="M0 80 L40 80 L40 40 L80 40" stroke="#6366f1" strokeWidth="1" fill="none" strokeDasharray="4 4"/>
-        <path d="M0 120 L30 120 L30 60 L100 60" stroke="#8b5cf6" strokeWidth="0.7" fill="none" strokeDasharray="3 6"/>
-        <circle cx="80" cy="40" r="3" fill="#6366f1" style={{animation: "pulse 2s ease infinite"}}/>
-        <circle cx="100" cy="60" r="2" fill="#8b5cf6" style={{animation: "pulse 2.5s ease infinite"}}/>
+        <path d="M0 80 L40 80 L40 40 L80 40" stroke="#6366f1" strokeWidth="1" fill="none" strokeDasharray="4 4" />
+        <path d="M0 120 L30 120 L30 60 L100 60" stroke="#8b5cf6" strokeWidth="0.7" fill="none" strokeDasharray="3 6" />
+        <circle cx="80" cy="40" r="3" fill="#6366f1" style={{ animation: "pulse 2s ease infinite" }} />
+        <circle cx="100" cy="60" r="2" fill="#8b5cf6" style={{ animation: "pulse 2.5s ease infinite" }} />
       </svg>
 
       {/* Corner circuit lines — bottom right */}
       <svg className="absolute bottom-0 right-0 opacity-20" width="200" height="200" viewBox="0 0 200 200">
-        <path d="M200 120 L160 120 L160 160 L120 160" stroke="#6366f1" strokeWidth="1" fill="none" strokeDasharray="4 4"/>
-        <path d="M200 80 L170 80 L170 140 L100 140" stroke="#8b5cf6" strokeWidth="0.7" fill="none" strokeDasharray="3 6"/>
-        <circle cx="120" cy="160" r="3" fill="#6366f1" style={{animation: "pulse 2s 1s ease infinite"}}/>
+        <path d="M200 120 L160 120 L160 160 L120 160" stroke="#6366f1" strokeWidth="1" fill="none" strokeDasharray="4 4" />
+        <path d="M200 80 L170 80 L170 140 L100 140" stroke="#8b5cf6" strokeWidth="0.7" fill="none" strokeDasharray="3 6" />
+        <circle cx="120" cy="160" r="3" fill="#6366f1" style={{ animation: "pulse 2s 1s ease infinite" }} />
       </svg>
 
       {/* Floating layers icon (decorative) */}
@@ -663,7 +662,7 @@ function TypingText({ texts, className }: { texts: string[]; className?: string 
   return (
     <span className={className}>
       {displayed}
-      <span className="inline-block w-[2px] h-[1em] bg-indigo-400/60 ml-0.5 align-middle" 
+      <span className="inline-block w-[2px] h-[1em] bg-indigo-400/60 ml-0.5 align-middle"
         style={{ animation: "blink 1s step-end infinite" }} />
     </span>
   );
@@ -719,21 +718,36 @@ export default function LoginPage() {
 
   const passwordRef = useRef<HTMLInputElement>(null);
 
+  /**
+   * Only same-origin, in-app paths are valid redirect targets.
+   * URLSearchParams already decodes the value once; a manual second decode
+   * corrupted values containing % or +. Paths like "//evil.com" (protocol-
+   * relative) or "/\\evil.com" must never pass, or sign-in becomes an open
+   * redirect.
+   */
+  function sanitizeReturnUrl(raw: string | null): string {
+    if (!raw) return "/dashboard";
+    const isSafePath =
+      raw.startsWith("/") &&
+      !raw.startsWith("//") &&
+      !raw.startsWith("/\\") &&
+      !raw.includes("\\") &&
+      !raw.startsWith("/login") &&
+      raw !== "/" &&
+      !/[\u0000-\u001f\u007f]/.test(raw);
+    return isSafePath ? raw : "/dashboard";
+  }
+
   useEffect(() => {
     setMounted(true);
     document.documentElement.setAttribute("data-theme", "login");
     setPrivacyModeState(isPrivacyMode());
     setRememberMeState(isRememberMe());
-    checkBiometricSupport().then(setBiometricAvailable);
+    // WebAuthn works in the browser but the API has no credential endpoints
+    // yet, so the button stays hidden until the backend verifies assertions.
+    setBiometricAvailable(false);
     const p = new URLSearchParams(window.location.search).get("returnUrl");
-    if (p) {
-      const decoded = decodeURIComponent(p);
-      if (decoded && !decoded.startsWith("/login") && decoded !== "/") {
-        setReturnUrl(decoded);
-      } else {
-        setReturnUrl("/dashboard");
-      }
-    }
+    setReturnUrl(sanitizeReturnUrl(p));
     return () => document.documentElement.removeAttribute("data-theme");
   }, []);
 
@@ -749,6 +763,14 @@ export default function LoginPage() {
     } finally {
       setBiometricLoading(false);
     }
+  };
+
+  // No self-service reset endpoint exists yet; the dead link now explains the
+  // real process instead of jumping to the top of the page.
+  const handleResetAccessKey = () => {
+    setError(
+      "Self-service password reset is not enabled. Ask an administrator to reset your password from the Master Registration Portal → Directory."
+    );
   };
 
   const revealWelcome = (sessionUser?: AuthUser) => {
@@ -1136,9 +1158,9 @@ export default function LoginPage() {
             </p>
             <div className="space-y-2.5 max-w-[360px]">
               <MetricCard icon={FlaskConical} label="Orders Processed Today" value="84%" subtext="↑ 12% from yesterday" color="bg-indigo-500/15 text-indigo-300" gradient="#6366f1" delay="0.4s" />
-              <MetricCard icon={Activity}    label="Sample TAT Compliance" value="97%" subtext="Target: 95%" color="bg-violet-500/15 text-violet-300" gradient="#8b5cf6" delay="0.5s" />
-              <MetricCard icon={BarChart3}   label="Revenue Collected"     value="76%" subtext="₹4.2L collected today" color="bg-emerald-500/15 text-emerald-300" gradient="#10b981" delay="0.6s" />
-              <MetricCard icon={ShieldCheck} label="Security Score"        value="99%" subtext="All checks passed" color="bg-sky-500/15 text-sky-300" gradient="#38bdf8" delay="0.7s" />
+              <MetricCard icon={Activity} label="Sample TAT Compliance" value="97%" subtext="Target: 95%" color="bg-violet-500/15 text-violet-300" gradient="#8b5cf6" delay="0.5s" />
+              <MetricCard icon={BarChart3} label="Revenue Collected" value="76%" subtext="₹4.2L collected today" color="bg-emerald-500/15 text-emerald-300" gradient="#10b981" delay="0.6s" />
+              <MetricCard icon={ShieldCheck} label="Security Score" value="99%" subtext="All checks passed" color="bg-sky-500/15 text-sky-300" gradient="#38bdf8" delay="0.7s" />
             </div>
           </div>
 
@@ -1319,142 +1341,137 @@ export default function LoginPage() {
                       </div>
                     ) : (
                       <>
-                    {/* Email */}
-                    <div>
-                      <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-widest mono mb-2 flex items-center gap-1.5">
-                        <Mail className="h-3 w-3 text-indigo-400/40" />
-                        Operator Email
-                      </label>
-                      <div className={`input-wrap ${emailFocused ? "focused" : ""}`}>
-                        <div className="flex items-center px-4 py-3.5">
-                          <Mail className="h-4 w-4 mr-3 shrink-0 transition-colors duration-300" style={{ color: emailFocused ? "#818cf8" : "rgba(255,255,255,0.2)" }} />
-                          <input
-                            id="login-email"
-                            type="email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            onFocus={() => setEmailFocused(true)}
-                            onBlur={() => setEmailFocused(false)}
-                            onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); passwordRef.current?.focus(); } }}
-                            placeholder="operator@labcore.com"
-                            required
-                            autoComplete="username"
-                          />
+                        {/* Email */}
+                        <div>
+                          <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-widest mono mb-2 flex items-center gap-1.5">
+                            <Mail className="h-3 w-3 text-indigo-400/40" />
+                            Operator Email
+                          </label>
+                          <div className={`input-wrap ${emailFocused ? "focused" : ""}`}>
+                            <div className="flex items-center px-4 py-3.5">
+                              <Mail className="h-4 w-4 mr-3 shrink-0 transition-colors duration-300" style={{ color: emailFocused ? "#818cf8" : "rgba(255,255,255,0.2)" }} />
+                              <input
+                                id="login-email"
+                                type="email"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                onFocus={() => setEmailFocused(true)}
+                                onBlur={() => setEmailFocused(false)}
+                                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); passwordRef.current?.focus(); } }}
+                                placeholder="operator@labcore.com"
+                                required
+                                autoComplete="username"
+                              />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </div>
 
-                    {/* Password */}
-                    <div>
-                      <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-widest mono mb-2 flex items-center gap-1.5">
-                        <Lock className="h-3 w-3 text-indigo-400/40" />
-                        Access Key
-                      </label>
-                      <div className={`input-wrap ${passwordFocused ? "focused" : ""}`}>
-                        <div className="flex items-center px-4 py-3.5">
-                          <Lock className="h-4 w-4 mr-3 shrink-0 transition-colors duration-300" style={{ color: passwordFocused ? "#818cf8" : "rgba(255,255,255,0.2)" }} />
-                          <input
-                            id="login-password"
-                            ref={passwordRef}
-                            type={showPassword ? "text" : "password"}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            onFocus={() => setPasswordFocused(true)}
-                            onBlur={() => setPasswordFocused(false)}
-                            placeholder="••••••••••••"
-                            required
-                            autoComplete="current-password"
-                          />
-                          <button type="button" id="toggle-password-visibility"
-                            onClick={() => setShowPassword(!showPassword)}
-                            className="ml-2 shrink-0 text-white/20 hover:text-white/60 transition-colors p-1 rounded-lg hover:bg-white/5">
-                            {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                        {/* Password */}
+                        <div>
+                          <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-widest mono mb-2 flex items-center gap-1.5">
+                            <Lock className="h-3 w-3 text-indigo-400/40" />
+                            Access Key
+                          </label>
+                          <div className={`input-wrap ${passwordFocused ? "focused" : ""}`}>
+                            <div className="flex items-center px-4 py-3.5">
+                              <Lock className="h-4 w-4 mr-3 shrink-0 transition-colors duration-300" style={{ color: passwordFocused ? "#818cf8" : "rgba(255,255,255,0.2)" }} />
+                              <input
+                                id="login-password"
+                                ref={passwordRef}
+                                type={showPassword ? "text" : "password"}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                onFocus={() => setPasswordFocused(true)}
+                                onBlur={() => setPasswordFocused(false)}
+                                placeholder="••••••••••••"
+                                required
+                                autoComplete="current-password"
+                              />
+                              <button type="button" id="toggle-password-visibility"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="ml-2 shrink-0 text-white/20 hover:text-white/60 transition-colors p-1 rounded-lg hover:bg-white/5">
+                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                              </button>
+                            </div>
+                          </div>
+                          <PasswordStrength password={password} />
+                        </div>
+
+                        {/* Controls */}
+                        <div className="flex items-center justify-between pt-1">
+                          <button type="button"
+                            onClick={() => { const n = !rememberMe; setRememberMeState(n); setRememberMe(n); }}
+                            className="flex items-center gap-2 group">
+                            <div className="h-4 w-4 rounded flex items-center justify-center transition-all duration-300"
+                              style={{
+                                background: rememberMe ? "linear-gradient(135deg,#4f46e5,#7c3aed)" : "rgba(255,255,255,0.04)",
+                                border: rememberMe ? "1px solid #818cf8" : "1px solid rgba(255,255,255,0.1)",
+                                boxShadow: rememberMe ? "0 0 10px rgba(99,102,241,0.3)" : "none",
+                              }}>
+                              {rememberMe && (
+                                <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                                </svg>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-white/30 group-hover:text-white/60 transition-colors select-none mono">
+                              Keep session
+                            </span>
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => router.push("/forgot-password")}
+                            className="text-[11px] text-indigo-400/90 hover:text-indigo-300 transition-colors mono flex items-center gap-1 cursor-pointer font-medium"
+                          >
+                            Reset access key / Forgot password <ArrowRight className="h-3 w-3" />
                           </button>
                         </div>
-                      </div>
-                      <PasswordStrength password={password} />
-                    </div>
 
-                    {/* Controls */}
-                    <div className="flex items-center justify-between pt-1">
-                      <button type="button"
-                        onClick={() => { const n = !rememberMe; setRememberMeState(n); setRememberMe(n); }}
-                        className="flex items-center gap-2 group">
-                        <div className="h-4 w-4 rounded flex items-center justify-center transition-all duration-300"
-                          style={{
-                            background: rememberMe ? "linear-gradient(135deg,#4f46e5,#7c3aed)" : "rgba(255,255,255,0.04)",
-                            border: rememberMe ? "1px solid #818cf8" : "1px solid rgba(255,255,255,0.1)",
-                            boxShadow: rememberMe ? "0 0 10px rgba(99,102,241,0.3)" : "none",
-                          }}>
-                          {rememberMe && (
-                            <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
-                          )}
-                        </div>
-                        <span className="text-[11px] text-white/30 group-hover:text-white/60 transition-colors select-none mono">
-                          Keep session
-                        </span>
-                      </button>
-                      <a href="#" className="text-[11px] text-indigo-400/60 hover:text-indigo-300 transition-colors mono flex items-center gap-1">
-                        Reset access key <ArrowRight className="h-3 w-3" />
-                      </a>
-                    </div>
-
-                    {/* Biometric */}
-                    {biometricAvailable && (
-                      <button type="button" id="biometric-login-btn"
-                        onClick={handleBiometricLogin}
-                        disabled={biometricLoading}
-                        className="w-full py-3 rounded-xl text-xs text-white/50 hover:text-white/80 transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-white/[0.04]"
-                        style={{
-                          background: "rgba(255,255,255,0.02)",
-                          border: "1px solid rgba(255,255,255,0.06)",
-                        }}>
-                        {biometricLoading
-                          ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Scanning…</>
-                          : <><Fingerprint className="h-3.5 w-3.5 text-indigo-400/60" /> Biometric login</>}
-                      </button>
-                    )}
-
-                    {/* Divider */}
-                    <div className="flex items-center gap-3">
-                      <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)" }} />
-                      <span className="text-[10px] text-white/15 uppercase tracking-widest mono flex items-center gap-1.5">
-                        <Sparkles className="h-3 w-3 text-indigo-400/20" />
-                        authenticate
-                      </span>
-                      <div className="flex-1 h-px" style={{ background: "linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent)" }} />
-                    </div>
+                        {/* Biometric */}
+                        {biometricAvailable && (
+                          <button type="button" id="biometric-login-btn"
+                            onClick={handleBiometricLogin}
+                            disabled={biometricLoading}
+                            className="w-full py-3 rounded-xl text-xs text-white/50 hover:text-white/80 transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-white/[0.04]"
+                            style={{
+                              background: "rgba(255,255,255,0.02)",
+                              border: "1px solid rgba(255,255,255,0.06)",
+                            }}>
+                            {biometricLoading
+                              ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Scanning…</>
+                              : <><Fingerprint className="h-3.5 w-3.5 text-indigo-400/60" /> Biometric login</>}
+                          </button>
+                        )}
                       </>
                     )}
 
-                    {/* Submit button with pulse rings */}
+                    {/* Submit button */}
                     <div className="relative">
                       <button id="login-submit-btn" type="submit" disabled={loading || Boolean(mfaChallenge && mfaCode.length < 6)}
-                        className="btn-primary w-full py-4 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-2.5 relative z-10">
+                        className="btn-primary w-full py-4 rounded-xl text-sm font-extrabold text-white flex items-center justify-center gap-2.5 relative z-10 shadow-lg shadow-indigo-600/30">
                         {loading
-                          ? <><Loader2 className="h-4 w-4 animate-spin" /> {mfaChallenge ? "Verifying…" : "Authenticating…"}</>
+                          ? <><Loader2 className="h-4 w-4 animate-spin text-white" /> <span>{mfaChallenge ? "Verifying Code…" : "Authenticating…"}</span></>
                           : <>
-                              <ShieldCheck className="h-4 w-4 opacity-70" />
-                              <span>{mfaChallenge ? "Verify And Enter" : "Access Workspace"}</span>
-                              <ChevronRight className="h-4 w-4 opacity-60" />
-                            </>}
+                            <ShieldCheck className="h-4 w-4 text-white" />
+                            <span className="tracking-wide text-white">{mfaChallenge ? "Verify Code & Access Workspace" : "Access Workspace"}</span>
+                            <ChevronRight className="h-4 w-4 text-white/80" />
+                          </>}
                       </button>
                     </div>
                   </form>
 
-                  {/* Footer encryption notice */}
+                  {/* Footer security features notice */}
                   <div className="mt-6 pt-4 flex items-center justify-center gap-5"
                     style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
                     {[
-                      { icon: ShieldCheck, text: "E2E Encrypted" },
-                      { icon: Lock, text: "Zero-Trust" },
-                      { icon: Cpu, text: "MFA Ready" },
+                      { icon: ShieldCheck, text: "256-Bit SSL" },
+                      { icon: Lock, text: "Role-Based Access" },
+
+                      { icon: Cpu, text: "MFA Enabled" },
                     ].map(({ icon: Icon, text }) => (
                       <div key={text} className="flex items-center gap-1.5 group cursor-default">
-                        <Icon className="h-3 w-3 text-indigo-400/25 group-hover:text-indigo-400/50 transition-colors" />
-                        <span className="text-[10px] text-white/20 group-hover:text-white/40 transition-colors mono">{text}</span>
+                        <Icon className="h-3 w-3 text-indigo-400/60 group-hover:text-indigo-300 transition-colors" />
+                        <span className="text-[10px] text-white/40 group-hover:text-white/70 transition-colors mono font-medium">{text}</span>
                       </div>
                     ))}
                   </div>

@@ -49,7 +49,7 @@ export const orderIdSchema = z.object({
 export const orderQuerySchema = z.object({
   search: z.string().optional(),
 
-  patientId: z.string().cuid().optional(),
+  patientId: z.string().optional(),
 
   doctorId: z.string().cuid().optional(),
 
@@ -72,6 +72,14 @@ export const orderQuerySchema = z.object({
       "REFUNDED",
     ])
     .optional(),
+
+  priority: z.enum(["ROUTINE", "URGENT", "STAT"]).optional(),
+
+  collectionType: z.string().optional(),
+
+  dateFrom: z.string().optional(),
+
+  dateTo: z.string().optional(),
 
   page: z.coerce
     .number()

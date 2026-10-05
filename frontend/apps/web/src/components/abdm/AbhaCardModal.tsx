@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { X, Download, PrinterIcon, Shield, User, MapPin, Phone, Droplets, Calendar, QrCode } from "lucide-react";
+import { formatBloodGroup } from "@/lib/patient-utils";
 
 interface AbhaCardData {
   abhaNumber: string;
@@ -142,7 +143,7 @@ export default function AbhaCardModal({ data, onClose }: AbhaCardModalProps) {
                 {data.bloodGroup && (
                   <div>
                     <div style={{ fontSize: "9px", color: "rgba(255,255,255,0.55)" }}>Blood Group</div>
-                    <div style={{ fontSize: "12px", fontWeight: "600" }}>{data.bloodGroup}</div>
+                    <div style={{ fontSize: "12px", fontWeight: "600" }}>{formatBloodGroup(data.bloodGroup)}</div>
                   </div>
                 )}
               </div>

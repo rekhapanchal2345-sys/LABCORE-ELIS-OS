@@ -36,7 +36,19 @@ export const getTubeDetailsForTest = (testName: string, sampleType?: string) => 
   const name = (testName || "").toUpperCase();
   const sample = (sampleType || "").toUpperCase();
 
-  if (name.includes("CBC") || name.includes("BLOOD COUNT") || name.includes("HEMOGLOBIN") || name.includes("EDTA") || sample.includes("WHOLE_BLOOD")) {
+  // EDTA K2/K3 Lavender Tube
+  if (
+    name.includes("CBC") ||
+    name.includes("BLOOD COUNT") ||
+    name.includes("HEMOGLOBIN") ||
+    name.includes("HBA1C") ||
+    name.includes("GLYCATED") ||
+    name.includes("ESR") ||
+    name.includes("BLOOD GROUP") ||
+    name.includes("EDTA") ||
+    sample.includes("WHOLE_BLOOD") ||
+    sample.includes("EDTA")
+  ) {
     return {
       specimen: "EDTA Whole Blood",
       tubeType: "Lavender Top (EDTA K2/K3)",
@@ -46,29 +58,73 @@ export const getTubeDetailsForTest = (testName: string, sampleType?: string) => 
     };
   }
 
-  if (name.includes("SUGAR") || name.includes("GLUCOSE") || name.includes("FBS") || name.includes("PPBS") || name.includes("RBS") || name.includes("FLUORIDE")) {
+  // Sodium Fluoride Grey Tube (Glycolysis Inhibitor)
+  if (
+    name.includes("SUGAR") ||
+    name.includes("GLUCOSE") ||
+    name.includes("FBS") ||
+    name.includes("PPBS") ||
+    name.includes("RBS") ||
+    name.includes("OGTT") ||
+    name.includes("GTT") ||
+    name.includes("LACTATE") ||
+    name.includes("FLUORIDE") ||
+    sample.includes("FLUORIDE")
+  ) {
     return {
       specimen: "Fluoride Plasma",
-      tubeType: "Grey Top (Sodium Fluoride)",
+      tubeType: "Grey Top (Sodium Fluoride / Potassium Oxalate)",
       tubeColor: "Grey",
       tubeColorHex: "#64748B", // Slate Grey
       tubeBg: "bg-slate-100 text-slate-800 border-slate-300",
     };
   }
 
-  if (name.includes("PT") || name.includes("INR") || name.includes("COAGULATION") || name.includes("CITRATE")) {
+  // Sodium Citrate 3.2% Light Blue Tube (Coagulation)
+  if (
+    name.includes("PT") ||
+    name.includes("INR") ||
+    name.includes("APTT") ||
+    name.includes("PTT") ||
+    name.includes("D-DIMER") ||
+    name.includes("DIMER") ||
+    name.includes("FIBRINOGEN") ||
+    name.includes("COAGULATION") ||
+    name.includes("CITRATE") ||
+    sample.includes("CITRATE")
+  ) {
     return {
       specimen: "Citrated Plasma",
-      tubeType: "Light Blue Top (Sodium Citrate)",
-      tubeColor: "Blue",
+      tubeType: "Light Blue Top (Sodium Citrate 3.2%)",
+      tubeColor: "Light Blue",
       tubeColorHex: "#0284C7", // Sky Blue
       tubeBg: "bg-sky-100 text-sky-800 border-sky-300",
     };
   }
 
-  if (name.includes("URINE") || sample.includes("URINE")) {
+  // Sodium / Lithium Heparin Green Tube
+  if (name.includes("HEPARIN") || name.includes("BLOOD GAS") || name.includes("ABG") || sample.includes("HEPARIN")) {
     return {
-      specimen: "Sterile Urine",
+      specimen: "Heparinized Plasma",
+      tubeType: "Green Top (Lithium Heparin)",
+      tubeColor: "Green",
+      tubeColorHex: "#16A34A", // Emerald Green
+      tubeBg: "bg-emerald-100 text-emerald-800 border-emerald-300",
+    };
+  }
+
+  // Sterile Container / Urine / Fluids
+  if (
+    name.includes("URINE") ||
+    name.includes("STOOL") ||
+    name.includes("SPUTUM") ||
+    name.includes("CULTURE") ||
+    sample.includes("URINE") ||
+    sample.includes("STOOL") ||
+    sample.includes("SPUTUM")
+  ) {
+    return {
+      specimen: "Sterile Specimen",
       tubeType: "Sterile Container / Yellow Top",
       tubeColor: "Yellow",
       tubeColorHex: "#CA8A04", // Amber
@@ -76,12 +132,12 @@ export const getTubeDetailsForTest = (testName: string, sampleType?: string) => 
     };
   }
 
-  // Default Biochemistry / Serology / Immunology
+  // Default Biochemistry / Serology / Immunology SST Gel Tube
   return {
     specimen: "Serum (Clotted)",
-    tubeType: "Red / Gold Top (SST Gel Clot Activator)",
+    tubeType: "Gold / Red Top (SST Gel Clot Activator)",
     tubeColor: "Gold / Red",
-    tubeColorHex: "#DC2626", // Red
+    tubeColorHex: "#DC2626", // Red / Gold
     tubeBg: "bg-red-100 text-red-800 border-red-300",
   };
 };
@@ -349,7 +405,7 @@ export default function BarcodeLabelModal({
                           {current.uhid}
                         </span>
                         <span className="text-[10px] text-slate-600 block mt-0.5 font-semibold">
-                          {current.age ? `${current.age}Y` : "25Y"} / {current.gender || "FEMALE"}
+                          {current.age !== undefined && current.age !== null ? (current.age === 0 ? "Newborn" : `${current.age}Y`) : "N/A"} / {current.gender || "N/A"}
                         </span>
                       </div>
                     </div>
@@ -473,7 +529,9 @@ export default function BarcodeLabelModal({
             </div>
             <div className="flex justify-between items-end text-[7px] border-t border-black/40 pt-0.5">
               <span className="truncate max-w-[90px] font-semibold">{current.testName}</span>
-              <span className="font-mono">{tubeInfo.tubeColor}</span>
+              <span className="font-mono text-[6.5px]">
+                {tubeInfo.tubeColor}{current.age !== undefined && current.age !== null ? ` | ${current.age}Y` : ""}{current.gender ? `/${current.gender.charAt(0)}` : ""}
+              </span>
             </div>
           </div>
         ))}

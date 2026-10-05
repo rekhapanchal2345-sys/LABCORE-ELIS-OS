@@ -3,6 +3,34 @@ import prisma from '../api/config/database';
 import bcrypt from 'bcryptjs';
 import { UserRole, AccountStatus } from '@prisma/client';
 
+/** Reads the seed admin credentials, refusing to fall back to any default password. */
+function readAdminInput() {
+  const email = (process.env.ADMIN_EMAIL || '').toLowerCase();
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!email) {
+    throw new Error('ADMIN_EMAIL is not set. Add it to backend/.env first.');
+  }
+
+  if (!password) {
+    // A default password here would silently create a known-credential account.
+    throw new Error(
+      'ADMIN_PASSWORD is not set. Add a strong password to backend/.env first.'
+    );
+  }
+
+  return {
+    employeeCode: process.env.ADMIN_EMPLOYEE_CODE || 'ADMIN001',
+    fullName: process.env.ADMIN_FULL_NAME || 'System Administrator',
+    email,
+    password,
+    role: UserRole.ADMIN,
+    phone: '',
+    status: AccountStatus.ACTIVE,
+    specialization: 'System Administration'
+  };
+}
+
 async function resetAdminUser() {
   try {
     console.log('🔄 Resetting admin user...');
@@ -25,20 +53,11 @@ async function resetAdminUser() {
     }
 
     // New admin user configuration
-    const newAdminUser = {
-      employeeCode: process.env.ADMIN_EMPLOYEE_CODE || 'ADMIN001',
-      fullName: process.env.ADMIN_FULL_NAME || 'System Administrator',
-      email: process.env.ADMIN_EMAIL || 'admin@labcore.local',
-      password: process.env.ADMIN_PASSWORD || 'CHANGE_ME_IN_PRODUCTION',
-      role: UserRole.ADMIN,
-      phone: '',
-      status: AccountStatus.ACTIVE,
-      specialization: 'System Administration'
-    };
+    const newAdminUser = readAdminInput();
 
     console.log('Creating new admin user...');
     console.log(`Email: ${newAdminUser.email}`);
-    console.log(`Password: ${newAdminUser.password}`);
+    console.log('Password: [HIDDEN - set ADMIN_PASSWORD in your environment]');
 
     // Hash password
     const passwordHash = await bcrypt.hash(newAdminUser.password, 12);

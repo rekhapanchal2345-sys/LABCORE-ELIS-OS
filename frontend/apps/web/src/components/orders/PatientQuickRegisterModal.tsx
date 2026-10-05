@@ -16,6 +16,7 @@ export function PatientQuickRegisterModal({
 }) {
   const initialFormState = {
     firstName: "",
+    middleName: "",
     lastName: "",
     gender: "MALE",
     age: "",
@@ -44,6 +45,29 @@ export function PatientQuickRegisterModal({
     setFormData(initialFormState);
     setError("");
     onClose();
+  };
+
+  const handleFirstNameChange = (val: string) => {
+    // Smart auto-split: if user types or pastes full 3-part or 2-part name in First Name
+    const tokens = val.trim().split(/\s+/);
+    if (tokens.length >= 3 && !formData.middleName && !formData.lastName) {
+      setFormData({
+        ...formData,
+        firstName: tokens[0],
+        middleName: tokens.slice(1, -1).join(" "),
+        lastName: tokens[tokens.length - 1],
+      });
+      return;
+    }
+    if (tokens.length === 2 && !formData.lastName) {
+      setFormData({
+        ...formData,
+        firstName: tokens[0],
+        lastName: tokens[1],
+      });
+      return;
+    }
+    setFormData({ ...formData, firstName: val });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,8 +99,10 @@ export function PatientQuickRegisterModal({
 
       const payload: any = {
         firstName: formData.firstName.trim(),
+        middleName: formData.middleName.trim() || undefined,
         lastName: formData.lastName.trim(),
         gender: formData.gender,
+        age: formData.age ? Number(formData.age) : undefined,
         phone: cleanPhone,
         email: formData.email.trim() || undefined,
         address: formData.address.trim() || undefined,
@@ -145,7 +171,7 @@ export function PatientQuickRegisterModal({
         )}
 
         <form onSubmit={handleSubmit} className="mt-4 space-y-3">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
             <div>
               <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
                 First Name *
@@ -154,8 +180,20 @@ export function PatientQuickRegisterModal({
                 type="text"
                 required
                 value={formData.firstName}
-                onChange={(e) => setFormData({ ...formData, firstName: e.target.value })}
-                placeholder="e.g. Ramesh"
+                onChange={(e) => handleFirstNameChange(e.target.value)}
+                placeholder="e.g. Panchal"
+                className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                Middle Name
+              </label>
+              <input
+                type="text"
+                value={formData.middleName}
+                onChange={(e) => setFormData({ ...formData, middleName: e.target.value })}
+                placeholder="e.g. Mayurkumar"
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -168,7 +206,7 @@ export function PatientQuickRegisterModal({
                 required
                 value={formData.lastName}
                 onChange={(e) => setFormData({ ...formData, lastName: e.target.value })}
-                placeholder="e.g. Sharma"
+                placeholder="e.g. Ashokkumar"
                 className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>

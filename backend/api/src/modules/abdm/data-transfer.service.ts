@@ -104,7 +104,7 @@ export async function handleHealthInfoRequest(hiReq: HiRequest): Promise<void> {
       if (ctx.orderId) {
         const order = await prisma.order.findUnique({
           where: { id: ctx.orderId },
-          select: { createdAt: true, status: true },
+          select: { createdAt: true, orderStatus: true },
         });
         if (order) {
           const orderDate = new Date(order.createdAt);

@@ -2,12 +2,13 @@ import app from "./app";
 import env from "../config/env";
 import prisma from "../config/database";
 
-const server = app.listen(env.PORT, () => {
+const PORT = Number(env.PORT) || 5000;
+const server = app.listen(PORT, "0.0.0.0", () => {
   console.log("======================================");
   console.log("🚀 LabCore ELIS Backend Started");
-  console.log(`📍 Port : ${env.PORT}`);
+  console.log(`📍 Port : ${PORT}`);
   console.log(`🌍 Mode : ${env.NODE_ENV}`);
-  console.log(`🔗 URL  : http://localhost:${env.PORT}`);
+  console.log(`🔗 URL  : http://127.0.0.1:${PORT}`);
   console.log("======================================");
 });
 

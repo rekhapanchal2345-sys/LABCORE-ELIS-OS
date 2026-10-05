@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { authenticate } from "../../../middleware/auth.middleware";
+import { requirePermission } from "../../../middleware/rbac.middleware";
 import {
   getSettings,
   updateSettings,
@@ -10,10 +11,10 @@ const router = Router();
 // All settings routes require authentication
 router.use(authenticate);
 
-// Get laboratory settings
-router.get("/", getSettings);
+// Get laboratory settings - requires `settings:view`
+router.get("/", requirePermission("settings:view"), getSettings);
 
-// Update laboratory settings
-router.put("/", updateSettings);
+// Update laboratory settings - requires `settings:edit`
+router.put("/", requirePermission("settings:edit"), updateSettings);
 
 export default router;

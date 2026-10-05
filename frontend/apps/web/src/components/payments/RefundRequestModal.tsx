@@ -9,8 +9,10 @@ import {
   ShieldAlert,
   ArrowRight,
   FileText,
+  DollarSign
 } from "lucide-react";
 import { refundsApi, paymentApi } from "@/lib/api";
+import { formatIndianRupees } from "@/lib/money";
 
 interface RefundRequestModalProps {
   isOpen: boolean;
@@ -46,11 +48,7 @@ export default function RefundRequestModal({
   const selectedPayment = payments.find((p) => p.id === paymentId);
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 2,
-    }).format(val);
+    return formatIndianRupees(val || 0);
   };
 
   // Print GST Credit Note / Refund Voucher Slip
@@ -62,7 +60,7 @@ export default function RefundRequestModal({
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Refund_Credit_Note_${refundData.refundNumber}</title>
+          <title>Credit_Note_${refundData.refundNumber}</title>
           <style>
             @page { size: 80mm auto; margin: 4mm; }
             body { font-family: monospace; font-size: 11px; color: #000; padding: 4px; }
@@ -73,26 +71,27 @@ export default function RefundRequestModal({
           </style>
         </head>
         <body>
-          <div class="center bold" style="font-size: 13px;">LABCORE DIAGNOSTICS</div>
-          <div class="center bold">GST CREDIT NOTE & REFUND VOUCHER</div>
+          <div class="center bold" style="font-size: 13px;">LABCORE DIAGNOSTICS & HOSPITAL OS</div>
+          <div class="center bold">GST CREDIT NOTE / REFUND VOUCHER</div>
+          <div class="center" style="font-size: 9px;">OFFICIAL REFUND DISBURSEMENT</div>
           <div class="divider"></div>
-          <div class="row"><span>Credit Note #:</span><span class="bold">${refundData.refundNumber}</span></div>
-          <div class="row"><span>Original Receipt:</span><span>${refundData.receiptNumber || "—"}</span></div>
+          <div class="row"><span>Credit Note No:</span><span class="bold">${refundData.refundNumber}</span></div>
           <div class="row"><span>Date:</span><span>${new Date().toLocaleString()}</span></div>
+          <div class="row"><span>Original Receipt:</span><span>${refundData.receiptNumber}</span></div>
           <div class="row"><span>Patient:</span><span class="bold">${refundData.patientName}</span></div>
           <div class="divider"></div>
           <div class="row bold" style="font-size: 13px;">
             <span>Refund Amount:</span>
-            <span>₹${refundData.amount}</span>
+            <span>₹${refundData.amount.toLocaleString("en-IN")}</span>
           </div>
-          <div class="row"><span>Payout Tender:</span><span>${refundData.refundMethod}</span></div>
+          <div class="row"><span>Refund Mode:</span><span>${refundData.refundMethod}</span></div>
           <div class="row"><span>Reason:</span><span>${refundData.reason}</span></div>
           <div class="divider"></div>
-          <div class="center" style="font-size: 9px;">Amount refunded. Original tax invoice adjusted in accounting records.</div>
           <div style="margin-top: 25px;" class="row">
-            <span>Authorizer: __________</span>
-            <span>Recipient: __________</span>
+            <span>Patient/Receiver: __________</span>
+            <span>Auth Signatory: __________</span>
           </div>
+          <div class="center" style="margin-top: 10px; font-size: 8px;">THANK YOU • LABCORE FINANCE</div>
         </body>
       </html>
     `);
@@ -108,12 +107,17 @@ export default function RefundRequestModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!paymentId) {
-      alert("Please select a transaction to refund.");
+      alert("Please select the original transaction to process a refund.");
       return;
     }
     const amt = Number(amount);
     if (!amt || amt <= 0) {
       alert("Please enter a valid refund amount.");
+      return;
+    }
+
+    if (selectedPayment && amt > selectedPayment.amount) {
+      alert(`Refund amount cannot exceed original transaction total of ${formatCurrency(selectedPayment.amount)}.`);
       return;
     }
 
@@ -134,7 +138,6 @@ export default function RefundRequestModal({
           refundMethod,
         })
         .catch(async () => {
-          // Fallback to direct payment refund endpoint
           return await paymentApi.refund(paymentId, {
             amount: amt,
             reason: fullReason,
@@ -170,146 +173,155 @@ export default function RefundRequestModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 border border-slate-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md animate-in fade-in">
+      <div className="relative w-full max-w-lg max-h-[92vh] overflow-y-auto rounded-3xl bg-slate-900 border border-slate-800 p-6 shadow-2xl space-y-5 animate-in zoom-in-95">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-500 flex items-center justify-center text-white shadow-md shadow-rose-500/20">
+            <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-rose-600 to-pink-500 flex items-center justify-center text-white shadow-lg shadow-rose-500/25 border border-rose-400/30">
               <RotateCcw className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-slate-900 tracking-tight">Issue Refund & Credit Note</h3>
-              <p className="text-xs text-slate-500">Authorize diagnostic fee refund with audit justification</p>
+              <h3 className="text-xl font-black text-white tracking-tight">Issue Refund & Credit Note</h3>
+              <p className="text-xs font-medium text-slate-400 mt-0.5">Authorize reverse transaction & generate official refund credit note</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+            className="rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <form onSubmit={handleSubmit} className="mt-5 space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Target Transaction */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              Select Payment Transaction *
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+              Select Original Transaction <span className="text-rose-400">*</span>
             </label>
             <select
+              required
               value={paymentId}
               onChange={(e) => {
-                setPaymentId(e.target.value);
-                const p = payments.find((x) => x.id === e.target.value);
+                const pId = e.target.value;
+                setPaymentId(pId);
+                const p = payments.find((item) => item.id === pId);
                 if (p) setAmount(String(p.amount));
               }}
-              required
-              className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-medium outline-none focus:border-blue-500"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-rose-500"
             >
-              <option value="">-- Choose Transaction --</option>
-              {payments.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.receiptNumber} ({p.transactionId}) - {p.patientName} - ₹{p.amount} ({p.method})
-                </option>
-              ))}
+              <option value="">Select Transaction to Refund</option>
+              {payments
+                .filter((p) => p.status === "PAID" || p.status === "PARTIALLY_PAID")
+                .map((p) => (
+                  <option key={p.id} value={p.id} className="bg-slate-900">
+                    {p.receiptNumber} • {p.patientName} • {formatCurrency(p.amount)} ({p.method})
+                  </option>
+                ))}
             </select>
           </div>
 
+          {/* Transaction Info Banner */}
           {selectedPayment && (
-            <div className="rounded-2xl border border-rose-100 bg-rose-50/50 p-3 text-xs space-y-1">
+            <div className="rounded-2xl border border-rose-500/30 bg-rose-950/20 p-3.5 text-xs space-y-1">
               <div className="flex justify-between">
-                <span className="text-slate-500">Patient:</span>
-                <strong className="text-slate-900">{selectedPayment.patientName}</strong>
+                <span className="text-slate-400">Patient:</span>
+                <strong className="text-white">{selectedPayment.patientName} ({selectedPayment.patientUhid || "—"})</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Original Amount Paid:</span>
-                <span className="font-mono font-bold text-slate-900">
-                  {formatCurrency(Number(selectedPayment.amount))}
-                </span>
+                <span className="text-slate-400">Original Amount:</span>
+                <strong className="font-mono text-emerald-400">{formatCurrency(selectedPayment.amount)}</strong>
               </div>
               <div className="flex justify-between">
-                <span className="text-slate-500">Original Payment Mode:</span>
-                <span className="font-semibold text-slate-800">{selectedPayment.method}</span>
+                <span className="text-slate-400">Payment Mode:</span>
+                <span className="font-bold text-slate-300">{selectedPayment.method}</span>
               </div>
             </div>
           )}
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              Refund Amount (₹) *
-            </label>
-            <input
-              type="number"
-              step="0.01"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              required
-              className="w-full rounded-xl border border-slate-200 p-2.5 text-lg font-mono font-bold text-rose-600 outline-none focus:border-rose-500"
-            />
+          {/* Refund Amount & Mode */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                Refund Amount (₹) <span className="text-rose-400">*</span>
+              </label>
+              <input
+                type="number"
+                min="1"
+                required
+                placeholder="e.g. 500"
+                value={amount}
+                onChange={(e) => setAmount(e.target.value)}
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-sm font-black text-rose-400 focus:border-rose-500"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                Refund Disbursement Mode
+              </label>
+              <select
+                value={refundMethod}
+                onChange={(e) => setRefundMethod(e.target.value)}
+                className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-rose-500"
+              >
+                <option value="ORIGINAL_METHOD" className="bg-slate-900">Original Payment Method</option>
+                <option value="CASH" className="bg-slate-900">Cash Till</option>
+                <option value="UPI" className="bg-slate-900">UPI Reversal</option>
+                <option value="WALLET_CREDIT" className="bg-slate-900">Patient Wallet Balance</option>
+              </select>
+            </div>
           </div>
 
+          {/* Reason Category */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              Refund Reason Category *
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+              Standard Refund Reason
             </label>
             <select
               value={reasonCategory}
               onChange={(e) => setReasonCategory(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-semibold outline-none focus:border-blue-500"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-rose-500"
             >
-              <option value="Test Cancelled by Clinician">Test Cancelled by Clinician</option>
-              <option value="Sample Haemolysed / Recollection Refused">Sample Haemolysed / Recollection Refused</option>
-              <option value="Duplicate Payment Swiped">Duplicate Payment Swiped</option>
-              <option value="Patient Non-fasting / Ineligible">Patient Non-fasting / Ineligible</option>
-              <option value="Service Delay / Equipment Downtime">Service Delay / Equipment Downtime</option>
-              <option value="Doctor Billing Concession">Doctor Billing Concession</option>
+              <option value="Test Cancelled by Clinician" className="bg-slate-900">Test Cancelled by Clinician</option>
+              <option value="Duplicate Billing Entry" className="bg-slate-900">Duplicate Billing Entry</option>
+              <option value="Sample Hemolyzed / Unsuitable" className="bg-slate-900">Sample Hemolyzed / Unsuitable</option>
+              <option value="Patient Walkout / Cancelled" className="bg-slate-900">Patient Walkout / Cancelled</option>
+              <option value="Billing Discount Adjusted" className="bg-slate-900">Billing Discount Adjusted</option>
+              <option value="Other / Clinical Decision" className="bg-slate-900">Other / Clinical Decision</option>
             </select>
           </div>
 
+          {/* Additional Notes */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              Clinical / Accounting Justification Notes
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+              Specific Reason Notes
             </label>
             <input
               type="text"
+              placeholder="e.g. Patient requested cancellation before phlebotomy draw"
               value={customReason}
               onChange={(e) => setCustomReason(e.target.value)}
-              placeholder="e.g. Approved by Dr. Smith, sample discarded"
-              className="w-full rounded-xl border border-slate-200 p-2.5 text-xs outline-none focus:border-blue-500"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-rose-500"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              Refund Payout Mode *
-            </label>
-            <select
-              value={refundMethod}
-              onChange={(e) => setRefundMethod(e.target.value)}
-              className="w-full rounded-xl border border-slate-200 bg-white p-2.5 text-xs font-semibold outline-none focus:border-blue-500"
-            >
-              <option value="ORIGINAL_METHOD">Original Tender Mode (Recommended)</option>
-              <option value="CASH">💵 Cash Handover from Till</option>
-              <option value="UPI">📱 Direct UPI Refund</option>
-              <option value="BANK_TRANSFER">🏦 Bank NEFT / IMPS</option>
-            </select>
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+          {/* Action Buttons */}
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+              className="rounded-xl border border-slate-700 bg-slate-800 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-700"
             >
               Cancel
             </button>
             <button
               type="submit"
               disabled={submitting}
-              className="inline-flex items-center gap-2 rounded-xl bg-rose-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-rose-600/20 hover:bg-rose-500 active:scale-95 disabled:opacity-50 transition"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 px-6 py-2.5 text-xs font-black text-white shadow-lg shadow-rose-500/25 hover:from-rose-500 hover:to-pink-500 disabled:opacity-50"
             >
-              {submitting ? "Processing Refund..." : "Authorize Refund & Print Credit Note"}
-              <ArrowRight className="h-4 w-4" />
+              {submitting ? "Processing..." : "Authorize Refund & Print Slip"}
             </button>
           </div>
         </form>

@@ -55,6 +55,7 @@ import {
 import { ResultFlagBadge, PremiumStatusBadge } from "./PremiumStatusBadge";
 import { PremiumEmptyState } from "./PremiumEmptyState";
 import ResultQuickViewDrawer from "./ResultQuickViewDrawer";
+import { formatPatientFullName } from "@/lib/patient-utils";
 
 export interface ResultRow {
   id: string;
@@ -488,8 +489,8 @@ export default function ResultsManagementTable({
     };
     return [...results].sort((a, b) => {
       if (sortMode === "patient") {
-        return `${a.order.patient.firstName} ${a.order.patient.lastName}`.localeCompare(
-          `${b.order.patient.firstName} ${b.order.patient.lastName}`
+        return formatPatientFullName(a.order.patient).localeCompare(
+          formatPatientFullName(b.order.patient)
         );
       }
       if (sortMode === "recent") {
@@ -832,7 +833,7 @@ export default function ResultsManagementTable({
                             href={`/patients/${result.order.patient.id}`}
                             className="block font-bold text-sm text-slate-100 hover:text-cyan-400 hover:underline truncate"
                           >
-                            {result.order.patient.firstName} {result.order.patient.lastName}
+                            {formatPatientFullName(result.order.patient)}
                           </Link>
 
                           <div className="mt-0.5 flex items-center gap-1.5 font-mono text-[11px] text-slate-400">

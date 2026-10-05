@@ -87,36 +87,36 @@ export default function InvoiceActionsDropdown({
     <div className="relative" ref={dropdownRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-center w-8 h-8 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 text-gray-600 transition-colors"
+        className="flex items-center justify-center w-8 h-8 rounded-xl border border-slate-800 bg-slate-900/80 hover:bg-slate-800 text-slate-400 hover:text-white transition-colors shadow-sm"
         title="More actions"
       >
         {isOpen ? <X className="w-4 h-4" /> : <MoreVertical className="w-4 h-4" />}
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 z-50 mt-2 w-56 rounded-xl bg-white shadow-2xl border border-gray-200 py-2 origin-top-right">
+        <div className="absolute right-0 z-50 mt-2 w-56 rounded-2xl bg-slate-950/95 backdrop-blur-md shadow-2xl border border-slate-800 py-2 origin-top-right text-slate-200 animate-in fade-in zoom-in-95">
           {/* Print Section */}
           <div className="px-3 py-2">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Print</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Print Documents</p>
             <div className="space-y-1">
               <button
                 onClick={() => handleAction(onPrintThermal)}
-                className="flex items-center gap-3 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                className="flex items-center gap-3 w-full px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-900 hover:text-amber-400 rounded-xl transition-colors"
               >
-                <Receipt className="w-4 h-4 text-amber-600" />
+                <Receipt className="w-4 h-4 text-amber-400" />
                 <span>Thermal Receipt</span>
               </button>
               <button
                 onClick={() => handleAction(onPrintA4)}
-                className="flex items-center gap-3 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                className="flex items-center gap-3 w-full px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-900 hover:text-cyan-400 rounded-xl transition-colors"
               >
-                <FileText className="w-4 h-4 text-blue-600" />
+                <FileText className="w-4 h-4 text-cyan-400" />
                 <span>A4 GST Invoice</span>
               </button>
             </div>
           </div>
 
-          <div className="border-t border-gray-100 my-2" />
+          <div className="border-t border-slate-800 my-1" />
 
           {/* Payment Section */}
           {hasDue && (
@@ -124,46 +124,46 @@ export default function InvoiceActionsDropdown({
               <div className="p-2">
                 <div className="flex items-center justify-between px-2 mb-1.5">
                   <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Due Settlement</p>
-                  <span className="flex h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
+                  <span className="flex h-1.5 w-1.5 rounded-full bg-amber-400 animate-pulse" />
                 </div>
                 <button
                   onClick={() => handleAction(onCollectPayment)}
-                  className="group flex items-center justify-between w-full px-2.5 py-2 text-xs font-bold rounded-xl bg-gradient-to-r from-emerald-500/10 via-emerald-500/5 to-transparent border border-emerald-500/25 hover:border-emerald-500/60 hover:bg-emerald-500/15 text-emerald-900 transition-all shadow-xs"
+                  className="group flex items-center justify-between w-full px-2.5 py-2 text-xs font-bold rounded-xl bg-emerald-950/40 border border-emerald-500/30 hover:border-emerald-500/60 hover:bg-emerald-900/40 text-emerald-300 transition-all shadow-sm"
                 >
                   <div className="flex items-center gap-2">
-                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-xs group-hover:scale-105 transition-transform">
+                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-emerald-600 text-white shadow-sm group-hover:scale-105 transition-transform">
                       <CreditCard className="w-3.5 h-3.5" />
                     </div>
                     <div className="text-left">
-                      <span className="block font-black text-slate-900 text-xs leading-none">Collect Due</span>
-                      <span className="text-[10px] text-emerald-700 font-medium">Settle Balance</span>
+                      <span className="block font-black text-white text-xs leading-none">Collect Due</span>
+                      <span className="text-[10px] text-emerald-400 font-medium">Settle Balance</span>
                     </div>
                   </div>
-                  <span className="inline-flex items-center rounded-md bg-amber-100 px-2 py-0.5 text-xs font-black text-amber-900 ring-1 ring-amber-500/20">
+                  <span className="inline-flex items-center rounded-md border border-amber-500/30 bg-amber-950/60 px-2 py-0.5 text-xs font-black text-amber-300">
                     ₹{dueAmount.toLocaleString("en-IN", { minimumFractionDigits: 2 })}
                   </span>
                 </button>
               </div>
-              <div className="border-t border-slate-100 my-1" />
+              <div className="border-t border-slate-800 my-1" />
             </>
           )}
 
           {/* Share Section */}
           <div className="px-3 py-2">
-            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Share</p>
+            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Share</p>
             <div className="space-y-1">
               <button
                 onClick={() => handleAction(onSendWhatsApp)}
-                className="flex items-center gap-3 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                className="flex items-center gap-3 w-full px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-900 hover:text-emerald-400 rounded-xl transition-colors"
               >
-                <MessageCircle className="w-4 h-4 text-green-600" />
+                <MessageCircle className="w-4 h-4 text-emerald-400" />
                 <span>Send via WhatsApp</span>
               </button>
               <button
                 onClick={() => handleAction(onSendEmail)}
-                className="flex items-center gap-3 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                className="flex items-center gap-3 w-full px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-900 hover:text-cyan-400 rounded-xl transition-colors"
               >
-                <Mail className="w-4 h-4 text-blue-600" />
+                <Mail className="w-4 h-4 text-cyan-400" />
                 <span>Send via Email</span>
               </button>
             </div>
@@ -172,23 +172,23 @@ export default function InvoiceActionsDropdown({
           {/* Other Actions */}
           {(onDelete || onRefund) && (
             <>
-              <div className="border-t border-gray-100 my-2" />
+              <div className="border-t border-slate-800 my-1" />
               <div className="px-3 py-2">
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Other</p>
+                <p className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-2">Other</p>
                 <div className="space-y-1">
                   {hasPaid && onRefund && (
                     <button
                       onClick={() => handleAction(onRefund)}
-                      className="flex items-center gap-3 w-full px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 rounded-lg transition-colors"
+                      className="flex items-center gap-3 w-full px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-900 hover:text-amber-400 rounded-xl transition-colors"
                     >
-                      <ArrowRightLeft className="w-4 h-4 text-orange-600" />
+                      <ArrowRightLeft className="w-4 h-4 text-amber-400" />
                       <span>Process Refund</span>
                     </button>
                   )}
                   {onDelete && (
                     <button
                       onClick={() => handleAction(onDelete)}
-                      className="flex items-center gap-3 w-full px-3 py-2 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="flex items-center gap-3 w-full px-3 py-2 text-xs font-semibold text-rose-400 hover:bg-rose-950/50 hover:text-rose-300 rounded-xl transition-colors"
                     >
                       <Trash2 className="w-4 h-4" />
                       <span>Delete Invoice</span>

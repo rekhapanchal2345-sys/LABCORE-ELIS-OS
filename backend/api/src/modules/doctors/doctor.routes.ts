@@ -5,220 +5,238 @@ import { authenticate } from "../../../middleware/auth.middleware";
 import { authorize } from "../../../middleware/rbac.middleware";
 import { validate } from "../../../middleware/validate.middleware";
 
-import {
-  create,
-  list,
-  getOne,
-  update,
-  updateStatus,
-  remove,
-  statistics,
-  commission,
-  bySpecialization,
-  uploadPhoto,
-  uploadSignature,
-} from "./doctor.controller";
+import * as controller from "./doctor.controller";
 
 import {
   createDoctorSchema,
   updateDoctorSchema,
   doctorIdSchema,
   doctorQuerySchema,
+  archiveDoctorSchema,
+  payoutSchema,
+  statusSchema,
+  organizationSchema,
+  documentSchema,
 } from "./doctor.validation";
 
 const router = Router();
 
-// All doctor routes require authentication
+// All doctor routes require authentication.
 router.use(authenticate);
 
-/*
- * CREATE DOCTOR
- * Admin / Front Desk
- */
+// -----------------------------------------------------------------
+// Role policy
+//   ADMIN / SUPER_ADMIN / BRANCH_ADMIN : full control
+//   FRONT_DESK                          : add + edit + view
+//   ACCOUNTANT                          : payouts only
+//   LAB_TECH / PATHOLOGIST / DOCTOR     : read only
+// -----------------------------------------------------------------
+const ADMINS = [
+  UserRole.ADMIN,
+  UserRole.SUPER_ADMIN,
+  UserRole.BRANCH_ADMIN,
+] as const;
+const CAN_MANAGE = [...ADMINS, UserRole.FRONT_DESK] as const;
+const CAN_READ = [
+  ...ADMINS,
+  UserRole.FRONT_DESK,
+  UserRole.LAB_TECH,
+  UserRole.PATHOLOGIST,
+  UserRole.DOCTOR,
+  UserRole.ACCOUNTANT,
+] as const;
+const PAYOUT_ROLES = [...ADMINS, UserRole.ACCOUNTANT, UserRole.FRONT_DESK] as const;
+
+// -----------------------------------------------------------------
+// Static paths MUST come before "/:id" so they are not swallowed.
+// -----------------------------------------------------------------
+
+/* Payouts — doctors who still owe money (Pending Payouts tab). */
+router.get(
+  "/payouts/pending",
+  authorize(...PAYOUT_ROLES),
+  controller.pendingPayouts
+);
+
+/* Lightweight search for "Referred By" dropdowns. */
+router.get(
+  "/search",
+  authorize(...CAN_READ),
+  controller.search
+);
+
+/* Hospital / clinic partner organisations. */
+router.get(
+  "/organizations",
+  authorize(...CAN_READ),
+  controller.orgList
+);
 router.post(
-  "/",
-  authorize(
-    UserRole.ADMIN,
-    UserRole.FRONT_DESK
-  ),
-  validate({
-    body: createDoctorSchema,
-  }),
-  create
+  "/organizations",
+  authorize(...ADMINS),
+  validate({ body: organizationSchema }),
+  controller.orgCreate
 );
-
-/*
- * LIST DOCTORS
- */
-router.get(
-  "/",
-  authorize(
-    UserRole.ADMIN,
-    UserRole.FRONT_DESK,
-    UserRole.LAB_TECH,
-    UserRole.PATHOLOGIST,
-    UserRole.DOCTOR
-  ),
-  validate({
-    query: doctorQuerySchema,
-  }),
-  list
-);
-
-/*
- * COUNT DOCTORS
- */
-router.get(
-  "/count",
-  authorize(
-    UserRole.ADMIN,
-    UserRole.FRONT_DESK,
-    UserRole.LAB_TECH,
-    UserRole.PATHOLOGIST,
-    UserRole.DOCTOR
-  ),
-  list
-);
-
-/*
- * GET SINGLE DOCTOR
- */
-router.get(
-  "/:id",
-  authorize(
-    UserRole.ADMIN,
-    UserRole.FRONT_DESK,
-    UserRole.LAB_TECH,
-    UserRole.PATHOLOGIST,
-    UserRole.DOCTOR
-  ),
-  validate({
-    params: doctorIdSchema,
-  }),
-  getOne
-);
-
-/*
- * UPDATE DOCTOR
- */
 router.patch(
-  "/:id",
-  authorize(
-    UserRole.ADMIN,
-    UserRole.FRONT_DESK
-  ),
-  validate({
-    params: doctorIdSchema,
-    body: updateDoctorSchema,
-  }),
-  update
+  "/organizations/:id",
+  authorize(...ADMINS),
+  validate({ body: organizationSchema }),
+  controller.orgUpdate
 );
 
-/*
- * ACTIVATE / DEACTIVATE DOCTOR
- */
-router.patch(
-  "/:id/status",
-  authorize(UserRole.ADMIN),
-  validate({
-    params: doctorIdSchema,
-  }),
-  updateStatus
-);
-
-/*
- * DELETE DOCTOR
- */
-router.delete(
-  "/:id",
-  authorize(UserRole.ADMIN),
-  validate({
-    params: doctorIdSchema,
-  }),
-  remove
-);
-
-/*
- * GET DOCTOR STATISTICS
- */
-router.get(
-  "/:id/statistics",
-  authorize(
-    UserRole.ADMIN,
-    UserRole.FRONT_DESK,
-    UserRole.DOCTOR
-  ),
-  validate({
-    params: doctorIdSchema,
-  }),
-  statistics
-);
-
-/*
- * GET DOCTOR COMMISSION
- */
-router.get(
-  "/:id/commission",
-  authorize(
-    UserRole.ADMIN,
-    UserRole.FRONT_DESK,
-    UserRole.DOCTOR
-  ),
-  validate({
-    params: doctorIdSchema,
-  }),
-  commission
-);
-
-/*
- * GET DOCTORS BY SPECIALIZATION
- */
 router.get(
   "/specialization/:specialization",
-  authorize(
-    UserRole.ADMIN,
-    UserRole.FRONT_DESK,
-    UserRole.LAB_TECH,
-    UserRole.PATHOLOGIST,
-    UserRole.DOCTOR
-  ),
-  bySpecialization
+  authorize(...CAN_READ),
+  controller.bySpecialization
 );
 
-/*
- * UPLOAD DOCTOR PHOTO
- */
+router.get(
+  "/count",
+  authorize(...CAN_READ),
+  validate({ query: doctorQuerySchema }),
+  controller.list
+);
+
+/* -----------------------------------------------------------------
+ * LIST — server-side filters, sort, pagination + KPI totals
+ * ----------------------------------------------------------------- */
+router.get(
+  "/",
+  authorize(...CAN_READ),
+  validate({ query: doctorQuerySchema }),
+  controller.list
+);
+
+/* CREATE */
 router.post(
-  "/:id/photo",
-  authorize(
-    UserRole.ADMIN,
-    UserRole.FRONT_DESK
-  ),
-  uploadPhoto
+  "/",
+  authorize(...CAN_MANAGE),
+  validate({ body: createDoctorSchema }),
+  controller.create
 );
 
-/*
- * UPLOAD DOCTOR SIGNATURE
- */
+/* -----------------------------------------------------------------
+ * Per-doctor sub-resources
+ * ----------------------------------------------------------------- */
+router.get(
+  "/:id/referrals",
+  authorize(...CAN_READ),
+  validate({ params: doctorIdSchema }),
+  controller.referralHistory
+);
+router.get(
+  "/:id/ledger",
+  authorize(...CAN_READ),
+  validate({ params: doctorIdSchema }),
+  controller.ledger
+);
+router.get(
+  "/:id/payout-history",
+  authorize(...CAN_READ),
+  validate({ params: doctorIdSchema }),
+  controller.payouts
+);
+router.get(
+  "/:id/trend",
+  authorize(...CAN_READ),
+  validate({ params: doctorIdSchema }),
+  controller.trend
+);
+router.get(
+  "/:id/documents",
+  authorize(...CAN_READ),
+  validate({ params: doctorIdSchema }),
+  controller.documents
+);
 router.post(
-  "/:id/signature",
-  authorize(
-    UserRole.ADMIN,
-    UserRole.FRONT_DESK
-  ),
-  uploadSignature
+  "/:id/documents",
+  authorize(...CAN_MANAGE),
+  validate({ params: doctorIdSchema, body: documentSchema }),
+  controller.uploadDocument
+);
+router.get(
+  "/:id/activity",
+  authorize(...CAN_READ),
+  validate({ params: doctorIdSchema }),
+  controller.activity
 );
 
-/*
- * PROCESS DOCTOR COMMISSION PAYOUT
- */
+router.get(
+  "/:id/statistics",
+  authorize(...CAN_READ),
+  validate({ params: doctorIdSchema }),
+  controller.statistics
+);
+router.get(
+  "/:id/commission",
+  authorize(...CAN_READ),
+  validate({ params: doctorIdSchema }),
+  controller.commission
+);
+
+/* Payout settlement — finance + admins. */
 router.post(
   "/:id/payout",
-  authorize(
-    UserRole.ADMIN,
-    UserRole.FRONT_DESK
-  ),
-  require("./doctor.controller").processPayout
+  authorize(...PAYOUT_ROLES),
+  validate({ params: doctorIdSchema, body: payoutSchema }),
+  controller.processPayout
+);
+
+router.get(
+  "/:id",
+  authorize(...CAN_READ),
+  validate({ params: doctorIdSchema }),
+  controller.getOne
+);
+
+router.patch(
+  "/:id",
+  authorize(...CAN_MANAGE),
+  validate({ params: doctorIdSchema, body: updateDoctorSchema }),
+  controller.update
+);
+
+router.patch(
+  "/:id/status",
+  authorize(...ADMINS),
+  validate({ params: doctorIdSchema, body: statusSchema }),
+  controller.updateStatus
+);
+
+/* Archive (soft delete) — history is always preserved. */
+router.post(
+  "/:id/archive",
+  authorize(...ADMINS),
+  validate({ params: doctorIdSchema, body: archiveDoctorSchema }),
+  controller.archive
+);
+router.post(
+  "/:id/restore",
+  authorize(...ADMINS),
+  validate({ params: doctorIdSchema }),
+  controller.restore
+);
+
+/* Legacy DELETE — routes to archive; hard delete is refused. */
+router.delete(
+  "/:id",
+  authorize(...ADMINS),
+  validate({ params: doctorIdSchema }),
+  controller.remove
+);
+
+router.post(
+  "/:id/photo",
+  authorize(...CAN_MANAGE),
+  validate({ params: doctorIdSchema }),
+  controller.uploadPhoto
+);
+
+router.post(
+  "/:id/signature",
+  authorize(...CAN_MANAGE),
+  validate({ params: doctorIdSchema }),
+  controller.uploadSignature
 );
 
 export default router;

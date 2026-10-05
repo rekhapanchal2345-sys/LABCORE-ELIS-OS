@@ -27,7 +27,15 @@ async function createAdminUser() {
     console.log('🔐 Creating admin user...');
     
     // Admin user configuration
-    const password = process.env.ADMIN_PASSWORD || 'CHANGE_ME_IN_PRODUCTION';
+    const password = process.env.ADMIN_PASSWORD;
+
+    if (!password) {
+      // No default: a fallback password would be published in this repo.
+      throw new Error(
+        'ADMIN_PASSWORD is not set. Add a strong password to backend/.env first.'
+      );
+    }
+
     const passwordHash = await bcrypt.hash(password, 12);
 
     // Create admin user

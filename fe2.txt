@@ -1,0 +1,21 @@
+﻿node.exe : npm notice 
+run web@1.0.0 npx
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" "C
+:\Users\nikil\AppData\Roa
+ming\ ...
++ ~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo       
+       : NotSpecified:   
+  (npm notice run web@   
+ 1.0.0 npx:String) []    
+, RemoteException
+    + FullyQualifiedErro 
+   rId : NativeCommandE  
+  rror
+ 
+npm notice run tsc 
+--noEmit --skipLibCheck

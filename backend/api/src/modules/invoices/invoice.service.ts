@@ -1,14 +1,6 @@
 import prisma from "../../../config/database";
-
-const generateInvoiceNumber = () => {
-  const timestamp = Date.now();
-
-  const random = Math.floor(
-    Math.random() * 1000
-  );
-
-  return `INV-${timestamp}-${random}`;
-};
+import { getNextSequenceNumber } from "../../services/sequence.service";
+import { getISTDayBounds, roundHalfUp } from "../../utils/money";
 
 // =======================================================
 // CREATE INVOICE
@@ -19,6 +11,8 @@ export const createInvoice = async (
     orderId: string;
     gstPercent?: number;
     discount?: number;
+    isInterState?: boolean;
+    seriesType?: "INV" | "B2B";
   }
 ) => {
   try {
@@ -78,58 +72,43 @@ export const createInvoice = async (
       );
     }
 
-    const taxableAmount =
-      subtotal - discount;
+    const taxableAmount = roundHalfUp(subtotal - discount);
 
-    const gstPercent =
-      data.gstPercent ?? 18;
+    // Configurable GST rate (default 18% or 0% for clinical exemption)
+    const gstPercent = data.gstPercent !== undefined ? data.gstPercent : 18;
 
     if (gstPercent < 0 || gstPercent > 100) {
       throw new Error("GST percentage must be between 0 and 100");
     }
 
-    const gstAmount =
-      (taxableAmount * gstPercent) / 100;
+    const gstAmount = roundHalfUp((taxableAmount * gstPercent) / 100);
 
-    // For now GST is split equally into CGST + SGST.
-    const cgstAmount =
-      gstAmount / 2;
+    // Bifurcate tax based on Place of Supply (Intra-state CGST+SGST vs Inter-state IGST)
+    const isInterState = Boolean(data.isInterState);
+    const cgstAmount = isInterState ? 0 : roundHalfUp(gstAmount / 2);
+    const sgstAmount = isInterState ? 0 : roundHalfUp(gstAmount - cgstAmount);
+    const igstAmount = isInterState ? gstAmount : 0;
 
-    const sgstAmount =
-      gstAmount / 2;
+    const grandTotal = roundHalfUp(taxableAmount + gstAmount);
 
-    const grandTotal =
-      taxableAmount + gstAmount;
+    const invoice = await prisma.$transaction(async (tx) => {
+      const series = data.seriesType || "INV";
+      const invoiceNumber = await getNextSequenceNumber(series, "MAIN", tx);
 
-    const invoice =
-      await prisma.invoice.create({
+      return tx.invoice.create({
         data: {
-          invoiceNumber:
-            generateInvoiceNumber(),
-
+          invoiceNumber,
           orderId: order.id,
-
           subtotal,
-
           discount,
-
           taxableAmount,
-
           gstPercent,
-
           cgstAmount,
-
           sgstAmount,
-
-          igstAmount: 0,
-
+          igstAmount,
           gstAmount,
-
           grandTotal,
-
-          paymentStatus:
-            "PENDING",
-
+          paymentStatus: "PENDING",
           dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
         },
 
@@ -147,6 +126,7 @@ export const createInvoice = async (
           },
         },
       });
+    });
 
     return invoice;
   } catch (error) {
@@ -590,37 +570,25 @@ export const getBillingMetrics = async (options: any = {}) => {
   try {
     const { startDate, endDate } = options;
 
-    // Default to today if no date range provided
-    const today = new Date();
     let startOfDay: Date;
     let endOfDay: Date;
 
-    try {
-      startOfDay = startDate ? new Date(startDate) : new Date(today.setHours(0, 0, 0, 0));
-      endOfDay = endDate ? new Date(endDate) : new Date(today.setHours(23, 59, 59, 999));
-
-      // Validate dates
-      if (isNaN(startOfDay.getTime())) {
-        throw new Error("Invalid start date format");
-      }
-      if (isNaN(endOfDay.getTime())) {
-        throw new Error("Invalid end date format");
-      }
-
-      // Ensure end date includes the full day
-      if (endDate) {
-        endOfDay.setHours(23, 59, 59, 999);
-      }
-    } catch (dateError) {
-      console.error("Date parsing error in getBillingMetrics:", dateError);
-      // Fallback to today if date parsing fails
-      const fallbackToday = new Date();
-      startOfDay = new Date(fallbackToday.setHours(0, 0, 0, 0));
-      endOfDay = new Date(fallbackToday.setHours(23, 59, 59, 999));
+    if (startDate && endDate) {
+      startOfDay = new Date(startDate);
+      endOfDay = new Date(endDate);
+      endOfDay.setHours(23, 59, 59, 999);
+    } else if (startDate) {
+      startOfDay = new Date(startDate);
+      endOfDay = new Date(startDate);
+      endOfDay.setHours(23, 59, 59, 999);
+    } else {
+      const bounds = getISTDayBounds(new Date());
+      startOfDay = bounds.startUTC;
+      endOfDay = bounds.endUTC;
     }
 
-    // Get all invoices within the date range with error handling
-    let invoices;
+    // Get all invoices within the date range
+    let invoices: any[] = [];
     try {
       invoices = await prisma.invoice.findMany({
         where: {
@@ -639,31 +607,20 @@ export const getBillingMetrics = async (options: any = {}) => {
       });
     } catch (dbError) {
       console.error("Database error in getBillingMetrics:", dbError);
-      // Return empty metrics instead of throwing error
-      return {
-        totalRevenue: 0,
-        paidInvoices: {
-          count: 0,
-          amount: 0,
-        },
-        pendingDueAmount: 0,
-        discountsAndRefunds: {
-          discounts: 0,
-          refunds: 0,
-          total: 0,
-        },
-        dateRange: {
-          startDate: startOfDay,
-          endDate: endOfDay,
-        },
-        totalInvoices: 0,
-      };
+      invoices = [];
     }
 
-    // Calculate metrics with safe number conversion
-    let totalRevenue = 0;
+    let totalTaxableRevenue = 0;
+    let totalGstAmount = 0;
+    let totalBilledTurnover = 0;
+    let totalCollections = 0;
     let paidInvoicesCount = 0;
     let paidInvoicesAmount = 0;
+    let partialInvoicesCount = 0;
+    let partialInvoicesPaid = 0;
+    let partialInvoicesDue = 0;
+    let unpaidInvoicesCount = 0;
+    let unpaidInvoicesDue = 0;
     let pendingDueAmount = 0;
     let totalDiscounts = 0;
     let totalRefunds = 0;
@@ -671,41 +628,66 @@ export const getBillingMetrics = async (options: any = {}) => {
     invoices.forEach((invoice) => {
       try {
         const grandTotal = Number(invoice.grandTotal) || 0;
+        const taxable = Number(invoice.taxableAmount || (grandTotal - Number(invoice.gstAmount || 0))) || 0;
+        const gst = Number(invoice.gstAmount) || 0;
         const discount = Number(invoice.discount) || 0;
         const paidAmount = invoice.order?.payments
-          ?.filter((p) => p.status === "PAID")
-          ?.reduce((sum, p) => sum + (Number(p.amount) || 0), 0) || 0;
+          ?.filter((p: any) => p.status === "PAID")
+          ?.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0) || 0;
         const refundedAmount = invoice.order?.payments
-          ?.filter((p) => p.status === "REFUNDED")
-          ?.reduce((sum, p) => sum + (Number(p.amount) || 0), 0) || 0;
+          ?.filter((p: any) => p.status === "REFUNDED")
+          ?.reduce((sum: number, p: any) => sum + (Number(p.amount) || 0), 0) || 0;
 
-        totalRevenue += paidAmount;
+        totalTaxableRevenue += taxable;
+        totalGstAmount += gst;
+        totalBilledTurnover += grandTotal;
+        totalCollections += paidAmount;
         totalDiscounts += discount;
         totalRefunds += refundedAmount;
 
-        if (invoice.paymentStatus === "PAID") {
+        const due = Math.max(0, grandTotal - paidAmount);
+
+        if (invoice.paymentStatus === "PAID" || due <= 0) {
           paidInvoicesCount++;
           paidInvoicesAmount += grandTotal;
-        } else if (invoice.paymentStatus === "PARTIAL" || invoice.paymentStatus === "PENDING") {
-          pendingDueAmount += (grandTotal - paidAmount);
+        } else if (paidAmount > 0) {
+          partialInvoicesCount++;
+          partialInvoicesPaid += paidAmount;
+          partialInvoicesDue += due;
+          pendingDueAmount += due;
+        } else {
+          unpaidInvoicesCount++;
+          unpaidInvoicesDue += due;
+          pendingDueAmount += due;
         }
       } catch (calcError) {
         console.error("Error calculating metrics for invoice:", invoice.id, calcError);
-        // Skip this invoice if calculation fails
       }
     });
 
     return {
-      totalRevenue,
+      totalRevenue: roundHalfUp(totalCollections), // Gross collections realized
+      totalTaxableRevenue: roundHalfUp(totalTaxableRevenue),
+      totalGstAmount: roundHalfUp(totalGstAmount),
+      totalBilledTurnover: roundHalfUp(totalBilledTurnover),
       paidInvoices: {
         count: paidInvoicesCount,
-        amount: paidInvoicesAmount,
+        amount: roundHalfUp(paidInvoicesAmount),
       },
-      pendingDueAmount,
+      partialInvoices: {
+        count: partialInvoicesCount,
+        paidAmount: roundHalfUp(partialInvoicesPaid),
+        dueAmount: roundHalfUp(partialInvoicesDue),
+      },
+      unpaidInvoices: {
+        count: unpaidInvoicesCount,
+        dueAmount: roundHalfUp(unpaidInvoicesDue),
+      },
+      pendingDueAmount: roundHalfUp(pendingDueAmount),
       discountsAndRefunds: {
-        discounts: totalDiscounts,
-        refunds: totalRefunds,
-        total: totalDiscounts + totalRefunds,
+        discounts: roundHalfUp(totalDiscounts),
+        refunds: roundHalfUp(totalRefunds),
+        total: roundHalfUp(totalDiscounts + totalRefunds),
       },
       dateRange: {
         startDate: startOfDay,

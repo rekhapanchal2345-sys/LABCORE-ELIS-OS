@@ -4,6 +4,7 @@ import React, { useState, useEffect, useMemo, useRef } from "react";
 import QRCode from "qrcode";
 import jsPDF from "jspdf";
 import { communicationApi, laboratorySettingsApi } from "@/lib/api";
+import { formatPatientFullName } from "@/lib/patient-utils";
 import {
   MessageSquare,
   Mail,
@@ -110,7 +111,7 @@ export function OrderCommunicationHubModal({
     if (!order) return;
 
     if (recipientTarget === "PATIENT") {
-      setTargetName(`${order.patient?.firstName || ""} ${order.patient?.lastName || ""}`.trim());
+      setTargetName(formatPatientFullName(order.patient));
       setTargetPhone(order.patient?.phone || "");
       setTargetEmail(order.patient?.email || "");
     } else if (recipientTarget === "DOCTOR") {
@@ -161,7 +162,7 @@ export function OrderCommunicationHubModal({
   useEffect(() => {
     if (!order) return;
 
-    const patientName = targetName || `${order.patient?.firstName || "Valued"} ${order.patient?.lastName || "Patient"}`;
+    const patientName = targetName || (order.patient ? formatPatientFullName(order.patient) : "Valued Patient");
     const orderNo = order.orderNumber || "ORD-0000";
     const billTotal = order.grandTotal || 0;
     const paid = order.paidAmount || 0;
@@ -430,7 +431,7 @@ export function OrderCommunicationHubModal({
 
       if (selectedTemplate === "REPORT_READY") {
         const pdf = new jsPDF();
-        const patientName = `${order.patient?.firstName || ""} ${order.patient?.lastName || ""}`.trim() || "Patient";
+        const patientName = order.patient ? formatPatientFullName(order.patient) : "Patient";
         const lines = [
           "LABCORE DIAGNOSTICS",
           "VERIFIED CLINICAL REPORT DOSSIER",
@@ -1385,7 +1386,7 @@ export function BulkOrderCommunicationModal({
       const o = orders[i];
       try {
         const patientId = o.patient?.id || o.patientId;
-        const name = `${o.patient?.firstName || ""} ${o.patient?.lastName || ""}`.trim();
+        const name = o.patient ? formatPatientFullName(o.patient) : "Patient";
         const testList = (o.items || []).map((it: any) => it.test?.testName).join(", ");
         const reportUrl = `${window.location.origin}/reports/order/${o.id}`;
 
@@ -1532,7 +1533,7 @@ export function BulkOrderCommunicationModal({
           {orders.map((o) => (
             <div key={o.id} className="py-1 flex items-center justify-between">
               <span className="font-semibold text-slate-800 dark:text-slate-200">
-                #{o.orderNumber} • {o.patient?.firstName} {o.patient?.lastName}
+                #{o.orderNumber} • {formatPatientFullName(o.patient)}
               </span>
               <span className="text-[10px] font-mono text-slate-400">
                 {channel === "EMAIL" ? o.patient?.email || "No email" : o.patient?.phone || "No phone"}

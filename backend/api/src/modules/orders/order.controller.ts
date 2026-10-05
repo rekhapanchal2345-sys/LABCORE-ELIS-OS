@@ -15,6 +15,16 @@ import prisma from "../../../config/database";
     collectSample,
     cancelOrder,
   } from "./order.service";
+
+  import {
+    getOrderAnalytics,
+    getTATAnalytics,
+    getHourlyThroughput,
+    bulkEscalatePriority,
+    bulkUpdateStatus,
+    getOrderPipeline,
+    getRevenueByDoctor,
+  } from "./order.analytics";
   
   import {
     successResponse,
@@ -73,6 +83,10 @@ import prisma from "../../../config/database";
             doctorId: query.doctorId,
             orderStatus: query.orderStatus,
             paymentStatus: query.paymentStatus,
+            priority: query.priority,
+            dateFrom: query.dateFrom,
+            dateTo: query.dateTo,
+            collectionType: query.collectionType,
             page: Number(query.page) || 1,
             limit: Number(query.limit) || 20,
           });
@@ -194,3 +208,86 @@ import prisma from "../../../config/database";
         next(error);
       }
     };
+
+// ─────────────────────────────────────────────────────────────
+//  ANALYTICS CONTROLLERS
+// ─────────────────────────────────────────────────────────────
+
+export const analytics = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { from, to } = req.query as any;
+    const dateRange = from && to ? { from: new Date(from), to: new Date(to) } : undefined;
+    const data = await getOrderAnalytics(dateRange);
+    return successResponse(res, data, "Analytics fetched successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const tatAnalytics = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await getTATAnalytics();
+    return successResponse(res, data, "TAT analytics fetched successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const hourlyThroughput = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const data = await getHourlyThroughput();
+    return successResponse(res, data, "Hourly throughput fetched successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const pipeline = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { dateFilter } = req.query as any;
+    const data = await getOrderPipeline(dateFilter);
+    return successResponse(res, data, "Pipeline fetched successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const revenueByDoctor = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { from, to } = req.query as any;
+    const dateRange = from && to ? { from: new Date(from), to: new Date(to) } : undefined;
+    const data = await getRevenueByDoctor(dateRange);
+    return successResponse(res, data, "Revenue by doctor fetched successfully");
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const bulkEscalate = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { orderIds, priority } = req.body;
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({ success: false, message: "orderIds array is required" });
+    }
+    if (!["ROUTINE", "URGENT", "STAT"].includes(priority)) {
+      return res.status(400).json({ success: false, message: "Invalid priority" });
+    }
+    const data = await bulkEscalatePriority(orderIds, priority);
+    return successResponse(res, data, `Priority updated to ${priority} for ${data.updatedCount} orders`);
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const bulkStatus = async (req: Request, res: Response, next: NextFunction) => {
+  try {
+    const { orderIds, status } = req.body;
+    if (!Array.isArray(orderIds) || orderIds.length === 0) {
+      return res.status(400).json({ success: false, message: "orderIds array is required" });
+    }
+    const data = await bulkUpdateStatus(orderIds, status);
+    return successResponse(res, data, `Status updated to ${status} for ${data.updatedCount} orders`);
+  } catch (error) {
+    next(error);
+  }
+};

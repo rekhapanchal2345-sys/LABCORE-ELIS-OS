@@ -347,25 +347,28 @@ function ApprovalsContent() {
 
   return (
     <DashboardLayout title="Approvals">
-      <div className="space-y-6 max-w-7xl mx-auto">
-        {/* Page Title & Workstation Header */}
-        <div className="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-black tracking-tight text-gray-900 flex items-center gap-3">
-              <span>Pathologist Review & Approval Queue</span>
-              <span className="rounded-full bg-blue-100 px-3 py-1 text-xs font-bold text-blue-700">
-                ISO 15189 / NABL Standard
-              </span>
-            </h1>
-            <p className="text-xs text-gray-500 mt-1">
-              Verify diagnostic findings, review historical delta checks, and digitally sign laboratory results.
-            </p>
+      <div className="space-y-3">
+        {/* Page Title — compact single-line strip */}
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 px-5 py-3 shadow-2xl shadow-slate-950/80">
+          <div className="flex items-center gap-3 min-w-0">
+            <span className="shrink-0 rounded-xl border border-cyan-500/30 bg-cyan-500/10 p-2 text-cyan-400 shadow-lg shadow-cyan-500/10 text-base">🔬</span>
+            <div className="min-w-0">
+              <h1 className="text-base font-black tracking-tight text-white flex flex-wrap items-center gap-2">
+                <span>Pathologist Review &amp; Approval Queue</span>
+                <span className="rounded-full border border-cyan-500/30 bg-cyan-500/10 px-2.5 py-0.5 text-[10px] font-bold text-cyan-300">
+                  ISO 15189 / NABL Standard
+                </span>
+              </h1>
+              <p className="text-[11px] text-slate-500 mt-0.5 hidden sm:block">
+                Verify diagnostic findings, review historical delta checks, and digitally sign laboratory results.
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 shrink-0">
             <button
               onClick={() => setIsRulesModalOpen(true)}
-              className="rounded-xl border border-gray-300 bg-white px-3.5 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 shadow-sm transition-colors flex items-center gap-2"
+              className="rounded-xl border border-slate-700 bg-slate-900/80 px-3 py-1.5 text-xs font-bold text-slate-300 hover:border-slate-600 hover:bg-slate-800 hover:text-white shadow-sm transition-colors flex items-center gap-1.5"
             >
               <span>🛡️</span>
               <span>Sign-Off Policies</span>
@@ -375,7 +378,7 @@ function ApprovalsContent() {
                 fetchMetrics();
                 fetchApprovals();
               }}
-              className="rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-black shadow-sm transition-colors flex items-center gap-2"
+              className="rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-3.5 py-1.5 text-xs font-bold text-white hover:from-cyan-500 hover:to-blue-500 shadow-md shadow-cyan-600/20 transition-all flex items-center gap-1.5"
             >
               <span>↻</span>
               <span>Refresh Queue</span>
@@ -407,12 +410,12 @@ function ApprovalsContent() {
 
         {/* Batch Action Bar */}
         {selectedApprovals.size > 0 && viewMode === "table" && (
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-gradient-to-r from-blue-50 to-indigo-50 px-5 py-3.5 border border-blue-200 shadow-sm animate-in fade-in duration-150">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-cyan-500/30 bg-gradient-to-r from-cyan-950/50 to-blue-950/50 px-5 py-3.5 shadow-lg shadow-cyan-500/5 animate-in fade-in duration-150">
             <div className="flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-blue-600 text-xs font-bold text-white">
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 text-xs font-bold text-white shadow-md">
                 {selectedApprovals.size}
               </span>
-              <p className="text-xs font-bold text-blue-950">
+              <p className="text-xs font-bold text-slate-200">
                 {selectedApprovals.size} report{selectedApprovals.size !== 1 ? "s" : ""} selected for batch review
               </p>
             </div>
@@ -421,7 +424,7 @@ function ApprovalsContent() {
               <button
                 type="button"
                 onClick={() => setSelectedApprovals(new Set())}
-                className="rounded-xl px-3 py-1.5 text-xs font-semibold text-gray-600 hover:bg-blue-100/60"
+                className="rounded-xl px-3 py-1.5 text-xs font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-800/60 transition-colors"
               >
                 Clear Selection
               </button>
@@ -429,7 +432,7 @@ function ApprovalsContent() {
                 type="button"
                 onClick={handleBatchApprove}
                 disabled={batchActionLoading}
-                className="rounded-xl bg-blue-600 px-5 py-2 text-xs font-bold text-white shadow hover:bg-blue-700 disabled:opacity-50 transition-colors flex items-center gap-2"
+                className="rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-5 py-2 text-xs font-bold text-white shadow-md shadow-cyan-600/20 hover:from-cyan-500 hover:to-blue-500 disabled:opacity-50 transition-all flex items-center gap-2"
               >
                 {batchActionLoading ? (
                   <>
@@ -447,8 +450,8 @@ function ApprovalsContent() {
         )}
 
         {error && (
-          <div className="rounded-2xl border border-red-200 bg-red-50 p-4 shadow-sm">
-            <p className="text-xs font-bold text-red-800 flex items-center gap-2">
+          <div className="rounded-2xl border border-rose-500/30 bg-rose-500/10 p-4 shadow-sm">
+            <p className="text-xs font-bold text-rose-300 flex items-center gap-2">
               <span>⚠️</span>
               <span>{error}</span>
             </p>
@@ -484,21 +487,21 @@ function ApprovalsContent() {
 
             {totalPages > 1 && (
               <div className="flex items-center justify-between pt-2">
-                <p className="text-xs text-gray-500">
-                  Page <strong className="text-gray-900">{page}</strong> of <strong className="text-gray-900">{totalPages}</strong>
+                <p className="text-xs text-slate-500">
+                  Page <strong className="text-slate-200">{page}</strong> of <strong className="text-slate-200">{totalPages}</strong>
                 </p>
                 <div className="flex gap-2">
                   <button
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page === 1}
-                    className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors shadow-sm"
+                    className="rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-2 text-xs font-bold text-slate-300 hover:border-slate-600 hover:bg-slate-800 hover:text-white disabled:opacity-40 transition-colors shadow-sm"
                   >
                     ← Previous
                   </button>
                   <button
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page === totalPages}
-                    className="rounded-xl border border-gray-300 bg-white px-4 py-2 text-xs font-bold text-gray-700 hover:bg-gray-50 disabled:opacity-40 transition-colors shadow-sm"
+                    className="rounded-xl border border-slate-700 bg-slate-900/80 px-4 py-2 text-xs font-bold text-slate-300 hover:border-slate-600 hover:bg-slate-800 hover:text-white disabled:opacity-40 transition-colors shadow-sm"
                   >
                     Next →
                   </button>
@@ -559,7 +562,7 @@ export default function ApprovalsPage() {
       fallback={
         <DashboardLayout title="Approvals">
           <div className="flex items-center justify-center min-h-[400px]">
-            <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+            <div className="h-8 w-8 animate-spin rounded-full border-4 border-cyan-500 border-t-transparent" />
           </div>
         </DashboardLayout>
       }

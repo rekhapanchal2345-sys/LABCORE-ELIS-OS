@@ -76,7 +76,7 @@ export const consentNotifySchema = abdmGatewayCallbackSchema.extend({
   notification: z.object({
     consentId: z.string(),
     status: z.enum(["GRANTED", "DENIED", "EXPIRED", "REVOKED"]),
-    consentDetail: z.record(z.unknown()).optional(),
+    consentDetail: z.record(z.string(), z.unknown()).optional(),
     signature: z.string().optional(),
   }),
 });

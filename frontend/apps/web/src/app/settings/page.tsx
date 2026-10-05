@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import DashboardLayout from "@/components/layout/dashboardlayout";
-import SettingsTabs, { SettingsTab } from "@/components/settings/SettingsTabs";
+import SettingsTabs, { SettingsTab, isSettingsTab } from "@/components/settings/SettingsTabs";
 import ProfileSettings from "@/components/settings/ProfileSettings";
 import GeneralSettings from "@/components/settings/GeneralSettings";
 import UsersSettings from "@/components/settings/UsersSettings";
@@ -18,26 +19,53 @@ import BackupSettings from "@/components/settings/BackupSettings";
 import { 
   getStoredSettings, 
   setStoredSettings, 
-  defaultSettings, 
-  SettingsStoreState 
+  defaultSettings
 } from "@/lib/settingsStorage";
+import { laboratorySettingsApi } from "@/lib/api";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { SETTINGS_VIEW_ROLES } from "@/components/settings/settingsAccess";
 import { 
   ShieldCheck, 
-  Sparkles, 
   CheckCircle2, 
   Check, 
   RotateCcw, 
-  Save, 
-  Award, 
-  Lock,
   Sliders
 } from "lucide-react";
 
-export default function SettingsPage() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>("profile");
+function SettingsPageContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const tabParam = searchParams.get("tab");
+
+  // The URL is the single source of truth for the active tab, so a refresh or a
+  // deep link lands on the same tab and browser Back walks the tab history.
+  const activeTab: SettingsTab = isSettingsTab(tabParam) ? tabParam : "profile";
   const [saving, setSaving] = useState(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+  // Bumped on reset so the active tab remounts and re-reads storage
+  // instead of forcing a full page reload.
+  const [resetToken, setResetToken] = useState(0);
+
+  // Drop an unknown ?tab= from the URL so the address bar always shows a real tab.
+  useEffect(() => {
+    if (tabParam !== null && !isSettingsTab(tabParam)) {
+      router.replace("/settings", { scroll: false });
+    }
+  }, [tabParam, router]);
+
+  const handleTabChange = useCallback(
+    (tab: SettingsTab) => {
+      router.replace(`/settings?tab=${tab}`, { scroll: false });
+    },
+    [router]
+  );
+
+  const triggerGlobalSave = () => {
+    // Read current settings for active tab and trigger save
+    const current = getStoredSettings(activeTab);
+    handleSave(activeTab, current);
+  };
 
   // Global Ctrl+S / Cmd+S save shortcut
   useEffect(() => {
@@ -64,8 +92,17 @@ export default function SettingsPage() {
       // 1. Dual-Write to local storage & broadcast change events
       setStoredSettings(settingsType, data);
 
-      // 2. Simulated brief network handshake
-      await new Promise((resolve) => setTimeout(resolve, 500));
+      // 2. Persist to backend database API
+      if (settingsType === "laboratory" || settingsType === "general" || settingsType === "notifications") {
+        try {
+          await laboratorySettingsApi.updateSettings(data);
+        } catch (apiErr) {
+          console.warn("Backend API sync notice:", apiErr);
+        }
+      }
+
+      // 3. Network handshake completion
+      await new Promise((resolve) => setTimeout(resolve, 300));
 
       setHasUnsavedChanges(false);
       showToast(`✓ ${getTabTitle(settingsType)} successfully saved & synced!`);
@@ -77,18 +114,13 @@ export default function SettingsPage() {
     }
   };
 
-  const triggerGlobalSave = () => {
-    // Read current settings for active tab and trigger save
-    const current = getStoredSettings(activeTab);
-    handleSave(activeTab, current);
-  };
-
   const resetActiveTabToDefaults = () => {
     if (confirm(`Reset ${getTabTitle(activeTab)} back to system factory defaults?`)) {
       const defaultVal = defaultSettings[activeTab];
       setStoredSettings(activeTab, defaultVal);
+      setHasUnsavedChanges(false);
+      setResetToken((token) => token + 1);
       showToast(`Reset ${getTabTitle(activeTab)} to defaults.`);
-      window.location.reload();
     }
   };
 
@@ -221,7 +253,7 @@ export default function SettingsPage() {
 
   return (
     <DashboardLayout title="Settings & Administration">
-      <div className="space-y-6 pb-24">
+      <div className="space-y-6 pb-36">
         {/* Toast Alert Banner */}
         {toastMessage && (
           <div className="fixed top-20 right-6 z-[1000] flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-slate-900/95 px-5 py-3 text-xs font-bold text-white shadow-2xl backdrop-blur-md animate-in slide-in-from-top-4">
@@ -266,7 +298,7 @@ export default function SettingsPage() {
         </div>
 
         {/* Tab Navigation Strip */}
-        <SettingsTabs activeTab={activeTab} onTabChange={setActiveTab} />
+        <SettingsTabs activeTab={activeTab} onTabChange={handleTabChange} />
 
         {/* Main Tab Content */}
         <div className="min-h-[500px]">
@@ -284,7 +316,7 @@ export default function SettingsPage() {
             </button>
           </div>
 
-          {renderSettingsContent()}
+          <div key={`${activeTab}-${resetToken}`}>{renderSettingsContent()}</div>
         </div>
 
         {/* Luxury Floating Action Bar */}
@@ -335,5 +367,23 @@ export default function SettingsPage() {
         </div>
       </div>
     </DashboardLayout>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <ProtectedRoute requiredRoles={SETTINGS_VIEW_ROLES}>
+      <Suspense
+        fallback={
+          <DashboardLayout title="Settings & Administration">
+            <div className="flex items-center justify-center min-h-[400px]">
+              <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+            </div>
+          </DashboardLayout>
+        }
+      >
+        <SettingsPageContent />
+      </Suspense>
+    </ProtectedRoute>
   );
 }

@@ -46,8 +46,8 @@ export const securityConfig = {
   // Access control
   access: {
     twoFactorAuth: false, // can be enabled for enhanced security
-    ipWhitelist: [], // specific IPs that can access the system
-    ipBlacklist: [], // blocked IPs
+    ipWhitelist: [] as string[], // specific IPs that can access the system
+    ipBlacklist: [] as string[], // blocked IPs
     geoBlocking: false, // block access from certain countries
   },
 

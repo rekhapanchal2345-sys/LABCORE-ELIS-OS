@@ -1,4 +1,5 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
+import type { AuthenticatedRequest } from '../../../middleware/auth';
 import {
   createBackup,
   restoreBackup,
@@ -10,7 +11,10 @@ import {
 /**
  * Create a new database backup
  */
-export const createBackupController = async (req: Request, res: Response) => {
+export const createBackupController = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
   try {
     // Only admins can create backups
     if (req.user?.role !== 'ADMIN') {
@@ -47,7 +51,10 @@ export const createBackupController = async (req: Request, res: Response) => {
 /**
  * Restore database from backup
  */
-export const restoreBackupController = async (req: Request, res: Response) => {
+export const restoreBackupController = async (
+  req: AuthenticatedRequest<{ fileName: string }>,
+  res: Response,
+) => {
   try {
     // Only admins can restore backups
     if (req.user?.role !== 'ADMIN') {
@@ -93,7 +100,10 @@ export const restoreBackupController = async (req: Request, res: Response) => {
 /**
  * Get all available backups
  */
-export const getBackupsController = async (req: Request, res: Response) => {
+export const getBackupsController = async (
+  req: AuthenticatedRequest,
+  res: Response,
+) => {
   try {
     // Only admins can view backups
     if (req.user?.role !== 'ADMIN') {
@@ -121,7 +131,7 @@ export const getBackupsController = async (req: Request, res: Response) => {
 /**
  * Get backup statistics
  */
-export const getBackupStatsController = async (req: Request, res: Response) => {
+export const getBackupStatsController = async (req: AuthenticatedRequest, res: Response) => {
   try {
     // Only admins can view backup statistics
     if (req.user?.role !== 'ADMIN') {
@@ -149,7 +159,7 @@ export const getBackupStatsController = async (req: Request, res: Response) => {
 /**
  * Delete a backup
  */
-export const deleteBackupController = async (req: Request, res: Response) => {
+export const deleteBackupController = async (req: AuthenticatedRequest<{ fileName: string }>, res: Response) => {
   try {
     // Only admins can delete backups
     if (req.user?.role !== 'ADMIN') {

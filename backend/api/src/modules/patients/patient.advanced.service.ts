@@ -331,7 +331,7 @@ const familyMemberSelect = {
 export const getFamilyMembers = async (patientId: string) => {
   const patient = await prisma.patient.findUnique({
     where: { id: patientId },
-    select: { id: true, uhid: true, firstName: true, lastName: true, familyHeadId: true },
+    select: { id: true, uhid: true, firstName: true, middleName: true, lastName: true, familyHeadId: true },
   });
 
   if (!patient) throw notFound("Patient");

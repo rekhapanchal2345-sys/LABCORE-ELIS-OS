@@ -819,17 +819,6 @@ export const completeSample =
         }
       }
 
-      // If order is completed and has an invoice, update invoice status
-      if (allCompleted && sample.order.invoiceId) {
-        await tx.invoice.update({
-          where: { id: sample.order.invoiceId },
-          data: {
-            // You might want to add specific invoice status fields
-            // For now, we'll ensure the invoice is linked properly
-          },
-        });
-      }
-
       return updatedSample;
     });
   };

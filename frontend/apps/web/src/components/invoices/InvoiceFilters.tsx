@@ -136,11 +136,11 @@ export default function InvoiceFilters({
   };
 
   return (
-    <section className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-sm space-y-4">
+    <section className="rounded-3xl border border-slate-800 bg-slate-950 p-5 shadow-2xl shadow-slate-950/80 space-y-4">
       {/* Top row: Quick presets and active filter indicator */}
-      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-800/80 pb-3">
         <div className="flex flex-wrap items-center gap-1.5 text-xs">
-          <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px] mr-1">
+          <span className="font-bold text-slate-400 uppercase tracking-wider text-[10px] mr-1">
             Date Presets:
           </span>
           {[
@@ -151,15 +151,21 @@ export default function InvoiceFilters({
             { id: "month", label: "This Month" },
           ].map((preset) => {
             const isAll = preset.id === "all" && !filters.dateFrom && !filters.dateTo;
+            const isSelected =
+              isAll ||
+              (preset.id === "today" &&
+                filters.dateFrom === new Date().toISOString().split("T")[0] &&
+                filters.dateTo === new Date().toISOString().split("T")[0]);
+
             return (
               <button
                 key={preset.id}
                 type="button"
                 onClick={() => setQuickDate(preset.id as any)}
-                className={`rounded-lg px-2.5 py-1 font-semibold transition-all ${
-                  isAll
-                    ? "bg-indigo-600 text-white shadow-sm"
-                    : "bg-slate-100 text-slate-600 hover:bg-slate-200 hover:text-slate-900"
+                className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition-all ${
+                  isSelected
+                    ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/30 font-bold"
+                    : "border border-slate-800 bg-slate-900/80 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
                 }`}
               >
                 {preset.label}
@@ -171,7 +177,7 @@ export default function InvoiceFilters({
         {hasFilters && (
           <button
             onClick={handleReset}
-            className="flex items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-semibold text-rose-600 hover:bg-rose-50 hover:border-rose-200 transition-colors"
+            className="flex items-center gap-1.5 rounded-xl border border-rose-500/30 bg-rose-950/40 px-3 py-1 text-xs font-semibold text-rose-300 hover:bg-rose-900/60 transition-colors"
           >
             <RotateCcw className="h-3.5 w-3.5" />
             <span>Reset Filters</span>
@@ -183,11 +189,11 @@ export default function InvoiceFilters({
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
         {/* Search */}
         <div className="lg:col-span-2">
-          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Smart Search
           </label>
           <div className="relative">
-            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400">
+            <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500">
               <Search className="h-4 w-4" />
             </span>
             <input
@@ -197,12 +203,12 @@ export default function InvoiceFilters({
                 handleSearchChange(e.target.value)
               }
               placeholder="Invoice #, patient name, UHID, phone, order ID..."
-              className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-9 text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all"
+              className="w-full rounded-xl border border-slate-800 bg-slate-900/90 py-2 pl-10 pr-9 text-xs text-slate-200 placeholder:text-slate-500 outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30"
             />
             {filters.search && (
               <button
                 onClick={() => handleSearchChange("")}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -212,7 +218,7 @@ export default function InvoiceFilters({
 
         {/* Payment Status */}
         <div>
-          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Payment Status
           </label>
           <select
@@ -220,19 +226,19 @@ export default function InvoiceFilters({
             onChange={(e: ChangeEvent<HTMLSelectElement>) =>
               handlePaymentStatusChange(e.target.value)
             }
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-xs font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all"
+            className="w-full rounded-xl border border-slate-800 bg-slate-900/90 px-3 py-2 text-xs font-medium text-slate-200 outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30"
           >
-            <option value="">All Statuses</option>
-            <option value="PAID">Fully Paid</option>
-            <option value="PARTIAL">Partially Paid</option>
-            <option value="PENDING">Unpaid / Due</option>
-            <option value="REFUNDED">Refunded</option>
+            <option value="" className="bg-slate-900 text-slate-200">All Statuses</option>
+            <option value="PAID" className="bg-slate-900 text-slate-200">Fully Paid</option>
+            <option value="PARTIAL" className="bg-slate-900 text-slate-200">Partially Paid</option>
+            <option value="PENDING" className="bg-slate-900 text-slate-200">Unpaid / Due</option>
+            <option value="REFUNDED" className="bg-slate-900 text-slate-200">Refunded</option>
           </select>
         </div>
 
         {/* Payment Mode */}
         <div>
-          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Payment Mode
           </label>
           <select
@@ -240,20 +246,20 @@ export default function InvoiceFilters({
             onChange={(e: ChangeEvent<HTMLSelectElement>) =>
               handlePaymentModeChange(e.target.value)
             }
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-xs font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all"
+            className="w-full rounded-xl border border-slate-800 bg-slate-900/90 px-3 py-2 text-xs font-medium text-slate-200 outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30"
           >
-            <option value="">All Payment Modes</option>
-            <option value="CASH">Cash Counter</option>
-            <option value="UPI">UPI (GPay / PhonePe)</option>
-            <option value="CARD">Credit / Debit Card</option>
-            <option value="NET_BANKING">Net Banking</option>
-            <option value="CHEQUE">Cheque / DD</option>
+            <option value="" className="bg-slate-900 text-slate-200">All Payment Modes</option>
+            <option value="CASH" className="bg-slate-900 text-slate-200">Cash Counter</option>
+            <option value="UPI" className="bg-slate-900 text-slate-200">UPI (GPay / PhonePe)</option>
+            <option value="CARD" className="bg-slate-900 text-slate-200">Credit / Debit Card</option>
+            <option value="NET_BANKING" className="bg-slate-900 text-slate-200">Net Banking</option>
+            <option value="CHEQUE" className="bg-slate-900 text-slate-200">Cheque / DD</option>
           </select>
         </div>
 
         {/* Referring Doctor (B2B) */}
         <div>
-          <label className="mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-500">
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Referring Doctor (B2B)
           </label>
           <select
@@ -262,15 +268,22 @@ export default function InvoiceFilters({
               handleDoctorChange(e.target.value)
             }
             disabled={loadingDoctors}
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-xs font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 disabled:opacity-50 transition-all"
+            className="w-full rounded-xl border border-slate-800 bg-slate-900/90 px-3 py-2 text-xs font-medium text-slate-200 outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 disabled:opacity-50"
           >
-            <option value="">All Referring Doctors</option>
-            {doctors.map((doctor) => (
-              <option key={doctor.id} value={doctor.id}>
-                Dr. {doctor.fullName}{" "}
-                {doctor.specialization ? `(${doctor.specialization})` : ""}
-              </option>
-            ))}
+            <option value="" className="bg-slate-900 text-slate-200">All Referring Doctors</option>
+            {doctors.map((doctor) => {
+              const cleaned = (doctor.fullName || "")
+                .replace(/^(dr\.?|dr\b)\s+/i, "")
+                .replace(/^(dr\.?|dr\b)\s+/i, "")
+                .trim();
+              const doctorLabel = cleaned ? `Dr. ${cleaned}` : doctor.fullName;
+              return (
+                <option key={doctor.id} value={doctor.id} className="bg-slate-900 text-slate-200">
+                  {doctorLabel}{" "}
+                  {doctor.specialization ? `(${doctor.specialization})` : ""}
+                </option>
+              );
+            })}
           </select>
         </div>
       </div>
@@ -278,7 +291,7 @@ export default function InvoiceFilters({
       {/* Date Pickers */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4 pt-1">
         <div>
-          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Date From
           </label>
           <input
@@ -287,12 +300,12 @@ export default function InvoiceFilters({
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
               handleDateFromChange(e.target.value)
             }
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all"
+            className="w-full rounded-xl border border-slate-800 bg-slate-900/90 px-3 py-2 text-xs font-medium text-slate-200 outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30"
           />
         </div>
 
         <div>
-          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-500">
+          <label className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Date To
           </label>
           <input
@@ -301,7 +314,7 @@ export default function InvoiceFilters({
             onChange={(e: ChangeEvent<HTMLInputElement>) =>
               handleDateToChange(e.target.value)
             }
-            className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-medium text-slate-800 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-100 transition-all"
+            className="w-full rounded-xl border border-slate-800 bg-slate-900/90 px-3 py-2 text-xs font-medium text-slate-200 outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30"
           />
         </div>
 

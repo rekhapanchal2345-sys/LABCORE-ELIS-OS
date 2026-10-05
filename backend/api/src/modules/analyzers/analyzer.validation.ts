@@ -120,7 +120,7 @@ export const updateStatusSchema = z.object({
     "MAINTENANCE",
     "CALIBRATION_REQUIRED",
   ]),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 export const heartbeatSchema = z.object({
@@ -213,7 +213,7 @@ export const maintenanceQuerySchema = paginationSchema.extend({
 
 export const createTestMappingSchema = z.object({
   analyzerId: z.string().cuid(),
-  labCoreTestId: z.string().cuid().optional(),
+  labCoreTestId: z.string().cuid(),
   labCoreTestCode: z.string().min(1).max(50),
   labCoreTestName: z.string().min(1).max(200),
   analyzerTestCode: z.string().min(1).max(100),
@@ -271,7 +271,7 @@ export const updateAnalyzerJobSchema = z.object({
   progressPercentage: z.coerce.number().int().min(0).max(100).optional(),
   currentStep: z.string().max(200).optional(),
   errorMessage: z.string().max(2000).optional(),
-  errorDetails: z.record(z.any()).optional(),
+  errorDetails: z.record(z.string(), z.any()).optional(),
   retryCount: z.coerce.number().int().min(0).optional(),
   resultId: z.string().cuid().optional(),
   resultReceived: z.boolean().optional(),
@@ -305,7 +305,7 @@ export const createAlertSchema = z.object({
   ]),
   title: z.string().min(1).max(200),
   message: z.string().min(1).max(2000),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 export const resolveAlertSchema = z.object({
@@ -382,7 +382,7 @@ export const testMessageSchema = z.object({
     "RESULT",
     "HEARTBEAT",
   ]).optional(),
-  testData: z.record(z.any()).optional(),
+  testData: z.record(z.string(), z.any()).optional(),
 });
 
 // =======================================================
@@ -408,7 +408,7 @@ export const generateASTMSchema = z.object({
     "RESULT",
     "TERMINATOR",
   ]),
-  data: z.record(z.any()),
+  data: z.record(z.string(), z.any()),
   frameNumber: z.coerce.number().int().min(0).max(99).optional(),
   sequenceNumber: z.coerce.number().int().min(0).max(9999).optional(),
 });
@@ -422,7 +422,7 @@ export const generateHL7Schema = z.object({
     "MDM",
   ]),
   triggerEvent: z.string().min(1).max(3),
-  data: z.record(z.any()),
+  data: z.record(z.string(), z.any()),
   version: z.enum(["2.1", "2.2", "2.3", "2.4", "2.5", "2.6", "2.7", "2.8"]).optional(),
 });
 

@@ -57,7 +57,44 @@ app.set(
 // SECURITY
 // =======================================================
 
-app.use(helmet() as any);
+app.use(
+  helmet({
+    // The API serves JSON and never a document, so a restrictive policy costs
+    // nothing and removes any chance of content being rendered as a page.
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc: ["'none'"],
+        frameAncestors: ["'none'"],
+        baseUri: ["'none'"],
+        formAction: ["'none'"],
+      },
+    },
+    // Only meaningful over TLS, and only safe to send once TLS is guaranteed.
+    // Sending it in development would pin a browser to HTTPS for localhost.
+    hsts:
+      process.env.NODE_ENV === "production"
+        ? { maxAge: 31536000, includeSubDomains: true, preload: true }
+        : false,
+    // The bearer token travels in a header, so it must never reach a
+    // third-party origin through a Referer.
+    referrerPolicy: { policy: "no-referrer" },
+    crossOriginResourcePolicy: { policy: "same-site" },
+  }) as any
+);
+
+/**
+ * No response may be stored by a browser, a proxy or the back/forward cache.
+ *
+ * A cached authenticated response stays readable after sign-out and can be
+ * shown to the next person who opens the machine, which is the normal state of
+ * a shared laboratory workstation.
+ */
+app.use((_req: Request, res: Response, next) => {
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, private");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+  next();
+});
 
 // =======================================================
 // CORS
@@ -111,12 +148,51 @@ app.use(
   })
 );
 
+app.use((req: Request, _res: Response, next) => {
+  const cookieHeader = req.headers.cookie;
+  if (cookieHeader) {
+    const cookies: Record<string, string> = {};
+    cookieHeader.split(";").forEach((cookie) => {
+      const parts = cookie.split("=");
+      if (parts.length >= 2) {
+        cookies[parts[0].trim()] = decodeURIComponent(parts.slice(1).join("=").trim());
+      }
+    });
+    (req as any).cookies = cookies;
+  } else {
+    (req as any).cookies = {};
+  }
+  next();
+});
+
 // =======================================================
 // HTTP LOGGER
 // =======================================================
 
+/**
+ * The URL is logged without its query string.
+ *
+ * Search endpoints accept patient names, UHIDs, phone numbers and order numbers
+ * as query parameters, so a default log line writes identifiers into a log file
+ * that is typically kept far longer than the clinical record itself and is
+ * rarely covered by the same access controls as the database.
+ */
+morgan.token("safe-url", (req) => {
+  const path = (req as Request).originalUrl || req.url || "";
+  const queryAt = path.indexOf("?");
+  return queryAt === -1 ? path : path.slice(0, queryAt);
+});
+
 if (process.env.NODE_ENV !== "test") {
-  app.use(morgan("dev"));
+  // Neither format writes request headers, so the bearer token is not logged.
+  app.use(
+    morgan(
+      process.env.NODE_ENV === "production"
+        ? // No colours, and no query string.
+          ":method :safe-url :status :response-time ms - :res[content-length]"
+        : "dev"
+    )
+  );
 }
 
 // =======================================================

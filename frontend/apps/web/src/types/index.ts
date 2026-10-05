@@ -1168,7 +1168,7 @@ export interface PatientFormData {
   firstName: string;
   lastName: string;
   dateOfBirth?: string;
-  gender: Gender;
+  gender: "" | "MALE" | "FEMALE" | "OTHER";
   phone?: string;
   email?: string;
   address?: string;

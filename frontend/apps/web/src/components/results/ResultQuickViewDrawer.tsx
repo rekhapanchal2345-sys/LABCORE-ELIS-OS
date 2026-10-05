@@ -52,6 +52,7 @@ import {
   Zap,
 } from "lucide-react";
 import { ResultRow } from "./ResultsManagementTable";
+import { formatPatientFullName } from "@/lib/patient-utils";
 
 interface TubeSpec {
   name: string;
@@ -174,7 +175,7 @@ ${(result.values || [])
 
           <div className="mt-1 flex flex-wrap items-center gap-3 text-xs text-slate-400">
             <span>
-              Patient: <strong className="text-white">{result.order.patient.firstName} {result.order.patient.lastName}</strong>
+              Patient: <strong className="text-white">{formatPatientFullName(result.order.patient)}</strong>
             </span>
             <span>·</span>
             <span>

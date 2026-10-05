@@ -5,7 +5,18 @@ import {
   } from "express";
 
 import type { AuthenticatedRequest } from "../../../middleware/auth";
+import { HttpError } from "../../utils/http-error";
+import { pathParam } from "../../utils/request-meta";
 import prisma from "../../../config/database";
+
+/** These routes all sit behind `authenticate`, so a missing user is a wiring bug. */
+const actorId = (req: AuthenticatedRequest): string => {
+  const id = req.user?.id;
+  if (!id) {
+    throw new HttpError("Authenticated user is required.", 401, "UNAUTHORIZED");
+  }
+  return id;
+};
   
   import {
     createResult,
@@ -294,7 +305,8 @@ import prisma from "../../../config/database";
       next: NextFunction
     ) => {
       try {
-        const { patientId, testCode } = req.params;
+        const patientId = pathParam(req, "patientId");
+        const testCode = pathParam(req, "testCode");
         const limit = Number(req.query.limit) || 10;
 
         const trendData =
@@ -330,7 +342,7 @@ import prisma from "../../../config/database";
         const acknowledgment =
           await acknowledgeCriticalValue(
             req.body,
-            req.user?.id
+            actorId(req)
           );
 
         res.status(201).json({
@@ -359,7 +371,7 @@ import prisma from "../../../config/database";
         const amendment =
           await createResultAmendment(
             req.body,
-            req.user?.id
+            actorId(req)
           );
 
         res.status(201).json({
@@ -397,7 +409,7 @@ import prisma from "../../../config/database";
         const results =
           await bulkVerifyResults(
             resultIds,
-            req.user?.id
+            actorId(req)
           );
 
         res.status(200).json({

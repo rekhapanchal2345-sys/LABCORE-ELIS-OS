@@ -1,5 +1,6 @@
 import { jsPDF } from 'jspdf';
 import { PDFDocument } from 'pdf-lib';
+import { formatPatientFullName } from './patient-utils';
 
 export interface PDFOperationOptions {
   password?: string;
@@ -160,7 +161,7 @@ export async function generateReportPDF(
     pdf.text('Patient Information', margin, y);
     y += 18;
     pdf.setFontSize(10);
-    line(margin, y, 'Name:', ((patient.firstName || '') + ' ' + (patient.lastName || '')).trim() || '-');
+    line(margin, y, 'Name:', formatPatientFullName(patient) || '-');
     y += 18;
     line(margin, y, 'UHID:', patient.uhid || '-');
     y += 18;

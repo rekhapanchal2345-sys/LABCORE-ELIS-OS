@@ -110,7 +110,7 @@ export async function handleDiscovery(req: DiscoveryRequest): Promise<void> {
     patient: matchedPatient
       ? {
           referenceNumber: matchedPatient.uhid,
-          display: `${matchedPatient.firstName} ${matchedPatient.lastName}`,
+          display: [matchedPatient.firstName, matchedPatient.middleName, matchedPatient.lastName].filter(Boolean).join(" ").trim(),
           careContexts: buildCareContextsFromOrders(matchedPatient.orders ?? []),
           matchedBy: abhaIdentifier ? ["ABHA-NUMBER"] : ["MOBILE"],
         }
@@ -269,7 +269,7 @@ export async function addCareContextForOrder(
 ): Promise<{ success: boolean; careContextReference: string }> {
   const patient = await (prisma.patient as any).findUnique({
     where: { id: patientId },
-    select: { abhaAddress: true, abhaNumber: true, uhid: true, firstName: true, lastName: true },
+    select: { abhaAddress: true, abhaNumber: true, uhid: true, firstName: true, middleName: true, lastName: true },
   });
 
   if (!patient?.abhaAddress && !patient?.abhaNumber) {
@@ -311,7 +311,7 @@ export async function addCareContextForOrder(
       accessToken: patient.abhaAddress || patient.abhaNumber,
       patient: {
         referenceNumber: patient.uhid,
-        display: `${patient.firstName} ${patient.lastName}`,
+        display: [patient.firstName, patient.middleName, patient.lastName].filter(Boolean).join(" ").trim(),
         careContexts: [{ referenceNumber: careContextReference, display }],
         hiType: "DiagnosticReport",
       },

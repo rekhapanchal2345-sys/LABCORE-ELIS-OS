@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DashboardLayout from "@/components/layout/dashboardlayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
-import { orderApi } from "@/lib/api";
+import { orderApi, paymentsApi } from "@/lib/api";
 import {
   StatusBadge,
   PriorityBadge,
@@ -15,6 +15,10 @@ import {
   useToast,
   OrderStatusType,
   OrderCommunicationHubModal,
+  QuickAssignDoctorModal,
+  QuickCollectSampleModal,
+  AddPaymentModal,
+  CancelOrderModal,
 } from "@/components/orders/orders-ui";
 import {
   ArrowLeft,
@@ -36,7 +40,42 @@ import {
   MessageSquare,
   DollarSign,
   Receipt,
+  ScanLine,
+  UserRound,
+  ShieldCheck,
+  Building2,
+  Phone,
+  Flame,
+  MessageCircle,
+  Activity,
+  ArrowRight,
+  Loader2
 } from "lucide-react";
+
+const TUBE_CONTAINER_COLORS: Record<string, { bg: string; text: string; border: string; capColor: string; name: string }> = {
+  "EDTA Tube": { bg: "bg-purple-500/10", text: "text-purple-300", border: "border-purple-500/40", capColor: "#8B5CF6", name: "Lavender EDTA" },
+  "Lavender Top": { bg: "bg-purple-500/10", text: "text-purple-300", border: "border-purple-500/40", capColor: "#8B5CF6", name: "Lavender EDTA" },
+  "Serum Separator Tube": { bg: "bg-amber-500/10", text: "text-amber-300", border: "border-amber-500/40", capColor: "#F59E0B", name: "Gold SST Gel" },
+  "SST": { bg: "bg-amber-500/10", text: "text-amber-300", border: "border-amber-500/40", capColor: "#F59E0B", name: "Gold SST Gel" },
+  "Red Top": { bg: "bg-red-500/10", text: "text-red-300", border: "border-red-500/40", capColor: "#EF4444", name: "Red Plain" },
+  "Sodium Citrate": { bg: "bg-sky-500/10", text: "text-sky-300", border: "border-sky-500/40", capColor: "#0284C7", name: "Light Blue Citrate" },
+  "Light Blue": { bg: "bg-sky-500/10", text: "text-sky-300", border: "border-sky-500/40", capColor: "#0284C7", name: "Light Blue Citrate" },
+  "Lithium Heparin": { bg: "bg-emerald-500/10", text: "text-emerald-300", border: "border-emerald-500/40", capColor: "#10B981", name: "Green Heparin" },
+  "Green Top": { bg: "bg-emerald-500/10", text: "text-emerald-300", border: "border-emerald-500/40", capColor: "#10B981", name: "Green Heparin" },
+  "Fluoride Tube": { bg: "bg-slate-500/10", text: "text-slate-300", border: "border-slate-500/40", capColor: "#64748B", name: "Grey Fluoride" },
+  "Grey Top": { bg: "bg-slate-500/10", text: "text-slate-300", border: "border-slate-500/40", capColor: "#64748B", name: "Grey Fluoride" },
+  "Sterile Container": { bg: "bg-yellow-500/10", text: "text-yellow-300", border: "border-yellow-500/40", capColor: "#EAB308", name: "Urine Sterile Cup" },
+};
+
+function getContainerStyle(containerName?: string) {
+  if (!containerName) return { bg: "bg-cyan-500/10", text: "text-cyan-300", border: "border-cyan-500/40", capColor: "#06B6D4", name: "Standard Specimen" };
+  for (const [key, val] of Object.entries(TUBE_CONTAINER_COLORS)) {
+    if (containerName.toLowerCase().includes(key.toLowerCase())) {
+      return val;
+    }
+  }
+  return { bg: "bg-cyan-500/10", text: "text-cyan-300", border: "border-cyan-500/40", capColor: "#06B6D4", name: containerName };
+}
 
 export default function OrderDetailPage({
   params,
@@ -53,6 +92,9 @@ export default function OrderDetailPage({
   const [updating, setUpdating] = useState(false);
   const [error, setError] = useState("");
   const [showCommunicationModal, setShowCommunicationModal] = useState(false);
+
+  // Modals
+  const [modalType, setModalType] = useState<"assignDoctor" | "collectSample" | "addPayment" | "cancelOrder" | null>(null);
 
   const fetchOrder = async () => {
     try {
@@ -91,356 +133,392 @@ export default function OrderDetailPage({
     }
   };
 
-  const copyToClipboard = (text: string, label: string) => {
-    navigator.clipboard.writeText(text);
-    showToast(`${label} copied to clipboard`, "info");
-  };
-
-  if (loading) {
-    return (
-      <ProtectedRoute>
-        <DashboardLayout title="Order Details">
-          <div className="py-20 text-center max-w-sm mx-auto space-y-3">
-            <RefreshCw className="h-8 w-8 text-blue-600 animate-spin mx-auto" />
-            <p className="text-xs font-semibold text-slate-500">
-              Loading laboratory order requisition...
-            </p>
-          </div>
-        </DashboardLayout>
-      </ProtectedRoute>
-    );
-  }
-
-  if (error || !order) {
-    return (
-      <ProtectedRoute>
-        <DashboardLayout title="Order Details">
-          <div className="py-16 text-center max-w-sm mx-auto space-y-4">
-            <div className="h-12 w-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center mx-auto">
-              <AlertCircle className="h-6 w-6" />
-            </div>
-            <h3 className="text-base font-bold text-slate-900">Order Not Found</h3>
-            <p className="text-xs text-slate-500">{error || "The requested order could not be located."}</p>
-            <Link
-              href="/orders"
-              className="inline-flex items-center gap-1.5 px-4 py-2 text-xs font-bold text-white bg-blue-600 rounded-xl"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              Return to Orders
-            </Link>
-          </div>
-        </DashboardLayout>
-      </ProtectedRoute>
-    );
-  }
+  const isStat = order?.priority === "STAT" || order?.priority === "URGENT";
+  const isPaid = order?.paymentStatus === "PAID";
+  const isPartial = order?.paymentStatus === "PARTIAL";
 
   return (
     <ProtectedRoute>
-      <DashboardLayout title={`Order #${order.orderNumber}`}>
+      <DashboardLayout title={`Order ${order?.orderNumber || orderId}`}>
         <ToastContainer toasts={toasts} onRemove={removeToast} />
 
-        <div className="max-w-6xl mx-auto space-y-6 pb-20">
-          {/* Back button & Action buttons */}
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-            <Link
-              href="/orders"
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:hover:text-white transition-colors"
-            >
-              <ArrowLeft className="h-3.5 w-3.5" />
-              <span>Back to All Orders</span>
-            </Link>
-
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
-                onClick={() => setShowCommunicationModal(true)}
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-emerald-700 bg-emerald-50 dark:bg-emerald-950/50 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 hover:bg-emerald-100 transition-colors shadow-xs"
+        <div className="space-y-6 pb-12">
+          {/* Header Navigation Bar */}
+          <div className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-slate-800 bg-slate-950 p-5 shadow-2xl">
+            <div className="flex items-center gap-4">
+              <Link
+                href="/orders"
+                className="inline-flex h-11 w-11 items-center justify-center rounded-2xl border border-slate-700 bg-slate-900 text-slate-300 shadow-md transition-all hover:bg-slate-800 hover:text-white hover:scale-105"
               >
-                <Share2 className="h-3.5 w-3.5" />
-                <span>WhatsApp & Email Hub</span>
-              </button>
-
-              <a
-                href={`/orders/${order.id}/barcode`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-purple-700 bg-purple-50 dark:bg-purple-950/50 dark:text-purple-300 border border-purple-200 hover:bg-purple-100 transition-colors shadow-xs"
-              >
-                <Printer className="h-3.5 w-3.5" />
-                Print Tube Barcodes
-              </a>
-
-              <a
-                href={`/orders/${order.id}/receipt`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold text-blue-700 bg-blue-50 dark:bg-blue-950/50 dark:text-blue-300 border border-blue-200 hover:bg-blue-100 transition-colors shadow-xs"
-              >
-                <FileText className="h-3.5 w-3.5" />
-                Print Receipt
-              </a>
-            </div>
-          </div>
-
-          {/* Workflow Action Bar */}
-          <div className="flex flex-wrap items-center gap-2 p-3 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-sm">
-            <span className="text-xs font-bold text-slate-500 mr-2 uppercase tracking-wide">Workflow:</span>
-            
-            <Link
-              href={`/samples/collect?orderId=${order.id}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-amber-700 bg-amber-50 hover:bg-amber-100 border border-amber-200 transition-colors"
-            >
-              <FlaskConical className="h-3.5 w-3.5" />
-              Collect Sample
-            </Link>
-
-            <Link
-              href={`/results?orderId=${order.id}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors"
-            >
-              <FileText className="h-3.5 w-3.5" />
-              Enter Results
-            </Link>
-
-            <Link
-              href={`/reports/order/${order.id}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 transition-colors"
-            >
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              View Report
-            </Link>
-
-            <Link
-              href={`/invoices?orderId=${order.id}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-sky-700 bg-sky-50 hover:bg-sky-100 border border-sky-200 transition-colors"
-            >
-              <Receipt className="h-3.5 w-3.5" />
-              View Invoice
-            </Link>
-
-            <Link
-              href={`/payments?orderId=${order.id}&amount=${order.dueAmount || 0}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 transition-colors"
-            >
-              <DollarSign className="h-3.5 w-3.5" />
-              Record Payment
-            </Link>
-
-            <Link
-              href={`/patients/${order.patient?.id}`}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-[11px] font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 border border-blue-200 transition-colors ml-auto"
-            >
-              <User className="h-3.5 w-3.5" />
-              Patient Profile
-            </Link>
-          </div>
-
-          {/* Main Hero Card */}
-          <div className="rounded-3xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-xl p-6 md:p-8 space-y-6">
-            {/* Header info */}
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-6 border-b border-slate-100 dark:border-slate-800">
-              <div className="space-y-1">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-2xl font-black text-slate-900 dark:text-white">
-                    Order {order.orderNumber}
+                <ArrowLeft className="h-5 w-5" />
+              </Link>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-black text-white">
+                    {order?.orderNumber || "Clinical Requisition"}
                   </h1>
-                  <button
-                    type="button"
-                    onClick={() => copyToClipboard(order.orderNumber, "Order number")}
-                    className="text-slate-400 hover:text-slate-600 p-1"
-                    title="Copy Order Number"
-                  >
-                    <Copy className="h-4 w-4" />
-                  </button>
-                  <PriorityBadge priority={order.priority} />
+                  {isStat && (
+                    <span className="rounded-full bg-rose-600 px-2.5 py-0.5 text-[10px] font-black uppercase text-white shadow-md flex items-center gap-1">
+                      <Flame className="h-3 w-3 fill-white" /> {order.priority}
+                    </span>
+                  )}
+                  {order?.orderStatus && (
+                    <StatusBadge status={order.orderStatus as any} />
+                  )}
                 </div>
-                <p className="text-xs text-slate-500 font-mono flex items-center gap-2">
-                  <span>Tube Barcode: {order.barcode}</span>
-                  <span>•</span>
-                  <span>Registered: {new Date(order.createdAt).toLocaleString("en-IN")}</span>
-                </p>
-              </div>
-
-              {/* Status Selector */}
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-semibold text-slate-500">Current Status:</span>
-                <StatusBadge
-                  status={order.orderStatus}
-                  isUpdating={updating}
-                  interactive={true}
-                  onChange={handleStatusChange}
-                />
-              </div>
-            </div>
-
-            {/* Demographics Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Patient Demographics */}
-              <div className="p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 space-y-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                  <User className="h-3.5 w-3.5 text-blue-600" />
-                  Patient Demographics
-                </span>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">
-                  {order.patient?.firstName} {order.patient?.lastName}
-                </p>
-                <div className="text-xs text-slate-500 space-y-0.5">
-                  <p className="font-mono">UHID: {order.patient?.uhid}</p>
-                  <p>Gender: {order.patient?.gender} • Phone: {order.patient?.phone}</p>
-                  {order.patient?.address && <p>Address: {order.patient.address}</p>}
-                </div>
-              </div>
-
-              {/* Referring Doctor */}
-              <div className="p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 space-y-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                  <Stethoscope className="h-3.5 w-3.5 text-blue-600" />
-                  Referring Physician
-                </span>
-                <p className="text-sm font-bold text-slate-900 dark:text-white">
-                  {order.doctor?.fullName || "Self / Walk-in"}
-                </p>
-                <div className="text-xs text-slate-500 space-y-0.5">
-                  <p>{order.doctor?.specialization || "Direct Patient Consultation"}</p>
-                  {order.doctor?.clinicName && <p>Clinic: {order.doctor.clinicName}</p>}
-                </div>
-              </div>
-
-              {/* Turnaround & Scheduling */}
-              <div className="p-4 rounded-2xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-200/60 dark:border-slate-700/60 space-y-2">
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-blue-600" />
-                  Processing Turnaround (TAT)
-                </span>
-                <TATIndicator
-                  createdAt={order.createdAt}
-                  tests={order.items}
-                  orderStatus={order.orderStatus}
-                />
-                <p className="text-xs text-slate-500">
-                  Collection: {order.collectionType === "HOME_COLLECTION" ? "Home Visit" : "Walk-in Center"}
+                <p className="text-xs text-slate-400 mt-0.5 flex items-center gap-2 font-mono">
+                  <ScanLine className="h-3.5 w-3.5 text-cyan-400" /> Barcode: {order?.barcode || "—"}
                 </p>
               </div>
             </div>
 
-            {/* Patient Notification & Communications Center */}
-            <div className="p-4 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-blue-50 dark:from-emerald-950/30 dark:via-teal-950/20 dark:to-blue-950/30 border border-emerald-200/80 dark:border-emerald-800/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-              <div className="flex items-center gap-3">
-                <div className="h-10 w-10 rounded-2xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-md">
-                  <Share2 className="h-5 w-5" />
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                onClick={() => window.open(`/orders/${orderId}/barcode`, "_blank")}
+                className="inline-flex items-center gap-1.5 rounded-2xl border border-cyan-500/40 bg-cyan-950/40 px-4 py-2.5 text-xs font-bold text-cyan-300 hover:bg-cyan-900/50 transition-all"
+              >
+                <Printer className="h-4 w-4" /> Barcode Labels
+              </button>
+              <button
+                onClick={() => window.open(`/orders/${orderId}/invoice`, "_blank")}
+                className="inline-flex items-center gap-1.5 rounded-2xl border border-indigo-500/40 bg-indigo-950/40 px-4 py-2.5 text-xs font-bold text-indigo-300 hover:bg-indigo-900/50 transition-all"
+              >
+                <Receipt className="h-4 w-4" /> Tax Invoice
+              </button>
+              <button
+                onClick={() => setShowCommunicationModal(true)}
+                className="inline-flex items-center gap-1.5 rounded-2xl border border-emerald-500/40 bg-emerald-950/40 px-4 py-2.5 text-xs font-bold text-emerald-300 hover:bg-emerald-900/50 transition-all"
+              >
+                <MessageCircle className="h-4 w-4" /> WhatsApp Receipt
+              </button>
+            </div>
+          </div>
+
+          {loading ? (
+            <div className="flex h-72 flex-col items-center justify-center space-y-4 rounded-3xl border border-slate-800 bg-slate-950 p-8 shadow-2xl">
+              <Loader2 className="h-10 w-10 animate-spin text-cyan-400" />
+              <p className="text-sm font-bold text-slate-300">Retrieving patient requisition dossier...</p>
+            </div>
+          ) : error ? (
+            <div className="rounded-3xl border border-rose-500/40 bg-rose-950/30 p-8 text-center shadow-2xl">
+              <h3 className="text-lg font-black text-rose-200">Requisition Not Found</h3>
+              <p className="mt-2 text-xs text-rose-300/80">{error}</p>
+              <button
+                onClick={() => router.push("/orders")}
+                className="mt-6 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-2.5 text-xs font-black text-slate-950 shadow-lg"
+              >
+                Return to Orders
+              </button>
+            </div>
+          ) : order ? (
+            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+              {/* Left 2 Cols: Main Dossier */}
+              <div className="space-y-6 lg:col-span-2">
+                {/* Patient Demographics & Doctor */}
+                <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-2xl space-y-5">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-cyan-400">
+                      <UserRound className="h-4 w-4" /> Patient &amp; Requisition Profile
+                    </div>
+                    <Link
+                      href={`/patients/${order.patient?.id}`}
+                      className="inline-flex items-center gap-1 text-xs font-bold text-slate-400 hover:text-cyan-300"
+                    >
+                      Patient Record <ExternalLink className="h-3 w-3" />
+                    </Link>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-slate-500">Patient Full Name</p>
+                      <p className="text-base font-black text-slate-100 mt-0.5">
+                        {order.patient?.firstName} {order.patient?.lastName}
+                      </p>
+                      <p className="text-slate-400 text-[11px] mt-0.5">
+                        {order.patient?.gender} · {order.patient?.age || "—"} Years · Phone: {order.patient?.phone || "N/A"}
+                      </p>
+                    </div>
+
+                    <div>
+                      <p className="text-[10px] font-bold uppercase text-slate-500">UHID / Patient ID</p>
+                      <p className="font-mono text-base font-black text-cyan-300 mt-0.5">
+                        {order.patient?.uhid}
+                      </p>
+                      <p className="text-slate-400 text-[11px] mt-0.5">
+                        Booked: {new Date(order.createdAt).toLocaleString()}
+                      </p>
+                    </div>
+
+                    <div className="sm:col-span-2 border-t border-slate-800/80 pt-3">
+                      <p className="text-[10px] font-bold uppercase text-slate-500">Referring Clinician</p>
+                      <div className="mt-1 flex items-center justify-between">
+                        <div>
+                          <p className="font-bold text-slate-200">
+                            Dr. {order.doctor?.fullName || "Self / Walk-in Registration"}
+                          </p>
+                          <p className="text-[11px] text-slate-400">
+                            {order.doctor?.specialization || "General Medicine"} · {order.doctor?.clinicName || "Central OPD"}
+                          </p>
+                        </div>
+                        <button
+                          onClick={() => setModalType("assignDoctor")}
+                          className="rounded-xl border border-slate-700 bg-slate-800 px-3 py-1.5 text-xs font-bold text-cyan-300 hover:bg-slate-700"
+                        >
+                          Change Doctor
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <h4 className="text-xs font-bold text-emerald-950 dark:text-emerald-200">
-                      Digital Patient Communications & Dispatch
-                    </h4>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-200/70 dark:bg-emerald-900 text-emerald-800 dark:text-emerald-300">
-                      Active Channel
+
+                {/* Ordered Test Panels & Container Requirements */}
+                <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-2xl space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-indigo-400">
+                      <FlaskConical className="h-4 w-4" /> Ordered Test Panels &amp; Specimen Tubes ({order.items?.length || 0})
+                    </div>
+                    <span className="text-xs font-mono font-bold text-slate-400">
+                      Total: ₹{order.grandTotal}
                     </span>
                   </div>
-                  <p className="text-[11px] text-emerald-800/80 dark:text-emerald-400 mt-0.5">
-                    WhatsApp: <span className="font-mono font-semibold">{order.patient?.phone || "No phone registered"}</span> • Email: <span className="font-semibold">{order.patient?.email || "No email on file"}</span>
-                  </p>
+
+                  <div className="space-y-3">
+                    {order.items?.map((item: any, idx: number) => {
+                      const tube = getContainerStyle(item.test?.sampleContainer);
+                      return (
+                        <div
+                          key={item.id || idx}
+                          className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-4 space-y-2.5 transition-all hover:border-slate-700"
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <h4 className="font-bold text-slate-100 text-sm">{item.test?.testName}</h4>
+                                <span className="font-mono text-[10px] font-bold bg-slate-800 text-cyan-300 px-2 py-0.5 rounded-md">
+                                  {item.test?.testCode}
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-slate-400 mt-0.5">
+                                {item.test?.processingDepartment || "Core Laboratory"} · Specimen: {item.test?.sampleType}
+                              </p>
+                            </div>
+
+                            <div className="text-right">
+                              <span className="font-mono font-bold text-sm text-slate-100">
+                                ₹{item.finalPrice || item.price}
+                              </span>
+                              {item.test?.tatHours && (
+                                <p className="text-[10px] text-slate-500 font-mono">TAT: {item.test.tatHours}h</p>
+                              )}
+                            </div>
+                          </div>
+
+                          <div className="flex items-center justify-between border-t border-slate-800/80 pt-2 text-xs">
+                            <div
+                              className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-bold shadow-sm"
+                              style={{
+                                borderColor: `${tube.capColor}55`,
+                                backgroundColor: `${tube.capColor}15`,
+                                color: tube.capColor,
+                              }}
+                            >
+                              <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tube.capColor }} />
+                              <span>{item.test?.sampleContainer || "Standard Specimen Tube"}</span>
+                            </div>
+
+                            <span className="text-[10px] text-slate-400">
+                              {item.test?.sampleType === "BLOOD" ? "Room Temperature · Invert Gently" : "Standard SOP"}
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 shrink-0">
-                <button
-                  type="button"
-                  onClick={() => setShowCommunicationModal(true)}
-                  className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors"
-                >
-                  <MessageSquare className="h-3.5 w-3.5" />
-                  <span>WhatsApp Alert</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setShowCommunicationModal(true)}
-                  className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-xs flex items-center gap-1.5 transition-colors"
-                >
-                  <Mail className="h-3.5 w-3.5" />
-                  <span>Send Email</span>
-                </button>
+              {/* Right Column: Financial Ledger & Workflow Stage */}
+              <div className="space-y-6">
+                {/* Financial Ledger Card */}
+                <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-2xl space-y-4 text-xs">
+                  <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                    <div className="flex items-center gap-2 font-bold uppercase tracking-wider text-emerald-400">
+                      <CreditCard className="h-4 w-4" /> Billing Ledger
+                    </div>
+                    <span className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase ${
+                      isPaid ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40" :
+                      isPartial ? "bg-amber-500/20 text-amber-300 border border-amber-500/40" :
+                      "bg-rose-500/20 text-rose-300 border border-rose-500/40"
+                    }`}>
+                      {order.paymentStatus}
+                    </span>
+                  </div>
+
+                  <div className="space-y-2.5 border-b border-slate-800 pb-4">
+                    <div className="flex justify-between text-slate-400">
+                      <span>Tests Subtotal</span>
+                      <span className="font-mono font-bold text-slate-200">₹{order.grandTotal}</span>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>Discounts</span>
+                      <span className="font-mono font-bold text-emerald-400">₹0.00</span>
+                    </div>
+                    <div className="flex justify-between text-slate-400">
+                      <span>GST / Tax</span>
+                      <span className="font-mono font-bold text-slate-200">₹0.00</span>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between text-base font-black text-white">
+                    <span>Grand Total</span>
+                    <span className="font-mono text-cyan-300">₹{order.grandTotal}</span>
+                  </div>
+
+                  <div className="flex justify-between font-bold text-emerald-400">
+                    <span>Amount Paid</span>
+                    <span className="font-mono">₹{order.paidAmount}</span>
+                  </div>
+
+                  <div className="flex justify-between font-bold text-rose-400">
+                    <span>Balance Due</span>
+                    <span className="font-mono">₹{order.dueAmount}</span>
+                  </div>
+
+                  {order.dueAmount > 0 && (
+                    <button
+                      onClick={() => setModalType("addPayment")}
+                      className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 p-3.5 text-xs font-black text-white shadow-xl shadow-emerald-950/50 hover:from-emerald-400 hover:to-teal-500 transition-all mt-3"
+                    >
+                      <DollarSign className="h-4 w-4" /> Settle Balance of ₹{order.dueAmount}
+                    </button>
+                  )}
+                </div>
+
+                {/* Workflow Operational Action Box */}
+                <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-2xl space-y-4">
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-cyan-400 flex items-center gap-2">
+                    <Activity className="h-4 w-4" /> Clinical Workflow Action
+                  </h3>
+
+                  {!order.sampleCollected ? (
+                    <button
+                      onClick={() => setModalType("collectSample")}
+                      className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-purple-500 to-indigo-600 p-4 text-sm font-black text-white shadow-xl hover:from-purple-400 hover:to-indigo-500 transition-all"
+                    >
+                      <FlaskConical className="h-4 w-4" />
+                      <span>Phlebotomy Sample Draw</span>
+                    </button>
+                  ) : order.orderStatus === "SAMPLE_COLLECTED" ? (
+                    <button
+                      onClick={() => handleStatusChange("PROCESSING")}
+                      disabled={updating}
+                      className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 p-4 text-sm font-black text-slate-950 shadow-xl hover:from-cyan-400 hover:to-blue-500 transition-all"
+                    >
+                      <span>Load on Diagnostic Analyzer</span>
+                    </button>
+                  ) : order.orderStatus === "PROCESSING" ? (
+                    <button
+                      onClick={() => handleStatusChange("COMPLETED")}
+                      disabled={updating}
+                      className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-emerald-500 to-teal-600 p-4 text-sm font-black text-white shadow-xl hover:from-emerald-400 hover:to-teal-500 transition-all"
+                    >
+                      <span>Pathology Validation &amp; Sign-off</span>
+                    </button>
+                  ) : (
+                    <div className="rounded-2xl border border-emerald-500/40 bg-emerald-950/20 p-4 text-center text-xs font-bold text-emerald-300 flex items-center justify-center gap-2">
+                      <ShieldCheck className="h-5 w-5" /> Requisition Completed &amp; Verified
+                    </div>
+                  )}
+
+                  {order.orderStatus !== "CANCELLED" && order.orderStatus !== "COMPLETED" && (
+                    <button
+                      onClick={() => setModalType("cancelOrder")}
+                      className="w-full rounded-2xl border border-rose-500/40 bg-rose-950/30 p-3 text-xs font-bold text-rose-300 hover:bg-rose-900/40 transition-colors"
+                    >
+                      Cancel Requisition
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
+          ) : null}
+        </div>
 
-            {/* Prescribed Tests Table */}
-            <div className="space-y-3 pt-2">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <FlaskConical className="h-4 w-4 text-blue-600" />
-                Prescribed Tests ({order.items?.length || 0})
-              </h3>
+        {/* Communication Modal */}
+        <OrderCommunicationHubModal
+          order={order}
+          isOpen={showCommunicationModal}
+          onClose={() => setShowCommunicationModal(false)}
+        />
 
-              <div className="rounded-2xl border border-slate-200/80 dark:border-slate-800 overflow-hidden">
-                <table className="w-full text-left border-collapse text-xs">
-                  <thead className="bg-slate-50 dark:bg-slate-800/60 border-b border-slate-100 dark:border-slate-800">
-                    <tr>
-                      <th className="px-4 py-2.5 font-bold text-slate-500 uppercase">Test Name & Code</th>
-                      <th className="px-4 py-2.5 font-bold text-slate-500 uppercase">Sample Tube</th>
-                      <th className="px-4 py-2.5 font-bold text-slate-500 uppercase">Turnaround</th>
-                      <th className="px-4 py-2.5 font-bold text-slate-500 uppercase text-right">Price</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                    {(order.items || []).map((item: any, idx: number) => (
-                      <tr key={item.id || idx} className="hover:bg-slate-50/60">
-                        <td className="px-4 py-3">
-                          <p className="font-bold text-slate-900 dark:text-white">
-                            {item.test?.testName}
-                          </p>
-                          <p className="text-[10px] font-mono text-slate-400">
-                            {item.test?.testCode}
-                          </p>
-                        </td>
-                        <td className="px-4 py-3 text-slate-600 dark:text-slate-300">
-                          {item.test?.sampleType || "Blood"}
-                        </td>
-                        <td className="px-4 py-3 text-slate-500">
-                          {item.test?.tatDisplay || `${item.test?.tatHours || 24} hours`}
-                        </td>
-                        <td className="px-4 py-3 font-mono font-bold text-right text-slate-900 dark:text-white">
-                          ₹{item.finalPrice || item.price || 0}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-
-            {/* Financial Ledger */}
-            <div className="p-5 rounded-2xl bg-slate-900 text-white flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="space-y-1">
-                <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-                  Payment Status: {order.paymentStatus}
-                </span>
-                <p className="text-2xl font-black font-mono">
-                  Total: ₹{Number(order.grandTotal || 0).toLocaleString("en-IN")}
-                </p>
-                <p className="text-xs text-slate-300">
-                  Paid: ₹{Number(order.paidAmount || 0).toLocaleString("en-IN")} • Due: ₹{Number(order.dueAmount || 0).toLocaleString("en-IN")}
-                </p>
-              </div>
-
-              <div className="w-full md:w-56">
-                <PaymentProgressBar
-                  paidAmount={order.paidAmount}
-                  grandTotal={order.grandTotal}
-                  paymentStatus={order.paymentStatus}
-                />
-              </div>
-            </div>
-          </div>
-
-          <OrderCommunicationHubModal
-            isOpen={showCommunicationModal}
-            onClose={() => setShowCommunicationModal(false)}
+        {/* Assign Doctor Modal */}
+        {modalType === "assignDoctor" && order && (
+          <QuickAssignDoctorModal
             order={order}
-            onSuccess={({ channel, recipient }) => {
-              showToast(`Notification dispatched via ${channel} to ${recipient}!`, "success");
+            doctors={[]}
+            isOpen={true}
+            onClose={() => setModalType(null)}
+            onSubmit={async (doctorId) => {
+              await orderApi.update(order.id, { doctorId });
+              showToast("Referring doctor updated", "success");
+              setModalType(null);
+              await fetchOrder();
             }}
           />
-        </div>
+        )}
+
+        {/* Collect Sample Modal */}
+        {modalType === "collectSample" && order && (
+          <QuickCollectSampleModal
+            order={order}
+            isOpen={true}
+            onClose={() => setModalType(null)}
+            onSubmit={async (data) => {
+              await orderApi.collectSample(order.id, {
+                barcode: data.barcode,
+                notes: data.notes,
+              });
+              showToast("Specimen collected and tube barcode assigned", "success");
+              setModalType(null);
+              await fetchOrder();
+            }}
+          />
+        )}
+
+        {/* Add Payment Modal */}
+        {modalType === "addPayment" && order && (
+          <AddPaymentModal
+            order={order}
+            isOpen={true}
+            onClose={() => setModalType(null)}
+            onSubmit={async (data) => {
+              await paymentsApi.create({
+                orderId: order.id,
+                amount: data.amount,
+                method: data.method,
+                remarks: data.remarks,
+              });
+              showToast(`Payment of ₹${data.amount} recorded`, "success");
+              setModalType(null);
+              await fetchOrder();
+            }}
+          />
+        )}
+
+        {/* Cancel Order Modal */}
+        {modalType === "cancelOrder" && order && (
+          <CancelOrderModal
+            order={order}
+            isOpen={true}
+            onClose={() => setModalType(null)}
+            onSubmit={async (reason) => {
+              await orderApi.cancel(order.id, { reason });
+              showToast(`Order #${order.orderNumber} cancelled`, "warning");
+              setModalType(null);
+              await fetchOrder();
+            }}
+          />
+        )}
       </DashboardLayout>
     </ProtectedRoute>
   );

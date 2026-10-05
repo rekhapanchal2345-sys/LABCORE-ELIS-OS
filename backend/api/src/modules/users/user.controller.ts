@@ -10,6 +10,9 @@ import { Prisma } from "@prisma/client";
 
 import { prisma } from "../../lib/prisma";
 
+import { assertStrongPassword, assertNotCommonPassword, assertNoPersonalInfo } from "../../../src/utils/password-policy";
+import { hashPassword } from "../../../src/utils/password";
+
 import type {
   AuthenticatedRequest,
 } from "../../../middleware/auth";
@@ -22,6 +25,51 @@ import {
  * Password hashing configuration.
  */
 const BCRYPT_ROUNDS = 12;
+
+/**
+ * A concurrent request can pass the pre-check and still hit the DB unique
+ * constraint; surface that as 409 instead of a generic 500.
+ */
+const toConflictIfDuplicate = (error: unknown, res: Response): boolean => {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  ) {
+    res.status(409).json({
+      success: false,
+      message:
+        "A user with this email or employee code already exists.",
+    });
+    return true;
+  }
+  return false;
+};
+
+/**
+ * When a password is set or reset, stamp the change time, keep history for
+ * reuse-prevention, and kill every active session so a reset actually ends
+ * access immediately.
+ */
+const applyPasswordChange = async (
+  userId: string,
+  password: string
+): Promise<string> => {
+  assertStrongPassword(password);
+  const passwordHash = await hashPassword(password);
+  const passwordChangedAt = new Date();
+
+  await prisma.$transaction([
+    prisma.passwordHistory.create({
+      data: { userId, passwordHash },
+    }),
+    prisma.userSession.updateMany({
+      where: { userId, revokedAt: null },
+      data: { revokedAt: passwordChangedAt, revokeReason: "password_changed" },
+    }),
+  ]);
+
+  return passwordHash;
+};
 
 /**
  * Never return passwordHash.
@@ -148,13 +196,17 @@ export const createUser = async (
     }
 
     /**
+     * Enforce the same password policy as sign-in accounts created via
+     * /api/auth/register so no path can create a weak credential.
+     */
+    assertStrongPassword(password);
+    assertNotCommonPassword(password);
+    assertNoPersonalInfo(password, email, fullName);
+
+    /**
      * Never store plaintext password.
      */
-    const passwordHash =
-      await bcrypt.hash(
-        password,
-        BCRYPT_ROUNDS
-      );
+    const passwordHash = await hashPassword(password);
 
     const user =
       await prisma.user.create({
@@ -169,10 +221,21 @@ export const createUser = async (
           status,
           specialization:
             specialization ?? null,
+          passwordChangedAt: new Date(),
         },
 
         select: userSelect,
       });
+
+    // Seed reuse-prevention history with the initial credential.
+    await prisma.passwordHistory
+      .create({
+        data: {
+          userId: user.id,
+          passwordHash,
+        },
+      })
+      .catch(() => undefined);
 
     res.status(201).json({
       success: true,
@@ -183,6 +246,7 @@ export const createUser = async (
       },
     });
   } catch (error) {
+    if (toConflictIfDuplicate(error, res)) return;
     next(error);
   }
 };
@@ -570,14 +634,17 @@ export const updateUser =
       }
 
       /**
-       * Hash new password only when supplied.
+       * Hash new password only when supplied. An administrative reset must
+       * satisfy the password policy, update the expiry clock, record history
+       * and revoke the user's live sessions.
        */
       if (password) {
         data.passwordHash =
-          await bcrypt.hash(
-            password,
-            BCRYPT_ROUNDS
+          await applyPasswordChange(
+            id as string,
+            password
           );
+        data.passwordChangedAt = new Date();
       }
 
       const user =
@@ -676,6 +743,12 @@ export const deactivateUser =
 
           select: userSelect,
         });
+
+      // A deactivated account must not keep live sessions.
+      await prisma.userSession.updateMany({
+        where: { userId: id as string, revokedAt: null },
+        data: { revokedAt: new Date(), revokeReason: "account_disabled" },
+      });
 
       res.status(200).json({
         success: true,
@@ -821,6 +894,12 @@ export const suspendUser =
 
           select: userSelect,
         });
+
+      // A suspended account must not keep live sessions.
+      await prisma.userSession.updateMany({
+        where: { userId: id as string, revokedAt: null },
+        data: { revokedAt: new Date(), revokeReason: "account_disabled" },
+      });
 
       res.status(200).json({
         success: true,

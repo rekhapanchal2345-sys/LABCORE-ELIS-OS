@@ -3,6 +3,12 @@
 import { useRef, useEffect } from "react";
 import QRCode from "qrcode";
 import "./PatientPrintTemplate.css";
+import {
+  formatPatientFullName,
+  calculateClinicalAge,
+  formatIndianPhone,
+  formatBloodGroup,
+} from "@/lib/patient-utils";
 
 type Patient = {
   id?: string;
@@ -61,7 +67,7 @@ export default function PatientPrintTemplate({ patient }: PatientPrintTemplatePr
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-IN", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -70,7 +76,7 @@ export default function PatientPrintTemplate({ patient }: PatientPrintTemplatePr
 
   const formatDateTime = (dateString?: string) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleString("en-US", {
+    return new Date(dateString).toLocaleString("en-IN", {
       year: "numeric",
       month: "long",
       day: "numeric",
@@ -80,20 +86,7 @@ export default function PatientPrintTemplate({ patient }: PatientPrintTemplatePr
   };
 
   const calculateAge = (dateOfBirth?: string) => {
-    if (!dateOfBirth) return "N/A";
-    const today = new Date();
-    const birthDate = new Date(dateOfBirth);
-    const age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      return age - 1;
-    }
-    return age;
-  };
-
-  const formatBloodGroup = (bloodGroup?: string | null) => {
-    if (!bloodGroup) return "N/A";
-    return bloodGroup.replace("_", "+");
+    return calculateClinicalAge(dateOfBirth, patient?.age).formatted;
   };
 
   const formatGender = (gender?: string) => {
@@ -105,8 +98,7 @@ export default function PatientPrintTemplate({ patient }: PatientPrintTemplatePr
   };
 
   const getFullName = () => {
-    const parts = [patient?.firstName, patient?.middleName, patient?.lastName].filter(Boolean);
-    return parts.length > 0 ? parts.join(" ") : "N/A";
+    return formatPatientFullName(patient);
   };
 
   const getFullAddress = () => {

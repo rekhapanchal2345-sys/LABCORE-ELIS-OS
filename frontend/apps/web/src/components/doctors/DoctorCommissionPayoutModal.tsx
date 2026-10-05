@@ -106,6 +106,8 @@ export default function DoctorCommissionPayoutModal({
 
   const tdsAmount = Math.round((amount * tdsDeduction) / 100);
   const netPayable = amount - tdsAmount;
+  const totalReferralRevenue = realCommissionData?.totalRevenue ?? 0;
+  const unsettledCommission = realCommissionData?.totalCommission ?? 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -229,13 +231,13 @@ export default function DoctorCommissionPayoutModal({
                 <div className="flex justify-between items-center text-xs">
                   <span className="text-slate-600">Calculated Referral Revenue:</span>
                   <span className="font-bold text-slate-900">
-                    ₹{estimatedRevenue.toLocaleString()}
+                    ₹{totalReferralRevenue.toLocaleString()}
                   </span>
                 </div>
                 <div className="flex justify-between items-center text-xs pt-1 border-t border-purple-200/60">
                   <span className="text-purple-900 font-bold">Unsettled Incentive Balance:</span>
                   <span className="font-bold text-purple-900 text-sm">
-                    ₹{initialCommission.toLocaleString()}
+                    ₹{unsettledCommission.toLocaleString()}
                   </span>
                 </div>
               </div>
@@ -432,13 +434,41 @@ export default function DoctorCommissionPayoutModal({
               </div>
 
               {/* Action Buttons */}
-              <div className="flex gap-3">
+              <div className="flex gap-2">
                 <button
                   type="button"
                   onClick={onClose}
                   className="flex-1 py-2.5 text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
                 >
                   Done
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    const phone = (doctor.whatsappNumber || doctor.phone || "").replace(/\D/g, "");
+                    const msg = [
+                      `Respected ${doctorName},`,
+                      ``,
+                      `Greetings from LabCore Diagnostic Enterprise.`,
+                      ``,
+                      `We have processed your referral incentive settlement:`,
+                      `• Voucher No: ${voucherData.voucherNumber}`,
+                      `• Settlement Date: ${voucherData.payoutDate}`,
+                      `• Gross Amount: ₹${voucherData.grossAmount.toLocaleString()}`,
+                      `• TDS Deducted (${voucherData.tdsPercentage}%): ₹${voucherData.tdsAmount.toLocaleString()}`,
+                      `• Net Disbursed: ₹${voucherData.netPaid.toLocaleString()}`,
+                      `• Mode: ${voucherData.paymentMode} (Ref: ${voucherData.refNumber})`,
+                      ``,
+                      `Thank you for your continued clinical trust.`,
+                    ].join("\n");
+                    const url = `https://wa.me/${phone.length === 10 ? `91${phone}` : phone}?text=${encodeURIComponent(msg)}`;
+                    window.open(url, "_blank");
+                  }}
+                  className="flex-1 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold text-xs transition-all shadow-sm flex items-center justify-center gap-1.5"
+                >
+                  <MessageSquare className="w-4 h-4" />
+                  WhatsApp Advice
                 </button>
 
                 <button

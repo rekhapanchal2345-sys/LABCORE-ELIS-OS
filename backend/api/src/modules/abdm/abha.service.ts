@@ -13,6 +13,7 @@
 import crypto from "crypto";
 import prisma from "../../../config/database";
 import { abdmPost } from "./abdm.gateway.client";
+import { sendSMS } from "../../lib/communication-providers";
 import abdmConfig from "./abdm.config";
 
 // ─────────────────────────────────────────────────────────────
@@ -37,6 +38,8 @@ export interface AbhaProfile {
 export interface AadhaarOtpResult {
   txnId: string;
   message: string;
+  mockMode: boolean;
+  mockOtp?: string;
 }
 
 export interface AbhaGenerateResult {
@@ -51,6 +54,8 @@ export interface AbhaVerifyInitResult {
   txnId: string;
   authMode: string;
   message: string;
+  mockMode: boolean;
+  mockOtp?: string;
 }
 
 export interface AbhaVerifyConfirmResult {
@@ -167,7 +172,6 @@ export async function requestMobileOtp(mobile: string): Promise<AadhaarOtpResult
 
   // If lab has SMS provider configured, attempt real telecom SMS dispatch as well
   try {
-    const { sendSMS } = await import("../../lib/communication-providers");
     await sendSMS({
       to: mobile.startsWith("+91") ? mobile : `+91${mobile}`,
       message: `Your LabCore ABDM ABHA verification OTP is 123456. Valid for 10 mins. (LabCore LIS)`,
@@ -401,7 +405,7 @@ export async function getAbhaCardData(patientId: string) {
   return {
     abhaNumber: patient.abhaNumber,
     abhaAddress: patient.abhaAddress,
-    name: `${patient.firstName} ${patient.lastName}`,
+    name: [patient.title, patient.firstName, patient.middleName, patient.lastName].filter(Boolean).join(" ").trim() || "Patient",
     gender: patient.gender,
     dob: patient.dateOfBirth,
     mobile: patient.phone,

@@ -268,7 +268,9 @@ export default function Header({
                 <span className="text-sm font-semibold text-[var(--text-primary)]">
                   {isMounted ? userName : 'Jaya Ashapurama'}
                 </span>
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" title="NABL Verified Authorized Signatory" />
+                <span title="NABL Verified Authorized Signatory" className="inline-flex shrink-0">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                </span>
               </div>
               <div className="flex items-center gap-1.5 mt-0.5">
                 <span className="rounded bg-[var(--surface-primary)] px-1.5 py-0.5 text-[9px] font-medium text-[var(--text-secondary)] border border-[var(--border-light)] shadow-sm">

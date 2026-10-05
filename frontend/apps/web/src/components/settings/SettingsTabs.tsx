@@ -14,7 +14,6 @@ import {
   Archive,
   Palette,
   HardDriveDownload,
-  Sparkles,
   CheckCircle2,
 } from "lucide-react";
 
@@ -35,7 +34,6 @@ export type SettingsTab =
 interface SettingsTabsProps {
   activeTab: SettingsTab;
   onTabChange: (tab: SettingsTab) => void;
-  hasUnsavedChanges?: boolean;
 }
 
 interface TabDefinition {
@@ -115,14 +113,52 @@ const tabs: TabDefinition[] = [
   },
 ];
 
+/**
+ * Valid tab identifiers for the ?tab= query parameter, derived from `tabs` so the
+ * URL contract can never drift from the rendered navigation.
+ */
+export const SETTINGS_TABS: readonly SettingsTab[] = tabs.map((tab) => tab.id);
+
+/** Narrows an arbitrary ?tab= value to a known SettingsTab. */
+export function isSettingsTab(value: string | null): value is SettingsTab {
+  return value !== null && (SETTINGS_TABS as readonly string[]).includes(value);
+}
+
 export default function SettingsTabs({
   activeTab,
   onTabChange,
-  hasUnsavedChanges,
 }: SettingsTabsProps) {
+  const navRef = React.useRef<HTMLInputElement>(null);
+
+  React.useEffect(() => {
+    if (navRef.current) {
+      const activeEl = navRef.current.querySelector('[data-active="true"]');
+      if (activeEl) {
+        activeEl.scrollIntoView({ behavior: "smooth", block: "nearest", inline: "center" });
+      }
+    }
+  }, [activeTab]);
+
+  const scroll = (direction: "left" | "right") => {
+    if (navRef.current) {
+      const amount = direction === "left" ? -250 : 250;
+      navRef.current.scrollBy({ left: amount, behavior: "smooth" });
+    }
+  };
+
   return (
-    <div className="relative border-b border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-xl p-1.5 shadow-sm">
+    <div className="relative border-b border-slate-200 dark:border-slate-800 bg-white/60 dark:bg-slate-900/60 backdrop-blur-md rounded-xl p-1.5 shadow-sm group">
+      <button
+        type="button"
+        onClick={() => scroll("left")}
+        className="absolute left-1 top-1/2 -translate-y-1/2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-800"
+        aria-label="Scroll left"
+      >
+        ‹
+      </button>
+
       <nav
+        ref={navRef as any}
         className="flex items-center gap-1.5 overflow-x-auto no-scrollbar scroll-smooth py-0.5 px-0.5"
         aria-label="Settings navigation"
       >
@@ -134,6 +170,7 @@ export default function SettingsTabs({
             <button
               key={tab.id}
               type="button"
+              data-active={active}
               onClick={() => onTabChange(tab.id)}
               className={`group relative flex shrink-0 items-center gap-2 rounded-lg px-3.5 py-2.5 text-xs font-semibold tracking-tight transition-all duration-200 ${
                 active
@@ -148,7 +185,7 @@ export default function SettingsTabs({
                     : "text-slate-400 group-hover:text-slate-700 dark:text-slate-500 dark:group-hover:text-slate-300"
                 }`}
               />
-              <span>{tab.label}</span>
+              <span className="whitespace-nowrap">{tab.label}</span>
 
               {tab.badge && (
                 <span
@@ -178,6 +215,15 @@ export default function SettingsTabs({
           );
         })}
       </nav>
+
+      <button
+        type="button"
+        onClick={() => scroll("right")}
+        className="absolute right-1 top-1/2 -translate-y-1/2 z-20 flex h-7 w-7 items-center justify-center rounded-full bg-slate-900/80 text-white shadow-md opacity-0 group-hover:opacity-100 transition-opacity hover:bg-slate-800"
+        aria-label="Scroll right"
+      >
+        ›
+      </button>
     </div>
   );
 }

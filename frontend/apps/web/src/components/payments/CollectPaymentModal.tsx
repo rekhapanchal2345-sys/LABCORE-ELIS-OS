@@ -33,6 +33,7 @@ import {
   User,
 } from "lucide-react";
 import { paymentApi, advancesApi } from "@/lib/api";
+import { formatPatientFullName } from "@/lib/patient-utils";
 
 export type PaymentMethod = "CASH" | "CARD" | "UPI" | "NET_BANKING" | "CHEQUE" | "OTHER";
 
@@ -152,7 +153,7 @@ export default function CollectPaymentModal({
   }, [selectedOrderId, orders]);
 
   const patientName = selectedOrder?.patient
-    ? `${selectedOrder.patient.firstName || ""} ${selectedOrder.patient.lastName || ""}`.trim()
+    ? formatPatientFullName(selectedOrder.patient)
     : "—";
   const grandTotal = Number(selectedOrder?.grandTotal || selectedOrder?.invoice?.grandTotal || 0);
   const paidAmount = Number(selectedOrder?.paidAmount || selectedOrder?.invoice?.paidAmount || 0);
@@ -182,7 +183,7 @@ export default function CollectPaymentModal({
     const q = orderSearchQuery.trim().toLowerCase();
     if (!q) return orders.slice(0, 12);
     return orders.filter((o) => {
-      const pn = `${o.patient?.firstName || ""} ${o.patient?.lastName || ""}`.toLowerCase();
+      const pn = formatPatientFullName(o.patient).toLowerCase();
       return (
         (o.orderNumber || "").toLowerCase().includes(q) ||
         pn.includes(q) ||
@@ -365,7 +366,7 @@ export default function CollectPaymentModal({
                 {isOrderDropdownOpen && (
                   <div className="absolute z-30 mt-1.5 max-h-64 w-full overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl">
                     {filteredOrders.length > 0 ? filteredOrders.map((o) => {
-                      const pn = o.patient ? `${o.patient.firstName || ""} ${o.patient.lastName || ""}`.trim() : "Patient";
+                      const pn = o.patient ? formatPatientFullName(o.patient) : "Patient";
                       const gt = Number(o.grandTotal || o.invoice?.grandTotal || 0);
                       const due = Number(o.dueAmount || Math.max(0, gt - Number(o.paidAmount || 0)));
                       const initials = pn.split(" ").map((w: string) => w[0]).slice(0, 2).join("").toUpperCase();
@@ -917,7 +918,7 @@ export function CollectPaymentModalDuplicate({
     return orders
       .filter((o) => {
         const orderNum = (o.orderNumber || "").toLowerCase();
-        const pName = `${o.patient?.firstName || ""} ${o.patient?.lastName || ""}`.toLowerCase();
+        const pName = formatPatientFullName(o.patient).toLowerCase();
         const uhid = (o.patient?.uhid || "").toLowerCase();
         const phone = (o.patient?.phone || "").toLowerCase();
         const invoiceNum = (o.invoice?.invoiceNumber || "").toLowerCase();
@@ -970,11 +971,12 @@ export function CollectPaymentModalDuplicate({
   useEffect(() => {
     if (isOpen && method === "UPI" && Number(amount) > 0 && selectedOrderId) {
       const upiUrl = `upi://pay?pa=labcore@icici&pn=LabCore%20Diagnostics&am=${amount}&cu=INR&tn=ORD-${selectedOrderId.slice(-6)}`;
-      QRCode.toDataURL(upiUrl, {
-        width: 150,
-        margin: 1,
-        color: { dark: "#0f2d52", light: "#ffffff" },
-      })
+      import("qrcode")
+        .then((QRCode) => QRCode.toDataURL(upiUrl, {
+          width: 150,
+          margin: 1,
+          color: { dark: "#0f2d52", light: "#ffffff" },
+        }))
         .then((url) => setUpiQrCodeUrl(url))
         .catch(() => setUpiQrCodeUrl(""));
     } else {
@@ -1127,7 +1129,7 @@ export function CollectPaymentModalDuplicate({
                 }}
                 placeholder={
                   selectedOrder
-                    ? `${selectedOrder.orderNumber} - ${selectedOrder.patient?.firstName || "Patient"} ${selectedOrder.patient?.lastName || ""}`
+                    ? `${selectedOrder.orderNumber} - ${formatPatientFullName(selectedOrder.patient)}`
                     : "Search by Patient Name, UHID, Phone, or Order #..."
                 }
                 className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-4 text-sm font-medium text-slate-900 outline-none transition focus:border-blue-500 focus:bg-white focus:ring-2 focus:ring-blue-100"
@@ -1141,7 +1143,7 @@ export function CollectPaymentModalDuplicate({
                 {filteredOrders.length > 0 ? (
                   filteredOrders.map((o) => {
                     const pName = o.patient
-                      ? `${o.patient.firstName || ""} ${o.patient.lastName || ""}`.trim()
+                      ? formatPatientFullName(o.patient)
                       : "Patient";
                     const grandTotal = Number(o.grandTotal || o.invoice?.grandTotal || 0);
                     const due = Number(o.dueAmount || Math.max(0, grandTotal - Number(o.paidAmount || 0)));
@@ -1184,7 +1186,7 @@ export function CollectPaymentModalDuplicate({
               <div className="flex items-center justify-between">
                 <span className="text-slate-500 font-medium">Patient Details:</span>
                 <span className="font-bold text-slate-900">
-                  {selectedOrder.patient?.firstName} {selectedOrder.patient?.lastName} ({selectedOrder.patient?.uhid || "No UHID"})
+                  {formatPatientFullName(selectedOrder.patient)} ({selectedOrder.patient?.uhid || "No UHID"})
                 </span>
               </div>
               <div className="flex items-center justify-between">

@@ -1,6 +1,17 @@
 "use client";
 
 import { AUTH_KEY, USER_KEY, readAuth, writeAuth } from "./auth-storage";
+import type { ProfileSettingsData } from "@/components/settings/ProfileSettings";
+import type { LaboratorySettingsData } from "@/components/settings/LaboratorySettings";
+import type { GeneralSettingsData } from "@/components/settings/GeneralSettings";
+import type { BillingSettingsData } from "@/components/settings/BillingSettings";
+import type { NotificationSettingsData } from "@/components/settings/NotificationSettings";
+import type { SecuritySettingsData } from "@/components/settings/SecuritySettings";
+import type { IntegrationSettingsData } from "@/components/settings/IntegrationSettings";
+import type { AdvancedSettingsData } from "@/components/settings/AdvancedSettings";
+import type { DataRetentionSettingsData } from "@/components/settings/DataRetentionSettings";
+import type { BrandingSettingsData } from "@/components/settings/BrandingSettings";
+import type { BackupSettingsData } from "@/components/settings/BackupSettings";
 
 /**
  * Enterprise Settings Storage & Synchronization Engine
@@ -8,18 +19,18 @@ import { AUTH_KEY, USER_KEY, readAuth, writeAuth } from "./auth-storage";
  */
 
 export interface SettingsStoreState {
-  profile: Record<string, any>;
-  laboratory: Record<string, any>;
-  general: Record<string, any>;
+  profile: ProfileSettingsData;
+  laboratory: LaboratorySettingsData;
+  general: GeneralSettingsData;
   users: Record<string, any>;
-  billing: Record<string, any>;
-  notifications: Record<string, any>;
-  security: Record<string, any>;
-  integrations: Record<string, any>;
-  advanced: Record<string, any>;
-  data_retention: Record<string, any>;
-  branding: Record<string, any>;
-  backup: Record<string, any>;
+  billing: BillingSettingsData;
+  notifications: NotificationSettingsData;
+  security: SecuritySettingsData;
+  integrations: IntegrationSettingsData;
+  advanced: AdvancedSettingsData;
+  data_retention: DataRetentionSettingsData;
+  branding: BrandingSettingsData;
+  backup: BackupSettingsData;
 }
 
 const SETTINGS_STORAGE_PREFIX = "labcore_settings_";
@@ -117,29 +128,35 @@ export const defaultSettings: SettingsStoreState = {
     enforceMfa: true,
   },
   billing: {
-    currency: "INR",
-    currencySymbol: "₹",
-    taxRate: 0,
-    enableGst: true,
-    gstNumber: "24AABCL1234F1Z8",
-    paymentTerms: "Immediate / Due on Delivery",
-    defaultPaymentMode: "UPI / Cash",
-    allowCreditOrders: true,
-    creditLimitDefault: 25000,
-    invoiceNotes: "Computer generated laboratory diagnostic bill. No physical signature required.",
+    gstEnabled: true,
+    gstPercentage: 18,
+    cgstPercentage: 9,
+    sgstPercentage: 9,
+    igstPercentage: 18,
+    taxInclusive: false,
+    invoicePrefix: "INV",
+    invoiceDueDays: 0,
+    allowPartialPayments: true,
+    allowCreditBilling: false,
+    paymentReceiptRequired: true,
+    autoGenerateInvoice: true,
+    defaultPaymentMethod: "CASH",
   },
   notifications: {
-    emailAlerts: true,
-    smsAlerts: true,
-    whatsappAlerts: true,
-    inAppAlerts: true,
-    notifyCriticalPanicValue: true,
-    notifyOrderCreated: true,
-    notifyReportReady: true,
-    notifySampleDelayed: true,
-    doctorAlerts: true,
-    patientSmsReports: true,
-    dailySummaryDigest: true,
+    emailEnabled: true,
+    smsEnabled: false,
+    inAppEnabled: true,
+    resultReady: true,
+    resultApproved: true,
+    criticalResult: true,
+    paymentReceived: true,
+    invoiceGenerated: true,
+    analyzerOffline: true,
+    analyzerError: true,
+    failedLogin: true,
+    reportGenerated: true,
+    recipientEmail: "",
+    senderName: "LabCore ELIS",
   },
   security: {
     minPasswordLength: 10,
@@ -155,35 +172,70 @@ export const defaultSettings: SettingsStoreState = {
     twoFactorRequired: true,
     auditLoginActivity: true,
     auditDataChanges: true,
-    ipWhitelistEnabled: false,
     deviceFingerprinting: true,
     sessionHijackingProtection: true,
     hipaaCompliantLogging: true,
   },
   integrations: {
-    hl7Enabled: true,
-    astmEnabled: true,
-    lisBridgeActive: true,
-    whatsappApiConnected: true,
-    smsGateway: "Kaleyra Enterprise",
-    emailGateway: "AWS SES Verified",
+    apiEnabled: true,
+    apiBaseUrl: "",
+    webhookEnabled: false,
+    webhookUrl: "",
+    hl7Enabled: false,
+    astmEnabled: false,
     analyzerAutoSync: true,
+    emailProvider: "SMTP",
+    smsProvider: "NONE",
   },
   advanced: {
+    maintenanceMode: false,
+    maintenanceMessage: "System is under maintenance. Please try again later.",
     debugMode: false,
-    telemetryEnabled: true,
-    apiRateLimit: 500,
-    cacheTtlSeconds: 300,
-    databasePoolSize: 20,
-    enableWebSocketLiveStream: true,
+    logLevel: "info",
+    maxFileSize: 10,
+    allowedFileTypes: ["pdf", "jpg", "jpeg", "png", "doc", "docx"],
+    sessionTimeout: 30,
+    concurrentLogins: 1,
+    apiRateLimit: 1000,
+    cacheEnabled: true,
+    cacheTtl: 3600,
+    enableAuditLogs: true,
+    auditLogRetention: 90,
+    dataEncryption: true,
+    backupEnabled: true,
+    backupFrequency: "daily",
+    backupRetention: 30,
+    autoUpdates: false,
+    betaFeatures: false,
+    performanceMonitoring: true,
+    errorReporting: true,
   },
   data_retention: {
-    retentionYears: 10,
-    archiveFrequency: "monthly",
-    autoPurgeAuditLogs: false,
-    auditLogRetentionDays: 2555, // 7 years compliance
-    patientRecordPolicy: "Perpetual Clinical Archive",
-    exportFormat: "HL7 / FHIR JSON / Encrypted PDF",
+    patientDataRetention: 3650,
+    patientDataArchive: true,
+    patientDataArchiveDays: 1825,
+    resultDataRetention: 3650,
+    resultDataArchive: true,
+    resultDataArchiveDays: 1825,
+    invoiceDataRetention: 2555,
+    invoiceDataArchive: true,
+    invoiceDataArchiveDays: 1825,
+    auditLogRetention: 365,
+    auditLogArchive: false,
+    auditLogArchiveDays: 90,
+    analyzerDataRetention: 365,
+    enableAutoPurge: false,
+    autoPurgeFrequency: "monthly",
+    retainInactivePatients: true,
+    inactivePatientDays: 365,
+    retainCompletedOrders: true,
+    completedOrderDays: 90,
+    enableDataExport: true,
+    exportFormat: "csv",
+    gdprCompliance: false,
+    rightToErasure: false,
+    dataMinimization: true,
+    consentManagement: true,
   },
   branding: {
     brandName: "LabCore Diagnostics",

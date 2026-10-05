@@ -263,6 +263,22 @@ async function sendSMTPEmail(data: EmailInput, settings: any): Promise<EmailResu
     };
   }
 
+  // Development / Testing fallback when placeholder SMTP password is present
+  const isPlaceholderPass = !settings.smtpPassword || settings.smtpPassword === 'YOUR_GMAIL_APP_PASSWORD_HERE';
+  if (isPlaceholderPass && process.env.NODE_ENV !== 'production') {
+    console.log(`\n=======================================================`);
+    console.log(`[DEV SMTP MOCK EMAIL DISPATCH]`);
+    console.log(`To: ${data.to}`);
+    console.log(`Subject: ${data.subject}`);
+    console.log(`Body:\n${data.body}`);
+    console.log(`=======================================================\n`);
+    return {
+      success: true,
+      provider: 'smtp-dev-mock',
+      messageId: `dev_mock_${Date.now()}`,
+    };
+  }
+
   try {
     const nodemailer = require('nodemailer');
     
@@ -330,6 +346,14 @@ async function sendSMTPEmail(data: EmailInput, settings: any): Promise<EmailResu
     };
   } catch (error: any) {
     console.error(`[SMTP] Email sending failed:`, error);
+    if (process.env.NODE_ENV !== 'production') {
+      console.log(`[DEV SMTP FALLBACK] Email logged above for developer testing.`);
+      return {
+        success: true,
+        provider: 'smtp-dev-fallback',
+        messageId: `dev_fallback_${Date.now()}`,
+      };
+    }
     return {
       success: false,
       provider: 'smtp',

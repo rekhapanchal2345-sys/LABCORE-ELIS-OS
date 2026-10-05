@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef } from "react";
+import { formatPatientFullName } from "@/lib/patient-utils";
 
 interface ResultData {
   id: string;
@@ -634,7 +635,7 @@ export default function ResultPrintTemplate({ result, onClose }: ResultPrintTemp
     }
   };
 
-  const patientName = `${result.order.patient.firstName} ${result.order.patient.lastName}`;
+  const patientName = formatPatientFullName(result.order.patient);
   const patientAge = result.order.patient.age || calculateAge(result.order.patient.dateOfBirth);
 
   return (

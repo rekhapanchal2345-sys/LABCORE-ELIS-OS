@@ -4,7 +4,8 @@ import pg from 'pg';
 import 'dotenv/config';
 
 const connectionString = process.env.DATABASE_URL;
-const adapter = new PrismaPg({ connectionString, pool: new pg.Pool({ connectionString }) });
+const pool = new pg.Pool({ connectionString });
+const adapter = new PrismaPg(pool);
 const prisma = new PrismaClient({ adapter });
 
 async function pushSchema() {

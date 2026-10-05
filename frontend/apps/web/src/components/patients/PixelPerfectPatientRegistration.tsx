@@ -1,8 +1,9 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import { getAccessToken } from "@/lib/auth-storage";
+import { formatIndianPhone } from "@/lib/patient-utils";
 import { 
   User, MapPin, Phone, Mail, Shield, Clock, Heart, 
   CheckCircle, AlertCircle, Info, ChevronRight, ChevronLeft
@@ -505,6 +506,8 @@ interface PatientFormData {
   preferredCommunicationMethod: string;
   notificationPreferences: string[];
   privacyConsent: boolean;
+  dpdpDigitalCommConsent?: boolean;
+  dpdpAbhaExchangeConsent?: boolean;
 }
 
 interface PixelPerfectPatientRegistrationProps {
@@ -535,7 +538,12 @@ export default function PixelPerfectPatientRegistration({
   loading = false,
 }: PixelPerfectPatientRegistrationProps) {
   const router = useRouter();
-  const [currentStep, setCurrentStep] = useState(1);
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  const initialStep = Math.min(Math.max(Number(searchParams.get("step")) || 1, 1), 5);
+  const [currentStep, setCurrentStep] = useState(initialStep);
+
   const [formData, setFormData] = useState<PatientFormData>({
     // Basic Information
     firstName: '',
@@ -545,8 +553,8 @@ export default function PixelPerfectPatientRegistration({
     gender: '',
     bloodGroup: '',
     maritalStatus: '',
-    nationality: '',
-    patientType: '',
+    nationality: 'Indian',
+    patientType: 'GENERAL',
     additionalInformation: '',
 
     // Contact & Address
@@ -556,7 +564,7 @@ export default function PixelPerfectPatientRegistration({
     city: '',
     state: '',
     postalCode: '',
-    country: '',
+    country: 'India',
 
     // Emergency Contact
     emergencyContactName: '',
@@ -578,6 +586,8 @@ export default function PixelPerfectPatientRegistration({
     preferredCommunicationMethod: 'EMAIL',
     notificationPreferences: [],
     privacyConsent: false,
+    dpdpDigitalCommConsent: true,
+    dpdpAbhaExchangeConsent: false,
   });
 
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
@@ -587,6 +597,61 @@ export default function PixelPerfectPatientRegistration({
   const [hasRestoredDraft, setHasRestoredDraft] = useState(false);
 
   const DRAFT_KEY = "patient_registration_form_draft";
+
+  // Helper to sync step to URL
+  const updateStepUrl = useCallback((newStep: number) => {
+    if (typeof window === "undefined") return;
+    const currentParams = new URLSearchParams(window.location.search);
+    if (newStep === 1) {
+      currentParams.delete("step");
+    } else {
+      currentParams.set("step", String(newStep));
+    }
+    const qs = currentParams.toString();
+    const newPath = `${pathname}${qs ? `?${qs}` : ""}`;
+    window.history.replaceState(null, "", newPath);
+  }, [pathname]);
+
+  // Track if form contains user entered data
+  const isDirty = useMemo(() => {
+    return Boolean(
+      formData.firstName.trim() ||
+      formData.lastName.trim() ||
+      formData.phone.trim() ||
+      formData.email.trim() ||
+      formData.address.trim() ||
+      formData.city.trim() ||
+      formData.emergencyContactName.trim() ||
+      formData.emergencyContactPhone.trim()
+    );
+  }, [formData]);
+
+  // Unsaved changes browser guard (tab close, refresh)
+  useEffect(() => {
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      if (isDirty) {
+        e.preventDefault();
+        e.returnValue = "You have unsaved changes in the patient registration form. Are you sure you want to leave?";
+        return e.returnValue;
+      }
+    };
+    window.addEventListener("beforeunload", handleBeforeUnload);
+    return () => window.removeEventListener("beforeunload", handleBeforeUnload);
+  }, [isDirty]);
+
+  // Dynamic Document Title based on wizard step
+  useEffect(() => {
+    const stepTitle = steps[currentStep - 1]?.title || "Registration";
+    document.title = `Register Patient (Step ${currentStep} of 5: ${stepTitle}) | LabCore ELIS`;
+  }, [currentStep]);
+
+  // Listen to searchParams changes (e.g. Back/Forward button)
+  useEffect(() => {
+    const stepParam = Number(searchParams.get("step"));
+    if (stepParam >= 1 && stepParam <= 5 && stepParam !== currentStep) {
+      setCurrentStep(stepParam);
+    }
+  }, [searchParams]);
 
   const cleanPhoneDigits = (phone: string): string => {
     if (!phone) return '';
@@ -693,6 +758,29 @@ export default function PixelPerfectPatientRegistration({
   }, [formData.phone, formData.email]);
 
   const updateField = (field: keyof PatientFormData, value: string | string[] | boolean) => {
+    if (field === "firstName" && typeof value === "string") {
+      const tokens = value.trim().split(/\s+/);
+      if (tokens.length >= 3 && !formData.middleName && !formData.lastName) {
+        setFormData(prev => ({
+          ...prev,
+          firstName: tokens[0],
+          middleName: tokens.slice(1, -1).join(" "),
+          lastName: tokens[tokens.length - 1],
+        }));
+        setValidationErrors(prev => ({ ...prev, firstName: '', lastName: '' }));
+        return;
+      }
+      if (tokens.length === 2 && !formData.lastName) {
+        setFormData(prev => ({
+          ...prev,
+          firstName: tokens[0],
+          lastName: tokens[1],
+        }));
+        setValidationErrors(prev => ({ ...prev, firstName: '', lastName: '' }));
+        return;
+      }
+    }
+
     setFormData(prev => ({ ...prev, [field]: value }));
     if (validationErrors[field]) {
       setValidationErrors(prev => ({ ...prev, [field]: '' }));
@@ -735,9 +823,9 @@ export default function PixelPerfectPatientRegistration({
       errors.email = 'Invalid email format';
     }
     if (formData.phone) {
-      const cleanP = cleanPhoneDigits(formData.phone);
-      if (cleanP.length < 10) {
-        errors.phone = 'Phone number must contain at least 10 digits';
+      const formatted = formatIndianPhone(formData.phone);
+      if (!formatted.isValid) {
+        errors.phone = 'Please enter a valid 10-digit mobile number (e.g. 9876543210)';
       }
     }
     if (formData.postalCode) {
@@ -755,9 +843,9 @@ export default function PixelPerfectPatientRegistration({
   const validateStep3 = (): { isValid: boolean; errors: Record<string, string> } => {
     const errors: Record<string, string> = {};
     if (formData.emergencyContactPhone) {
-      const cleanEC = cleanPhoneDigits(formData.emergencyContactPhone);
-      if (cleanEC.length < 10) {
-        errors.emergencyContactPhone = 'Emergency contact phone must contain at least 10 digits';
+      const formatted = formatIndianPhone(formData.emergencyContactPhone);
+      if (!formatted.isValid) {
+        errors.emergencyContactPhone = 'Emergency contact phone must be a valid 10-digit mobile number';
       }
     }
     if (formData.emergencyContactAddress && formData.emergencyContactAddress.length > 500) {
@@ -794,6 +882,7 @@ export default function PixelPerfectPatientRegistration({
           if (!step1Result.isValid) {
             setValidationErrors(step1Result.errors);
             setCurrentStep(1);
+            updateStepUrl(1);
             return;
           }
         }
@@ -802,6 +891,7 @@ export default function PixelPerfectPatientRegistration({
           if (!step2Result.isValid) {
             setValidationErrors(step2Result.errors);
             setCurrentStep(2);
+            updateStepUrl(2);
             return;
           }
         }
@@ -810,6 +900,7 @@ export default function PixelPerfectPatientRegistration({
           if (!step3Result.isValid) {
             setValidationErrors(step3Result.errors);
             setCurrentStep(3);
+            updateStepUrl(3);
             return;
           }
         }
@@ -817,16 +908,33 @@ export default function PixelPerfectPatientRegistration({
     }
     setValidationErrors({});
     setCurrentStep(targetStep);
+    updateStepUrl(targetStep);
   };
 
   const handleNext = () => {
     if (validateCurrentStep()) {
-      setCurrentStep(prev => Math.min(prev + 1, steps.length));
+      const nextStep = Math.min(currentStep + 1, steps.length);
+      setCurrentStep(nextStep);
+      updateStepUrl(nextStep);
     }
   };
 
   const handlePrevious = () => {
-    setCurrentStep(prev => Math.max(prev - 1, 1));
+    const prevStep = Math.max(currentStep - 1, 1);
+    setCurrentStep(prevStep);
+    updateStepUrl(prevStep);
+  };
+
+  const handleCancel = () => {
+    if (isDirty) {
+      const confirmed = window.confirm("You have unsaved changes in this registration draft. Are you sure you want to leave?");
+      if (!confirmed) return;
+    }
+    if (onCancel) {
+      onCancel();
+    } else {
+      router.push('/patients');
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -1020,13 +1128,23 @@ export default function PixelPerfectPatientRegistration({
                 <label className="field-label">
                   Nationality
                 </label>
-                <input
-                  type="text"
+                <select
                   value={formData.nationality}
                   onChange={(e) => updateField('nationality', e.target.value)}
-                  placeholder="Enter nationality"
-                  className="field-input"
-                />
+                  className="field-select"
+                >
+                  <option value="Indian">Indian</option>
+                  <option value="NRI / OCI">NRI / OCI</option>
+                  <option value="American">American</option>
+                  <option value="British">British</option>
+                  <option value="Emirati">Emirati (UAE)</option>
+                  <option value="Canadian">Canadian</option>
+                  <option value="Australian">Australian</option>
+                  <option value="Nepalese">Nepalese</option>
+                  <option value="Bhutanese">Bhutanese</option>
+                  <option value="Sri Lankan">Sri Lankan</option>
+                  <option value="Other">Other</option>
+                </select>
               </div>
 
               <div className="form-field">
@@ -1456,23 +1574,61 @@ export default function PixelPerfectPatientRegistration({
               </div>
 
               <div className="form-field full-width">
-                <div style={{ border: '1px solid #fcd34d', borderRadius: '8px', padding: '12px 16px', backgroundColor: '#fffbeb' }}>
-                  <p style={{ fontSize: '12px', color: '#92400e', fontWeight: 600, marginBottom: '8px' }}>
-                    ⚠️ Informed Consent — Legal Record
-                  </p>
-                  <label className="flex items-start cursor-pointer gap-3">
-                    <input
-                      type="checkbox"
-                      checked={formData.privacyConsent}
-                      onChange={(e) => updateField('privacyConsent', e.target.checked)}
-                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1"
-                    />
-                    <span className="text-sm" style={{ color: '#374151' }}>
-                      The patient has been informed of and explicitly consents to the collection, processing and storage of their personal and health data in accordance with the privacy policy and applicable data protection regulations (HIPAA / DPDP Act). <span style={{ color: '#dc2626', fontWeight: 600 }}>*</span>
+                <div style={{ border: '1px solid #93c5fd', borderRadius: '12px', padding: '16px 20px', backgroundColor: '#f0f7ff' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <p style={{ fontSize: '13px', color: '#1e40af', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Shield size={16} /> Digital Personal Data Protection (DPDP Act 2023) Consent
+                    </p>
+                    <span style={{ fontSize: '10px', backgroundColor: '#dbeafe', color: '#1d4ed8', padding: '2px 8px', borderRadius: '10px', fontWeight: 700 }}>
+                      v1.0 (India NABL / DPDP)
                     </span>
-                  </label>
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                    {/* 1. Mandatory Clinical Consent */}
+                    <label className="flex items-start cursor-pointer gap-3" style={{ borderBottom: '1px solid #e0eeff', paddingBottom: '10px' }}>
+                      <input
+                        type="checkbox"
+                        checked={formData.privacyConsent}
+                        onChange={(e) => updateField('privacyConsent', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 shrink-0"
+                      />
+                      <span className="text-xs leading-relaxed" style={{ color: '#1e293b' }}>
+                        <strong>1. Diagnostic Testing & Clinical Archival (Mandatory):</strong> The patient has been informed of and explicitly consents to specimen collection, laboratory analysis, pathologist verification, and medical record archival in accordance with NABL ISO 15189 and the DPDP Act 2023. <span style={{ color: '#dc2626', fontWeight: 700 }}>*</span>
+                      </span>
+                    </label>
+
+                    {/* 2. Communication Consent */}
+                    <label className="flex items-start cursor-pointer gap-3" style={{ borderBottom: '1px solid #e0eeff', paddingBottom: '10px' }}>
+                      <input
+                        type="checkbox"
+                        checked={formData.dpdpDigitalCommConsent !== false}
+                        onChange={(e) => updateField('dpdpDigitalCommConsent', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 shrink-0"
+                      />
+                      <span className="text-xs leading-relaxed" style={{ color: '#334155' }}>
+                        <strong>2. Digital Dispatch:</strong> Patient consents to receive authenticated diagnostic PDF reports, billing invoices, and accession status alerts via WhatsApp, SMS, and Email.
+                      </span>
+                    </label>
+
+                    {/* 3. ABDM Consent */}
+                    <label className="flex items-start cursor-pointer gap-3">
+                      <input
+                        type="checkbox"
+                        checked={Boolean(formData.dpdpAbhaExchangeConsent)}
+                        onChange={(e) => updateField('dpdpAbhaExchangeConsent', e.target.checked)}
+                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-0.5 shrink-0"
+                      />
+                      <span className="text-xs leading-relaxed" style={{ color: '#334155' }}>
+                        <strong>3. ABDM / ABHA Interoperability:</strong> Patient consents to linking their Ayushman Bharat Digital Mission (ABHA ID) for electronic health record (EHR) exchange with authorized healthcare providers.
+                      </span>
+                    </label>
+                  </div>
+
                   {!formData.privacyConsent && (
-                    <p style={{ fontSize: '11px', color: '#6b7280', marginTop: '6px' }}>This checkbox must be checked to register the patient.</p>
+                    <p style={{ fontSize: '11px', color: '#dc2626', marginTop: '10px', fontWeight: 600 }}>
+                      * Mandatory: Diagnostic testing consent must be accepted to finalize patient registration.
+                    </p>
                   )}
                 </div>
               </div>
@@ -1526,7 +1682,7 @@ export default function PixelPerfectPatientRegistration({
               {/* Form Content */}
               <div className="form-content">
                 {hasRestoredDraft && (
-                  <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '12px 16px', marginBottom: '20px', display: 'flex', itemsCenter: 'center', justifyContent: 'space-between' }}>
+                  <div style={{ backgroundColor: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '8px', padding: '12px 16px', marginBottom: '20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                       <Info size={18} style={{ color: '#2563eb', flexShrink: 0 }} />
                       <span style={{ fontSize: '13px', color: '#1e40af' }}>
@@ -1581,13 +1737,7 @@ export default function PixelPerfectPatientRegistration({
                 <div className="form-actions">
                   <button
                     type="button"
-                    onClick={() => {
-                      if (onCancel) {
-                        onCancel();
-                      } else {
-                        router.push('/patients');
-                      }
-                    }}
+                    onClick={handleCancel}
                     disabled={loading}
                     className="btn btn-secondary"
                   >
@@ -1635,7 +1785,7 @@ export default function PixelPerfectPatientRegistration({
                       <Clock />
                     </div>
                     <h3 className="feature-title">Quick Registration</h3>
-                    <p className="feature-description">Register patients in minutes with our streamlined process</p>
+                    <p className="feature-description">Register patients in minutes with streamlined clinical workflows</p>
                   </div>
 
                   <div className="feature-card">
@@ -1643,23 +1793,23 @@ export default function PixelPerfectPatientRegistration({
                       <Shield />
                     </div>
                     <h3 className="feature-title">Secure & Safe</h3>
-                    <p className="feature-description">Your data is protected with enterprise-grade security</p>
+                    <p className="feature-description">Protected with DPDP Act 2023 & NABL compliant access control</p>
                   </div>
 
                   <div className="feature-card">
                     <div className="feature-icon">
                       <CheckCircle />
                     </div>
-                    <h3 className="feature-title">HIPAA Compliant</h3>
-                    <p className="feature-description">Fully compliant with healthcare data regulations</p>
+                    <h3 className="feature-title">NABL & DPDP Compliant</h3>
+                    <p className="feature-description">Adheres to ISO 15189:2022 & India DPDP Act 2023 regulations</p>
                   </div>
 
                   <div className="feature-card">
                     <div className="feature-icon">
-                      <Phone />
+                      <Heart />
                     </div>
-                    <h3 className="feature-title">24/7 Support</h3>
-                    <p className="feature-description">Round-the-clock assistance for all your needs</p>
+                    <h3 className="feature-title">ABDM / ABHA Ready</h3>
+                    <p className="feature-description">Interoperable with Ayushman Bharat Digital Mission</p>
                   </div>
                 </div>
               </div>

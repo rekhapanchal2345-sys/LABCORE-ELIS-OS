@@ -10,7 +10,14 @@ const prisma = new PrismaClient({ adapter });
 async function resetPassword() {
   try {
     const email = process.env.ADMIN_EMAIL || 'admin@labcore.local';
-    const newPassword = process.env.ADMIN_PASSWORD || 'CHANGE_ME_IN_PRODUCTION';
+    const newPassword = process.env.ADMIN_PASSWORD;
+
+    if (!newPassword) {
+      // No default: a fallback password would be published in this repo.
+      throw new Error(
+        'ADMIN_PASSWORD is not set. Add a strong password to backend/.env first.'
+      );
+    }
 
     console.log('Resetting password for:', email);
 

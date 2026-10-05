@@ -8,10 +8,7 @@ import {
   ShieldCheck, 
   Fingerprint, 
   Barcode, 
-  UserCheck, 
-  Activity,
-  Lock,
-  Sparkles
+  UserCheck
 } from "lucide-react";
 
 export interface SampleCollectionData {
@@ -133,61 +130,61 @@ export default function SampleCollection({
   };
 
   const input =
-    "w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 outline-none focus:border-gray-500 focus:ring-2 focus:ring-gray-100";
+    "w-full rounded-xl border border-slate-800 bg-slate-900/90 px-3.5 py-2.5 text-sm text-slate-100 placeholder-slate-500 outline-none focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20 transition-colors disabled:opacity-50";
 
   const label =
-    "mb-1.5 block text-sm font-medium text-gray-700";
+    "mb-1.5 block text-xs font-bold uppercase tracking-wider text-slate-400";
 
   return (
     <form
       onSubmit={submit}
-      className="space-y-6"
+      className="space-y-6 text-white"
     >
-      {/* Premium Header */}
-      <div className="rounded-2xl border-2 border-slate-200 bg-gradient-to-r from-slate-50 to-white p-6 shadow-lg">
+      {/* Dark Obsidian Header */}
+      <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 text-white shadow-lg">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-600 to-indigo-600 text-white shadow-lg shadow-violet-900/30">
               <ShieldCheck className="w-6 h-6" />
             </div>
             <div>
-              <h2 className="text-xl font-black text-slate-900 flex items-center gap-2">
+              <h2 className="text-xl font-bold text-white flex items-center gap-2">
                 Sample Collection
-                <span className="rounded-full bg-gradient-to-r from-amber-400 via-yellow-500 to-amber-400 px-2 py-0.5 text-[10px] font-black uppercase tracking-wider text-white shadow-md">
-                  ⭐ Premium
+                <span className="rounded-full bg-violet-500/20 border border-violet-400/30 px-2.5 py-0.5 text-[10px] font-black uppercase tracking-wider text-violet-300">
+                  ⭐ Verified
                 </span>
               </h2>
-              <p className="text-sm text-slate-600">Advanced sample collection with biometric verification</p>
+              <p className="text-sm text-slate-400">Advanced sample collection with identity verification</p>
             </div>
           </div>
         </div>
 
-        {/* Premium Verification Status */}
+        {/* Dark Verification Status */}
         <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-xl border-2 border-violet-200 bg-gradient-to-br from-violet-50 to-purple-50 p-3">
+          <div className="rounded-2xl border border-violet-500/30 bg-violet-950/20 p-3">
             <div className="flex items-center gap-2 mb-1">
-              <UserCheck className="w-4 h-4 text-violet-600" />
-              <span className="text-xs font-bold text-violet-900">Patient Verification</span>
+              <UserCheck className="w-4 h-4 text-violet-400" />
+              <span className="text-xs font-bold text-violet-300">Patient Verification</span>
             </div>
-            <div className="text-sm font-black text-slate-900">
+            <div className="text-sm font-bold text-slate-200">
               {form.patientVerified ? '✓ Verified' : 'Pending'}
             </div>
           </div>
-          <div className="rounded-xl border-2 border-cyan-200 bg-gradient-to-br from-cyan-50 to-sky-50 p-3">
+          <div className="rounded-2xl border border-cyan-500/30 bg-cyan-950/20 p-3">
             <div className="flex items-center gap-2 mb-1">
-              <Barcode className="w-4 h-4 text-cyan-600" />
-              <span className="text-xs font-bold text-cyan-900">Barcode Verification</span>
+              <Barcode className="w-4 h-4 text-cyan-400" />
+              <span className="text-xs font-bold text-cyan-300">Barcode Verification</span>
             </div>
-            <div className="text-sm font-black text-slate-900">
+            <div className="text-sm font-bold text-slate-200">
               {form.barcodeVerified ? '✓ Verified' : 'Pending'}
             </div>
           </div>
-          <div className="rounded-xl border-2 border-amber-200 bg-gradient-to-br from-amber-50 to-yellow-50 p-3">
+          <div className="rounded-2xl border border-amber-500/30 bg-amber-950/20 p-3">
             <div className="flex items-center gap-2 mb-1">
-              <Fingerprint className="w-4 h-4 text-amber-600" />
-              <span className="text-xs font-bold text-amber-900">Biometric Verification</span>
+              <Fingerprint className="w-4 h-4 text-amber-400" />
+              <span className="text-xs font-bold text-amber-300">Biometric Verification</span>
             </div>
-            <div className="text-sm font-black text-slate-900">
+            <div className="text-sm font-bold text-slate-200">
               {form.biometricVerified ? '✓ Verified' : 'Pending'}
             </div>
           </div>
@@ -195,24 +192,24 @@ export default function SampleCollection({
       </div>
 
       {error && (
-        <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        <div className="rounded-2xl border border-rose-500/30 bg-rose-950/30 px-4 py-3 text-sm font-medium text-rose-300">
           {error}
         </div>
       )}
 
       {(patientName || orderNumber) && (
-        <div className="rounded-xl border border-gray-200 bg-gray-50 p-4">
-          <p className="text-xs font-medium uppercase text-gray-500">
+        <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4">
+          <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
             Collection For
           </p>
 
           <div className="mt-2 flex flex-wrap gap-x-8 gap-y-2">
             {patientName && (
               <div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-slate-400">
                   Patient
                 </p>
-                <p className="font-medium text-gray-900">
+                <p className="font-semibold text-slate-100">
                   {patientName}
                 </p>
               </div>
@@ -220,10 +217,10 @@ export default function SampleCollection({
 
             {orderNumber && (
               <div>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-slate-400">
                   Order
                 </p>
-                <p className="font-medium text-gray-900">
+                <p className="font-semibold text-cyan-300">
                   {orderNumber}
                 </p>
               </div>
@@ -232,12 +229,12 @@ export default function SampleCollection({
         </div>
       )}
 
-      <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-        <h2 className="font-semibold text-gray-900">
-          Sample Collection
+      <section className="rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-2xl">
+        <h2 className="font-bold text-white text-base">
+          Specimen Details
         </h2>
 
-        <p className="mt-1 text-xs text-gray-500">
+        <p className="mt-1 text-xs text-slate-400">
           Record the details of the specimen collection.
         </p>
 
@@ -245,7 +242,7 @@ export default function SampleCollection({
           <div>
             <label className={label}>
               Order ID{" "}
-              <span className="text-red-500">*</span>
+              <span className="text-rose-400">*</span>
             </label>
 
             <input
@@ -265,7 +262,7 @@ export default function SampleCollection({
           <div>
             <label className={label}>
               Specimen Type{" "}
-              <span className="text-red-500">*</span>
+              <span className="text-rose-400">*</span>
             </label>
 
             <input
@@ -304,7 +301,7 @@ export default function SampleCollection({
           <div>
             <label className={label}>
               Collected By{" "}
-              <span className="text-red-500">*</span>
+              <span className="text-rose-400">*</span>
             </label>
 
             {collectedByOptions.length > 0 ? (
@@ -353,7 +350,7 @@ export default function SampleCollection({
           <div>
             <label className={label}>
               Collection Date & Time{" "}
-              <span className="text-red-500">*</span>
+              <span className="text-rose-400">*</span>
             </label>
 
             <input
@@ -433,7 +430,7 @@ export default function SampleCollection({
             type="button"
             onClick={onCancel}
             disabled={loading}
-            className="rounded-lg border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 hover:bg-gray-50 disabled:opacity-50"
+            className="rounded-xl border border-slate-700 bg-slate-900 px-5 py-2.5 text-sm font-bold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors disabled:opacity-50"
           >
             Cancel
           </button>
@@ -442,7 +439,7 @@ export default function SampleCollection({
         <button
           type="submit"
           disabled={loading}
-          className="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 disabled:opacity-50"
+          className="rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-6 py-2.5 text-sm font-bold text-slate-950 hover:from-cyan-400 hover:to-blue-500 transition-all shadow-lg shadow-cyan-500/20 disabled:opacity-50"
         >
           {loading
             ? "Saving..."

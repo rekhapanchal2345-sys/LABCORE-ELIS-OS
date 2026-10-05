@@ -1,9 +1,8 @@
 import prisma from "../../../config/database";
+import { getNextSequenceNumber } from "../../services/sequence.service";
 
-const generateReceiptNumber = () => {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 1000);
-  return `RCP-${timestamp}-${random}`;
+const generateReceiptNumber = async (tx?: any) => {
+  return getNextSequenceNumber("REC", "MAIN", tx);
 };
 
 // =======================================================
@@ -80,36 +79,44 @@ export const generateReceipt = async (
 // GET RECEIPT BY PAYMENT ID
 // =======================================================
 
+// Receipt is a standalone table (no Prisma relation to Payment), so the payment
+// detail is attached manually to keep the `{ ...receipt, payment }` shape.
+const receiptPaymentInclude = {
+  order: {
+    include: {
+      patient: true,
+      invoice: true,
+    },
+  },
+  receivedBy: {
+    select: {
+      id: true,
+      employeeCode: true,
+      fullName: true,
+    },
+  },
+};
+
+const withPayment = async <T extends { paymentId: string }>(receipt: T) => {
+  const payment = await prisma.payment.findUnique({
+    where: { id: receipt.paymentId },
+    include: receiptPaymentInclude,
+  });
+
+  return { ...receipt, payment };
+};
+
 export const getReceiptByPaymentId = async (paymentId: string) => {
   try {
     const receipt = await prisma.receipt.findUnique({
       where: { paymentId },
-      include: {
-        payment: {
-          include: {
-            order: {
-              include: {
-                patient: true,
-                invoice: true,
-              },
-            },
-            receivedBy: {
-              select: {
-                id: true,
-                employeeCode: true,
-                fullName: true,
-              },
-            },
-          },
-        },
-      },
     });
 
     if (!receipt) {
       throw new Error("Receipt not found");
     }
 
-    return receipt;
+    return withPayment(receipt);
   } catch (error) {
     console.error('Error in getReceiptByPaymentId:', error);
     throw error;
@@ -124,32 +131,13 @@ export const getReceiptByNumber = async (receiptNumber: string) => {
   try {
     const receipt = await prisma.receipt.findUnique({
       where: { receiptNumber },
-      include: {
-        payment: {
-          include: {
-            order: {
-              include: {
-                patient: true,
-                invoice: true,
-              },
-            },
-            receivedBy: {
-              select: {
-                id: true,
-                employeeCode: true,
-                fullName: true,
-              },
-            },
-          },
-        },
-      },
     });
 
     if (!receipt) {
       throw new Error("Receipt not found");
     }
 
-    return receipt;
+    return withPayment(receipt);
   } catch (error) {
     console.error('Error in getReceiptByNumber:', error);
     throw error;
@@ -521,7 +509,7 @@ export const exportPaymentData = async (options: any = {}) => {
       transactionId: payment.transactionId,
       orderNumber: payment.order.orderNumber,
       invoiceNumber: payment.order.invoice?.invoiceNumber,
-      patientName: `${payment.order.patient.firstName} ${payment.order.patient.lastName}`,
+      patientName: [payment.order.patient.title, payment.order.patient.firstName, payment.order.patient.middleName, payment.order.patient.lastName].filter(Boolean).join(" ").trim() || "Patient",
       patientUHID: payment.order.patient.uhid,
       amount: Number(payment.amount),
       method: payment.method,

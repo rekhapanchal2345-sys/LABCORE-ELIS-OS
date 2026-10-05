@@ -1,71 +1,28 @@
-import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import prisma from "../config/database";
-import env from "../config/env";
-import { UserRole } from "@prisma/client";
+/**
+ * LEGACY IMPORT PATH — REDIRECTED TO THE SINGLE AUTHENTICATION IMPLEMENTATION
+ *
+ * This file used to hold a second, weaker copy of `authenticate`. Two
+ * implementations meant two different security policies, and this one was the
+ * weaker of the pair: it skipped the session-revocation check, the idle-timeout
+ * check, the issuer/audience verification and the token-type check, and it
+ * printed the first 20 characters of every bearer token to the logs.
+ *
+ * It guarded 24 of the route files, so those weaknesses applied to patients,
+ * orders, results, reports, audit logs and backups. The most serious was the
+ * missing token-type check: the short-lived MFA challenge token (`typ: "mfa"`,
+ * issued *before* the second factor is satisfied) and the owner
+ * re-authentication token (`typ: "owner"`) were both accepted as ordinary
+ * access tokens, which bypassed MFA entirely. Signing out also did not end
+ * access on those routes, because a revoked session was never consulted.
+ *
+ * There is now exactly one implementation, in ./auth, and this module only
+ * re-exports it so the existing import paths keep working. Do not add
+ * authentication logic here; add it to ./auth instead.
+ */
+export { authenticate } from "./auth";
 
-export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    role: UserRole;
-    email: string;
-    fullName: string;
-  };
-}
-
-interface JwtPayload {
-  sub: string;  // Changed from 'id' to 'sub' to match token generation
-  role: UserRole;
-}
-
-export const authenticate = async (
-  req: AuthRequest,
-  res: Response,
-  next: NextFunction
-) => {
-  try {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      console.log("Auth middleware: Missing or invalid authorization header");
-      return res.status(401).json({
-        success: false,
-        message: "Access token missing",
-      });
-    }
-
-    const token = authHeader.split(" ")[1];
-    console.log("Auth middleware: Token received", token.substring(0, 20) + "...");
-
-    const decoded = jwt.verify(token, env.JWT_SECRET) as JwtPayload;
-    console.log("Auth middleware: Token decoded successfully", { sub: decoded.sub, role: decoded.role });
-
-    const user = await prisma.user.findUnique({
-      where: { id: decoded.sub },  // Changed from decoded.id to decoded.sub
-    });
-
-    if (!user || user.status !== "ACTIVE") {
-      console.log("Auth middleware: User not found or inactive", { user: !!user, status: user?.status });
-      return res.status(401).json({
-        success: false,
-        message: "User not found or inactive",
-      });
-    }
-
-    req.user = {
-      id: user.id,
-      role: user.role,
-      email: user.email,
-      fullName: user.fullName,
-    };
-
-    console.log("Auth middleware: User authenticated successfully", { id: user.id, email: user.email });
-    next();
-  } catch (error) {
-    console.log("Auth middleware: Token verification failed", error);
-    return res.status(401).json({
-      success: false,
-      message: "Invalid or expired token",
-    });
-  }
-};
+/**
+ * Retained for `rbac.middleware` and other legacy consumers. It is the same
+ * request type that the single implementation populates.
+ */
+export type { AuthenticatedRequest as AuthRequest } from "./auth";

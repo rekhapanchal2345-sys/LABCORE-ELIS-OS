@@ -2,9 +2,9 @@
 
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { getRoleLabel } from "@/lib/auth";
+import { getRoleLabel, getUserRole } from "@/lib/auth";
 import { 
   LayoutDashboard, 
   Users, 
@@ -31,11 +31,17 @@ import {
   Activity,
   Zap,
   Radio,
+  MessageSquare,
   X
 } from "lucide-react";
 import { approvalApi, invoiceApi } from "@/lib/api";
 import LabCoreLogo from "@/components/common/LabCoreLogo";
 import LogoutModal from "@/components/auth/LogoutModal";
+import {
+  SETTINGS_VIEW_ROLES,
+  SETTINGS_ADMIN_ROLES,
+  SETTINGS_EDIT_ROLES,
+} from "@/components/settings/settingsAccess";
 
 interface SidebarProps {
   isOpen?: boolean;
@@ -47,6 +53,8 @@ interface SubMenuItem {
   href: string;
   badge?: string;
   badgeVariant?: "red" | "blue" | "amber" | "emerald";
+  /** When present, the child is only rendered for these roles. */
+  allowedRoles?: string[];
   children?: {
     label: string;
     href: string;
@@ -65,6 +73,8 @@ interface MenuItem {
     activeText: string;
   };
   badgeKey?: "approvals" | "invoices";
+  /** When present, the item is only rendered for these roles. */
+  allowedRoles?: string[];
   children?: SubMenuItem[];
 }
 
@@ -330,9 +340,29 @@ const menuSections: MenuSection[] = [
         ],
       },
       {
+        label: "Communication",
+        href: "/communication",
+        icon: MessageSquare,
+        accent: {
+          bg: "bg-violet-500/10 text-violet-400 group-hover:bg-violet-500/20 group-hover:text-violet-300",
+          text: "text-violet-400",
+          activeBorder: "border-violet-400",
+          activeIconBg: "bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-[0_0_12px_rgba(139,92,246,0.4)]",
+          activeText: "text-white font-semibold",
+        },
+        children: [
+          { label: "Communication Hub", href: "/communication" },
+          { label: "WhatsApp Console", href: "/whatsapp" },
+          { label: "SMS Campaigns", href: "/communication?tab=campaigns" },
+          { label: "Provider Settings", href: "/settings/communications" },
+        ],
+      },
+      {
         label: "Settings",
         href: "/settings",
         icon: Settings,
+        // Mirrors `settings:view` in backend/api/middleware/rbac.middleware.ts.
+        allowedRoles: SETTINGS_VIEW_ROLES,
         accent: {
           bg: "bg-slate-700/30 text-slate-300 group-hover:bg-slate-700/50 group-hover:text-slate-200",
           text: "text-slate-300",
@@ -342,8 +372,17 @@ const menuSections: MenuSection[] = [
         },
         children: [
           { label: "General Settings", href: "/settings" },
-          { label: "Users", href: "/settings/users" },
-          { label: "Roles & Permissions", href: "/settings/roles" },
+          {
+            label: "Users & Roles",
+            href: "/settings?tab=users",
+            // User/role management is admin-tier on the backend.
+            allowedRoles: SETTINGS_ADMIN_ROLES,
+          },
+          {
+            label: "Communication Providers",
+            href: "/settings/communications",
+            allowedRoles: SETTINGS_EDIT_ROLES,
+          },
         ],
       },
     ],
@@ -521,6 +560,13 @@ export default function Sidebar({
       return pathname === hrefPath && !searchParams.get("section") && !searchParams.get("tab");
     }
 
+    // /settings owns its tabs through ?tab=, and /settings/communications is a
+    // nested route. Match the bare entry exactly so the "General Settings" child
+    // does not light up alongside a deeper settings page.
+    if (hrefPath === "/settings" && !hrefQuery) {
+      return pathname === "/settings" && !searchParams.get("tab");
+    }
+
     return pathname === hrefPath || pathname.startsWith(`${hrefPath}/`);
   };
 
@@ -536,12 +582,49 @@ export default function Sidebar({
     });
   };
 
-  // Filter sections when searching
-  const filteredSections = useMemo(() => {
-    if (!searchQuery.trim()) return menuSections;
+  // Role of the signed-in user, normalized to an upper-case string.
+  const currentRole = useMemo(() => {
+    const role = getUserRole(user);
+    return role ? role.toUpperCase() : null;
+  }, [user]);
 
+  const isAllowedForRole = useCallback(
+    (allowedRoles?: string[]) => {
+      // No restriction declared, or the session has not resolved a role yet.
+      if (!allowedRoles || allowedRoles.length === 0) return true;
+      if (!currentRole) return false;
+      return allowedRoles.includes(currentRole);
+    },
+    [currentRole]
+  );
+
+  // Drop items the current role cannot open, then apply the search filter.
+  const filteredSections = useMemo(() => {
     const query = searchQuery.toLowerCase().trim();
-    return menuSections
+
+    const roleScoped = menuSections
+      .map((section) => ({
+        ...section,
+        items: section.items
+          .filter((item) => isAllowedForRole(item.allowedRoles))
+          .map((item) =>
+            item.children
+              ? {
+                  ...item,
+                  children: item.children.filter((child) =>
+                    isAllowedForRole(child.allowedRoles)
+                  ),
+                }
+              : item
+          )
+          // An accordion with no visible children is just a dead entry.
+          .filter((item) => !item.children || item.children.length > 0),
+      }))
+      .filter((section) => section.items.length > 0);
+
+    if (!query) return roleScoped;
+
+    return roleScoped
       .map((section) => {
         const filteredItems = section.items.filter((item) => {
           const matchLabel = item.label.toLowerCase().includes(query);
@@ -556,7 +639,7 @@ export default function Sidebar({
         };
       })
       .filter((section) => section.items.length > 0);
-  }, [searchQuery]);
+  }, [searchQuery, isAllowedForRole]);
 
   return (
     <>
@@ -607,7 +690,20 @@ export default function Sidebar({
         <div className="px-3 pt-3 pb-2 border-b border-slate-800/70 relative z-10">
           <Link
             href="/settings"
-            className="block relative group overflow-hidden rounded-xl border border-slate-800/80 bg-gradient-to-b from-slate-900/90 to-[#0c1424] p-3 transition-all duration-300 hover:border-sky-500/50 hover:shadow-[0_0_20px_rgba(56,189,248,0.15)] cursor-pointer no-underline"
+            onClick={(event) => {
+              // This card doubles as a "My Profile" shortcut. Roles without
+              // `settings:view` have no Settings section, so keep it inert
+              // rather than dropping them on a page they cannot use.
+              if (!isAllowedForRole(SETTINGS_VIEW_ROLES)) {
+                event.preventDefault();
+              }
+            }}
+            aria-disabled={!isAllowedForRole(SETTINGS_VIEW_ROLES)}
+            className={`block relative group overflow-hidden rounded-xl border border-slate-800/80 bg-gradient-to-b from-slate-900/90 to-[#0c1424] p-3 transition-all duration-300 no-underline ${
+              isAllowedForRole(SETTINGS_VIEW_ROLES)
+                ? "hover:border-sky-500/50 hover:shadow-[0_0_20px_rgba(56,189,248,0.15)] cursor-pointer"
+                : "cursor-default"
+            }`}
           >
             {/* Top glass highlight sheen */}
             <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-sky-400/40 to-transparent" />
@@ -970,20 +1066,22 @@ export default function Sidebar({
 
           {/* Settings & Logout buttons */}
           <div className="flex items-center gap-1 pt-1">
-            <Link
-              href="/settings"
-              onClick={onClose}
-              className="flex-1 min-h-[34px] flex items-center justify-center gap-1.5 px-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/70 text-xs no-underline transition-colors border border-transparent hover:border-slate-800"
-              title="System Configuration"
-            >
-              <Settings className="w-3.5 h-3.5" />
-              <span>Settings</span>
-            </Link>
+            {isAllowedForRole(SETTINGS_VIEW_ROLES) && (
+              <Link
+                href="/settings"
+                onClick={onClose}
+                className="flex-1 min-h-[34px] flex items-center justify-center gap-1.5 px-2 rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/70 text-xs no-underline transition-colors border border-transparent hover:border-slate-800"
+                title="System Configuration"
+              >
+                <Settings className="w-3.5 h-3.5" />
+                <span>Settings</span>
+              </Link>
+            )}
 
             <button
               type="button"
               onClick={handleLogout}
-              className="flex-1 min-h-[34px] flex items-center justify-center gap-1.5 px-2 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs border border-transparent hover:border-rose-500/20 cursor-pointer transition-colors"
+              className={`${isAllowedForRole(SETTINGS_VIEW_ROLES) ? "flex-1" : "w-full"} min-h-[34px] flex items-center justify-center gap-1.5 px-2 rounded-lg text-rose-400 hover:text-rose-300 hover:bg-rose-500/10 text-xs border border-transparent hover:border-rose-500/20 cursor-pointer transition-colors`}
               title="Terminate Secure Session"
             >
               <LogOut className="w-3.5 h-3.5" />

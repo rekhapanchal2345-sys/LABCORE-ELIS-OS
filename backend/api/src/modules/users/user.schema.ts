@@ -78,10 +78,14 @@ export const createUserSchema = {
     password: z
       .string()
       .min(
-        8,
-        "Password must contain at least 8 characters."
+        12,
+        "Password must contain at least 12 characters."
       )
-      .max(100),
+      .max(100)
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/,
+        "Password must include uppercase, lowercase, a number, and a symbol."
+      ),
 
     role: userRoleSchema,
 
@@ -157,10 +161,14 @@ export const updateUserSchema = {
     password: z
       .string()
       .min(
-        8,
-        "Password must contain at least 8 characters."
+        12,
+        "Password must contain at least 12 characters."
       )
       .max(100)
+      .regex(
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{12,}$/,
+        "Password must include uppercase, lowercase, a number, and a symbol."
+      )
       .optional(),
 
     role: userRoleSchema.optional(),

@@ -169,9 +169,9 @@ export const getBarcodePrintData = async (barcode: string) => {
     printData = {
       ...printData,
       orderNumber: order.orderNumber,
-      patientName: `${order.patient.firstName} ${order.patient.lastName}`,
+      patientName: [order.patient?.title, order.patient?.firstName, order.patient?.middleName, order.patient?.lastName].filter(Boolean).join(' ').trim() || 'Patient',
       patientUHID: order.patient.uhid,
-      tests: order.items.map(item => item.test.testName).join(', '),
+      tests: order.items.map((item: any) => item.test?.testName).filter(Boolean).join(', '),
       priority: order.priority,
       collectionType: order.collectionType,
     };
@@ -180,7 +180,7 @@ export const getBarcodePrintData = async (barcode: string) => {
     printData = {
       ...printData,
       sampleNumber: sample.sampleNumber,
-      patientName: `${sample.order.patient.firstName} ${sample.order.patient.lastName}`,
+      patientName: [sample.order?.patient?.title, sample.order?.patient?.firstName, sample.order?.patient?.middleName, sample.order?.patient?.lastName].filter(Boolean).join(' ').trim() || 'Patient',
       patientUHID: sample.order.patient.uhid,
       testName: sample.test.testName,
       sampleType: sample.sampleType,
@@ -191,7 +191,7 @@ export const getBarcodePrintData = async (barcode: string) => {
     printData = {
       ...printData,
       uhid: patient.uhid,
-      patientName: `${patient.firstName} ${patient.lastName}`,
+      patientName: [patient.title, patient.firstName, patient.middleName, patient.lastName].filter(Boolean).join(' ').trim() || 'Patient',
       gender: patient.gender,
       dateOfBirth: patient.dateOfBirth,
     };

@@ -1,6 +1,7 @@
 import "dotenv/config";
 import jwt, {
   type SignOptions,
+  type VerifyOptions,
 } from "jsonwebtoken";
 import crypto from "crypto";
 import { HttpError } from "../utils/http-error";
@@ -40,7 +41,7 @@ export interface JwtPayload {
   status: AccountStatus;
   sid?: string;
   amr?: string[];
-  typ?: "access" | "mfa" | "mfa_setup";
+  typ?: "access" | "mfa" | "mfa_setup" | "owner";
   iat?: number;
   exp?: number;
 }
@@ -80,14 +81,25 @@ const getJwtSecret = (): string => {
   return secret;
 };
 
+const tokenIssuer = (): string => process.env.JWT_ISSUER ?? "labcore-api";
+
+const tokenAudience = (): string => process.env.JWT_AUDIENCE ?? "labcore-web";
+
 const signOptions = (): Pick<SignOptions, "issuer" | "audience"> => ({
-  issuer: process.env.JWT_ISSUER ?? "labcore-api",
-  audience: process.env.JWT_AUDIENCE ?? "labcore-web",
+  issuer: tokenIssuer(),
+  audience: tokenAudience(),
+});
+
+const verifyOptions = (): VerifyOptions => ({
+  issuer: tokenIssuer(),
+  audience: tokenAudience(),
 });
 
 /** Short-lived access token; long-lived sessions are carried by the refresh token. */
-export const accessTokenTtl = (): string =>
-  process.env.JWT_ACCESS_EXPIRES_IN || "15m";
+export const accessTokenTtl = (): NonNullable<SignOptions["expiresIn"]> =>
+  (process.env.JWT_ACCESS_EXPIRES_IN || "15m") as NonNullable<
+    SignOptions["expiresIn"]
+  >;
 
 export const sessionTtlMs = (): number =>
   Number(process.env.SESSION_TTL_DAYS || 7) * 24 * 60 * 60 * 1000;
@@ -128,6 +140,105 @@ export const generateChallengeToken = (
   );
 };
 
+/**
+ * Owner re-authentication token.
+ *
+ * Privileged browser actions (registering staff, acting on a user's behalf)
+ * require the operator to re-enter their own password. This token is the
+ * server-side proof of that step: it is issued only after a successful password
+ * check, is short-lived, and is bound to the session that requested it, so it
+ * cannot be minted by anything running in the page.
+ */
+export const ownerTokenTtl = (): NonNullable<SignOptions["expiresIn"]> =>
+  (process.env.OWNER_TOKEN_EXPIRES_IN || "5m") as NonNullable<
+    SignOptions["expiresIn"]
+  >;
+
+export const generateOwnerToken = (
+  user: AuthUser,
+  sessionId?: string
+): string => {
+  const payload: Omit<JwtPayload, "iat" | "exp"> = {
+    sub: user.id,
+    employeeCode: user.employeeCode,
+    email: user.email,
+    fullName: user.fullName,
+    role: user.role,
+    status: user.status,
+    sid: sessionId,
+    amr: ["pwd", "owner"],
+    typ: "owner",
+  };
+
+  return jwt.sign(payload, getJwtSecret(), {
+    expiresIn: ownerTokenTtl(),
+    ...signOptions(),
+  });
+};
+
+/** Throws unless the token is a live owner token belonging to this user and session. */
+export const verifyOwnerToken = (
+  token: string,
+  userId: string,
+  sessionId?: string
+): JwtPayload => {
+  let decoded: jwt.JwtPayload | string;
+
+  try {
+    decoded = jwt.verify(token, getJwtSecret(), verifyOptions());
+  } catch {
+    throw new HttpError(
+      "Owner confirmation expired. Please enter your password again.",
+      401,
+      "OWNER_TOKEN_INVALID"
+    );
+  }
+
+  if (typeof decoded !== "object" || decoded === null) {
+    throw new HttpError("Invalid owner confirmation.", 401, "OWNER_TOKEN_INVALID");
+  }
+
+  const payload = decoded as Partial<JwtPayload>;
+
+  if (payload.typ !== "owner") {
+    throw new HttpError(
+      "Invalid owner confirmation.",
+      401,
+      "OWNER_TOKEN_INVALID"
+    );
+  }
+
+  if (payload.sub !== userId) {
+    throw new HttpError(
+      "This confirmation belongs to a different account.",
+      401,
+      "OWNER_TOKEN_INVALID"
+    );
+  }
+
+  // Binding to the live session means a stolen token is useless once the
+  // operator signs out, and cannot be replayed from another device.
+  if (sessionId && payload.sid && payload.sid !== sessionId) {
+    throw new HttpError(
+      "This confirmation is no longer valid for the current session.",
+      401,
+      "OWNER_TOKEN_INVALID"
+    );
+  }
+
+  return {
+    sub: payload.sub!,
+    employeeCode: String(payload.employeeCode || ""),
+    email: String(payload.email || ""),
+    fullName: String(payload.fullName || ""),
+    role: (payload.role as UserRole) || "ADMIN",
+    status: (payload.status as AccountStatus) || "ACTIVE",
+    sid: payload.sid,
+    amr: payload.amr,
+    typ: payload.typ,
+  };
+};
+
 export const verifyAccessToken = (
   token: string
 ): JwtPayload => {
@@ -138,7 +249,7 @@ export const verifyAccessToken = (
   let decoded: jwt.JwtPayload | string;
 
   try {
-    decoded = jwt.verify(token, getJwtSecret(), signOptions());
+    decoded = jwt.verify(token, getJwtSecret(), verifyOptions());
   } catch (error) {
     if (error instanceof jwt.TokenExpiredError) {
       throw new HttpError("Access token has expired.", 401, "TOKEN_EXPIRED");

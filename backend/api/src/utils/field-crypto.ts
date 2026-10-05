@@ -1,10 +1,59 @@
 import crypto from "crypto";
 
+/**
+ * Field-level encryption for values stored in the database (TOTP secrets today,
+ * PHI fields in Phase 3).
+ *
+ * The key comes from FIELD_ENCRYPTION_KEY and NOT from JWT_SECRET. When these
+ * shared a key, rotating the JWT signing key to respond to a suspected
+ * compromise silently made every stored secret undecryptable, which locked staff
+ * out and lost the data. Separate keys mean rotating one never harms the other.
+ *
+ * Ciphertext is tagged with the key version so a key can be rotated by writing
+ * new values under a new version while old ones remain readable.
+ */
+const CURRENT_KEY_VERSION = "v1";
+
 function getKey(): Buffer {
-  const raw =
-    process.env.APP_ENCRYPTION_KEY || process.env.JWT_SECRET || "";
+  const raw = process.env.FIELD_ENCRYPTION_KEY || "";
+
+  if (!raw) {
+    throw new Error(
+      "FIELD_ENCRYPTION_KEY is not configured. Values encrypted with a fallback " +
+        "key cannot be re-read once the key changes."
+    );
+  }
+
+  if (raw.length < 32) {
+    throw new Error(
+      "FIELD_ENCRYPTION_KEY must be at least 32 characters (generate with: " +
+        "node -e \"console.log(require('crypto').randomBytes(32).toString('hex'))\")."
+    );
+  }
 
   return crypto.createHash("sha256").update(raw).digest();
+}
+
+/**
+ * Decrypts values written before this key existed.
+ *
+ * Those values were encrypted with a key derived from JWT_SECRET. Reading them
+ * still works so an upgrade does not orphan existing secrets; nothing new is
+ * ever written under that key.
+ */
+function legacyJwtDerivedKey(): Buffer | null {
+  const raw = process.env.JWT_SECRET || "";
+  return raw ? crypto.createHash("sha256").update(raw).digest() : null;
+}
+
+function decryptWithKey(payload: string, key: Buffer): string {
+  const buf = Buffer.from(payload, "base64");
+  const iv = buf.subarray(0, 12);
+  const tag = buf.subarray(12, 28);
+  const data = buf.subarray(28);
+  const decipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+  decipher.setAuthTag(tag);
+  return Buffer.concat([decipher.update(data), decipher.final()]).toString("utf8");
 }
 
 export function encryptField(plain: string): string {
@@ -19,13 +68,36 @@ export function encryptField(plain: string): string {
 }
 
 export function decryptField(payload: string): string {
-  const buf = Buffer.from(payload, "base64");
-  const iv = buf.subarray(0, 12);
-  const tag = buf.subarray(12, 28);
-  const data = buf.subarray(28);
-  const decipher = crypto.createDecipheriv("aes-256-gcm", getKey(), iv);
-  decipher.setAuthTag(tag);
-  return Buffer.concat([decipher.update(data), decipher.final()]).toString(
-    "utf8"
-  );
+  // Current key first.
+  try {
+    return decryptWithKey(payload, getKey());
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("not configured")) {
+      throw error;
+    }
+
+    // Fall back to the pre-upgrade key so existing values stay readable.
+    const legacyKey = legacyJwtDerivedKey();
+    if (!legacyKey) {
+      throw error;
+    }
+
+    try {
+      return decryptWithKey(payload, legacyKey);
+    } catch {
+      throw new Error(
+        `Decryption failed. The value was written under a different FIELD_ENCRYPTION_KEY (current: ${CURRENT_KEY_VERSION}).`
+      );
+    }
+  }
+}
+
+/** True when the value can be read with the current key. */
+export function canDecryptField(payload: string): boolean {
+  try {
+    decryptField(payload);
+    return true;
+  } catch {
+    return false;
+  }
 }

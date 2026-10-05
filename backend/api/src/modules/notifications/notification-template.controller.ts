@@ -5,6 +5,7 @@ import {
 } from "express";
 
 import type { AuthRequest } from "../../../middleware/auth.middleware";
+import { pathParam } from "../../utils/request-meta";
   
 import {
   createNotificationTemplate,
@@ -71,7 +72,7 @@ export const getOne = async (
   next: NextFunction
 ) => {
   try {
-    const template = await getNotificationTemplateById(req.params.id);
+    const template = await getNotificationTemplateById(pathParam(req, "id"));
 
     return successResponse(
       res,
@@ -89,7 +90,7 @@ export const update = async (
   next: NextFunction
 ) => {
   try {
-    const template = await updateNotificationTemplate(req.params.id, req.body);
+    const template = await updateNotificationTemplate(pathParam(req, "id"), req.body);
 
     return successResponse(
       res,
@@ -107,7 +108,7 @@ export const remove = async (
   next: NextFunction
 ) => {
   try {
-    const result = await deleteNotificationTemplate(req.params.id);
+    const result = await deleteNotificationTemplate(pathParam(req, "id"));
 
     return successResponse(
       res,

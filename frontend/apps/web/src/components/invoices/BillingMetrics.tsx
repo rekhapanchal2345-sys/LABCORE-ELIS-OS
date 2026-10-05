@@ -11,14 +11,29 @@ import {
   Calendar,
   Sparkles,
   ArrowUpRight,
+  Info,
+  Layers,
+  HelpCircle,
 } from "lucide-react";
 import type { Invoice } from "./InvoiceTable";
 
 interface BillingMetricsData {
   totalRevenue: number;
+  totalTaxableRevenue?: number;
+  totalGstAmount?: number;
+  totalBilledTurnover?: number;
   paidInvoices: {
     count: number;
     amount: number;
+  };
+  partialInvoices?: {
+    count: number;
+    paidAmount: number;
+    dueAmount: number;
+  };
+  unpaidInvoices?: {
+    count: number;
+    dueAmount: number;
   };
   pendingDueAmount: number;
   discountsAndRefunds: {
@@ -30,12 +45,15 @@ interface BillingMetricsData {
     startDate: string;
     endDate: string;
   };
+  totalInvoices?: number;
 }
 
 interface BillingMetricsProps {
   startDate?: string;
   endDate?: string;
   invoices?: Invoice[];
+  activeStatusFilter?: string;
+  onFilterStatus?: (status: string) => void;
 }
 
 function formatCurrency(amount: number) {
@@ -49,10 +67,11 @@ export default function BillingMetrics({
   startDate,
   endDate,
   invoices = [],
+  activeStatusFilter = "",
+  onFilterStatus,
 }: BillingMetricsProps) {
   const [metrics, setMetrics] = useState<BillingMetricsData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<"register" | "today">("register");
 
   // Calculate live dynamic metrics from active invoices register
@@ -62,9 +81,14 @@ export default function BillingMetrics({
     let totalDue = 0;
     let totalDiscount = 0;
     let totalGst = 0;
+    let totalTaxable = 0;
     let paidCount = 0;
+    let paidAmount = 0;
     let partialCount = 0;
+    let partialPaidAmount = 0;
+    let partialDueAmount = 0;
     let pendingCount = 0;
+    let pendingDueAmount = 0;
 
     invoices.forEach((inv) => {
       const net = Number(inv.netPayable || inv.totalAmount || 0);
@@ -75,19 +99,25 @@ export default function BillingMetrics({
           : Math.max(0, net - paid);
       const disc = Number(inv.discount || 0);
       const gst = Number(inv.gstAmount || 0);
+      const taxable = Number(inv.taxableAmount || Math.max(0, net - gst));
 
       totalBilled += net;
       totalCollected += paid;
       totalDue += due;
       totalDiscount += disc;
       totalGst += gst;
+      totalTaxable += taxable;
 
       if (due <= 0 || inv.paymentStatus === "PAID") {
         paidCount++;
+        paidAmount += net;
       } else if (paid > 0) {
         partialCount++;
+        partialPaidAmount += paid;
+        partialDueAmount += due;
       } else {
         pendingCount++;
+        pendingDueAmount += due;
       }
     });
 
@@ -100,9 +130,14 @@ export default function BillingMetrics({
       totalDue,
       totalDiscount,
       totalGst,
+      totalTaxable,
       paidCount,
+      paidAmount,
       partialCount,
+      partialPaidAmount,
+      partialDueAmount,
       pendingCount,
+      pendingDueAmount,
       recoveryRate,
       count: invoices.length,
     };
@@ -115,8 +150,6 @@ export default function BillingMetrics({
   const fetchMetrics = async () => {
     try {
       setLoading(true);
-      setError(null);
-
       const queryParams = new URLSearchParams();
       if (startDate) queryParams.append("startDate", startDate);
       if (endDate) queryParams.append("endDate", endDate);
@@ -137,126 +170,181 @@ export default function BillingMetrics({
   };
 
   // Determine display values based on viewMode
-  const displayTotalRevenue =
-    viewMode === "register" && liveRegisterMetrics.count > 0
-      ? liveRegisterMetrics.totalCollected
-      : metrics?.totalRevenue || liveRegisterMetrics.totalCollected;
+  const isRegister = viewMode === "register";
 
-  const displayPaidInvoicesCount =
-    viewMode === "register" && liveRegisterMetrics.count > 0
-      ? liveRegisterMetrics.paidCount
-      : metrics?.paidInvoices.count || liveRegisterMetrics.paidCount;
+  const displayTotalCollections = isRegister
+    ? liveRegisterMetrics.totalCollected
+    : metrics?.totalRevenue ?? liveRegisterMetrics.totalCollected;
 
-  const displayPaidAmount =
-    viewMode === "register" && liveRegisterMetrics.count > 0
-      ? liveRegisterMetrics.totalCollected
-      : metrics?.paidInvoices.amount || liveRegisterMetrics.totalCollected;
+  const displayBilledTurnover = isRegister
+    ? liveRegisterMetrics.totalBilled
+    : metrics?.totalBilledTurnover ?? liveRegisterMetrics.totalBilled;
 
-  const displayPendingDue =
-    viewMode === "register" && liveRegisterMetrics.count > 0
-      ? liveRegisterMetrics.totalDue
-      : metrics?.pendingDueAmount || liveRegisterMetrics.totalDue;
+  const displayPaidInvoicesCount = isRegister
+    ? liveRegisterMetrics.paidCount
+    : metrics?.paidInvoices.count ?? liveRegisterMetrics.paidCount;
 
-  const displayDiscountTotal =
-    viewMode === "register" && liveRegisterMetrics.count > 0
-      ? liveRegisterMetrics.totalDiscount + liveRegisterMetrics.totalGst
-      : (metrics?.discountsAndRefunds.total || 0) + liveRegisterMetrics.totalGst;
+  const displayPaidAmount = isRegister
+    ? liveRegisterMetrics.paidAmount
+    : metrics?.paidInvoices.amount ?? liveRegisterMetrics.paidAmount;
 
-  return (
+  const displayPendingDue = isRegister
+    ? liveRegisterMetrics.totalDue
+    : metrics?.pendingDueAmount ?? liveRegisterMetrics.totalDue;
+
+  const displayTaxableRevenue = isRegister
+    ? liveRegisterMetrics.totalTaxable
+    : metrics?.totalTaxableRevenue ?? liveRegisterMetrics.totalTaxable;
+
+  const displayGstTotal = isRegister
+    ? liveRegisterMetrics.totalGst
+    : metrics?.totalGstAmount ?? liveRegisterMetrics.totalGst;
+
+  const displayDiscountTotal = isRegister
+    ? liveRegisterMetrics.totalDiscount
+    : metrics?.discountsAndRefunds.discounts ?? liveRegisterMetrics.totalDiscount;
+
+    return (
     <div className="space-y-3">
-      {/* Sub-bar with View Selector */}
-      <div className="flex items-center justify-between px-1">
-        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-          <Sparkles className="h-3.5 w-3.5 text-indigo-600" />
-          <span>Real-time Financial Telemetry</span>
-          <span className="text-slate-300">•</span>
-          <span className="text-slate-700 font-bold">
-            {liveRegisterMetrics.count} Total Register Invoices
+      {/* Sub-bar with View Selector & Scope Summary */}
+      <div className="flex flex-wrap items-center justify-between gap-2 px-1">
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-400">
+          <Sparkles className="h-3.5 w-3.5 text-cyan-400" />
+          <span className="text-slate-200">Real-time Financial Telemetry</span>
+          <span className="text-slate-600">•</span>
+          <span className="rounded-full border border-cyan-500/30 bg-cyan-950/60 px-2.5 py-0.5 text-[11px] font-bold text-cyan-300 font-mono">
+            {liveRegisterMetrics.count} Register Invoices
           </span>
+          {activeStatusFilter && (
+            <>
+              <span className="text-slate-600">•</span>
+              <span className="rounded-full border border-indigo-500/30 bg-indigo-950/60 px-2.5 py-0.5 text-[11px] font-bold text-indigo-300">
+                Filtered: {activeStatusFilter}
+              </span>
+              <button
+                onClick={() => onFilterStatus && onFilterStatus("")}
+                className="text-[11px] text-slate-400 hover:text-cyan-300 underline"
+              >
+                Clear
+              </button>
+            </>
+          )}
         </div>
 
-        <div className="flex rounded-lg bg-slate-100 p-0.5 text-[11px] font-bold">
+        <div className="flex rounded-xl border border-slate-800 bg-slate-950/90 p-1 text-[11px] font-bold">
           <button
             onClick={() => setViewMode("register")}
-            className={`rounded-md px-2.5 py-1 transition-all ${
+            className={`rounded-lg px-3 py-1 transition-all ${
               viewMode === "register"
-                ? "bg-white text-indigo-700 shadow-sm"
-                : "text-slate-500 hover:text-slate-800"
+                ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/30 font-bold"
+                : "text-slate-400 hover:text-slate-200"
             }`}
           >
-            Register Overall
+            Active Register View
           </button>
           <button
             onClick={() => setViewMode("today")}
-            className={`rounded-md px-2.5 py-1 transition-all ${
+            className={`rounded-lg px-3 py-1 transition-all ${
               viewMode === "today"
-                ? "bg-white text-indigo-700 shadow-sm"
-                : "text-slate-500 hover:text-slate-800"
+                ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/30 font-bold"
+                : "text-slate-400 hover:text-slate-200"
             }`}
           >
-            Today's Window
+            Today's Window (IST)
           </button>
         </div>
       </div>
 
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {/* CARD 1: TOTAL REVENUE / REALIZED CASH */}
-        <div className="group relative overflow-hidden rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-white via-emerald-50/30 to-emerald-50/60 p-5 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-800">
-              {viewMode === "register" ? "Total Revenue Realized" : "Revenue (Today)"}
-            </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
-              <TrendingUp className="h-5 w-5" />
+        {/* CARD 1: GROSS COLLECTIONS & TURNOVER */}
+        <div
+          onClick={() => onFilterStatus && onFilterStatus("")}
+          className={`group relative overflow-hidden rounded-2xl border p-5 shadow-xl transition-all cursor-pointer border-l-4 border-l-emerald-500 ${
+            !activeStatusFilter
+              ? "border-slate-800 bg-slate-950 hover:bg-slate-900/80 ring-1 ring-emerald-500/30"
+              : "border-slate-800 bg-slate-950 hover:bg-slate-900/60"
+          }`}
+          title="Click to reset filter and view all invoices"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+                Realized Collections
+              </span>
+              <span
+                className="text-slate-500 hover:text-slate-300"
+                title="Gross settled cash/bank/UPI payments received from patients and clients"
+              >
+                <HelpCircle className="h-3 w-3" />
+              </span>
+            </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-emerald-500/30 bg-emerald-950/60 text-emerald-400 shadow-sm">
+              <TrendingUp className="h-4 w-4" />
             </div>
           </div>
-          <div className="text-2xl font-black tracking-tight text-slate-900 font-mono">
-            {formatCurrency(displayTotalRevenue)}
+          <div className="text-2xl font-black tracking-tight text-white font-mono">
+            {formatCurrency(displayTotalCollections)}
           </div>
-          <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-            <span>Collected / Settled</span>
-            <span className="font-bold text-emerald-700">
+          <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
+            <span>Billed: {formatCurrency(displayBilledTurnover)}</span>
+            <span className="font-bold text-emerald-300 font-mono">
               {liveRegisterMetrics.recoveryRate}% Realized
             </span>
           </div>
-          <div className="mt-2 h-1.5 w-full bg-emerald-100 rounded-full overflow-hidden">
+          <div className="mt-2.5 h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
             <div
-              className="h-full bg-emerald-500 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-500 shadow-sm shadow-emerald-500/50"
               style={{ width: `${liveRegisterMetrics.recoveryRate}%` }}
             />
           </div>
         </div>
 
         {/* CARD 2: PAID INVOICES */}
-        <div className="group relative overflow-hidden rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-white via-indigo-50/30 to-indigo-50/60 p-5 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-indigo-900">
-              Paid Invoices
-            </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-indigo-100 text-indigo-700">
-              <CheckCircle2 className="h-5 w-5" />
+        <div
+          onClick={() => onFilterStatus && onFilterStatus(activeStatusFilter === "PAID" ? "" : "PAID")}
+          className={`group relative overflow-hidden rounded-2xl border p-5 shadow-xl transition-all cursor-pointer border-l-4 border-l-cyan-500 ${
+            activeStatusFilter === "PAID"
+              ? "border-slate-800 bg-slate-950 hover:bg-slate-900/80 ring-1 ring-cyan-500/40"
+              : "border-slate-800 bg-slate-950 hover:bg-slate-900/60"
+          }`}
+          title="Click to filter by fully paid invoices"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-cyan-400">
+                Paid Invoices (100%)
+              </span>
+              <span
+                className="text-slate-500 hover:text-slate-300"
+                title="Invoices where total paid amount matches grand total with zero pending balance"
+              >
+                <HelpCircle className="h-3 w-3" />
+              </span>
+            </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-cyan-500/30 bg-cyan-950/60 text-cyan-400 shadow-sm">
+              <CheckCircle2 className="h-4 w-4" />
             </div>
           </div>
-          <div className="text-2xl font-black tracking-tight text-slate-900">
+          <div className="text-2xl font-black tracking-tight text-white font-mono">
             {displayPaidInvoicesCount}{" "}
-            <span className="text-sm font-semibold text-slate-500 font-sans">
+            <span className="text-xs font-semibold text-slate-400 font-sans">
               invoices
             </span>
           </div>
-          <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+          <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
             <span>Value: {formatCurrency(displayPaidAmount)}</span>
-            <span className="font-bold text-indigo-700">
+            <span className="font-bold text-cyan-300 font-mono">
               {liveRegisterMetrics.count > 0
                 ? Math.round(
                     (displayPaidInvoicesCount / liveRegisterMetrics.count) * 100
                   )
                 : 100}
-              % Completed
+              % of Total
             </span>
           </div>
-          <div className="mt-2 h-1.5 w-full bg-indigo-100 rounded-full overflow-hidden">
+          <div className="mt-2.5 h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
             <div
-              className="h-full bg-indigo-600 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-cyan-500 to-blue-500 rounded-full transition-all duration-500 shadow-sm shadow-cyan-500/50"
               style={{
                 width: `${
                   liveRegisterMetrics.count > 0
@@ -268,32 +356,53 @@ export default function BillingMetrics({
           </div>
         </div>
 
-        {/* CARD 3: PENDING / DUE AMOUNT */}
-        <div className="group relative overflow-hidden rounded-2xl border border-amber-200/80 bg-gradient-to-br from-white via-amber-50/30 to-amber-50/60 p-5 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-amber-900">
-              Pending / Due Balance
-            </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-100 text-amber-800">
-              <AlertCircle className="h-5 w-5" />
+        {/* CARD 3: PENDING / DUE BALANCE */}
+        <div
+          onClick={() =>
+            onFilterStatus &&
+            onFilterStatus(activeStatusFilter === "PENDING" ? "" : "PENDING")
+          }
+          className={`group relative overflow-hidden rounded-2xl border p-5 shadow-xl transition-all cursor-pointer border-l-4 border-l-amber-500 ${
+            activeStatusFilter === "PENDING" || activeStatusFilter === "PARTIAL"
+              ? "border-slate-800 bg-slate-950 hover:bg-slate-900/80 ring-1 ring-amber-500/40"
+              : "border-slate-800 bg-slate-950 hover:bg-slate-900/60"
+          }`}
+          title="Click to filter by pending / overdue invoices"
+        >
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-amber-400">
+                Pending / Due Balance
+              </span>
+              <span
+                className="text-slate-500 hover:text-slate-300"
+                title="Uncollected debt balance awaiting settlement across partial and unpaid invoices"
+              >
+                <HelpCircle className="h-3 w-3" />
+              </span>
+            </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-amber-500/30 bg-amber-950/60 text-amber-400 shadow-sm">
+              <AlertCircle className="h-4 w-4" />
             </div>
           </div>
-          <div className="text-2xl font-black tracking-tight text-slate-900 font-mono">
+          <div className="text-2xl font-black tracking-tight text-white font-mono">
             {formatCurrency(displayPendingDue)}
           </div>
-          <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
-            <span>Uncollected Patient Dues</span>
+          <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
+            <span>
+              {liveRegisterMetrics.partialCount} Partial • {liveRegisterMetrics.pendingCount} Unpaid
+            </span>
             <span
-              className={`font-bold ${
-                displayPendingDue > 0 ? "text-amber-700" : "text-emerald-700"
+              className={`font-bold font-mono ${
+                displayPendingDue > 0 ? "text-amber-300" : "text-emerald-300"
               }`}
             >
               {displayPendingDue > 0 ? "Action Required" : "Zero Arrears"}
             </span>
           </div>
-          <div className="mt-2 h-1.5 w-full bg-amber-100 rounded-full overflow-hidden">
+          <div className="mt-2.5 h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
             <div
-              className="h-full bg-amber-500 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-amber-500 to-orange-500 rounded-full transition-all duration-500 shadow-sm shadow-amber-500/50"
               style={{
                 width: `${
                   liveRegisterMetrics.totalBilled > 0
@@ -308,30 +417,38 @@ export default function BillingMetrics({
           </div>
         </div>
 
-        {/* CARD 4: DISCOUNTS & GST TAX AUDIT */}
-        <div className="group relative overflow-hidden rounded-2xl border border-purple-200/80 bg-gradient-to-br from-white via-purple-50/30 to-purple-50/60 p-5 shadow-sm hover:shadow-md transition-all">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-purple-900">
-              Discounts & Tax (GST)
-            </span>
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-purple-100 text-purple-700">
-              <Percent className="h-5 w-5" />
+        {/* CARD 4: TAX & DISCOUNTS AUDIT */}
+        <div className="group relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 p-5 shadow-xl hover:bg-slate-900/60 transition-all border-l-4 border-l-violet-500">
+          <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center gap-1.5">
+              <span className="text-xs font-bold uppercase tracking-wider text-violet-400">
+                Tax (GST) &amp; Discounts
+              </span>
+              <span
+                className="text-slate-500 hover:text-slate-300"
+                title="Bifurcated GST output liability and discounts granted under SAC 999312"
+              >
+                <HelpCircle className="h-3 w-3" />
+              </span>
+            </div>
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl border border-violet-500/30 bg-violet-950/60 text-violet-400 shadow-sm">
+              <Percent className="h-4 w-4" />
             </div>
           </div>
-          <div className="text-2xl font-black tracking-tight text-slate-900 font-mono">
-            {formatCurrency(liveRegisterMetrics.totalGst)}
+          <div className="text-2xl font-black tracking-tight text-white font-mono">
+            {formatCurrency(displayGstTotal)}
           </div>
-          <div className="mt-2 flex items-center justify-between text-xs text-slate-500">
+          <div className="mt-2 flex items-center justify-between text-xs text-slate-400">
             <span>
-              Disc: {formatCurrency(liveRegisterMetrics.totalDiscount)}
+              Taxable: {formatCurrency(displayTaxableRevenue)}
             </span>
-            <span className="font-bold text-purple-700 font-mono">
-              +GST: {formatCurrency(liveRegisterMetrics.totalGst)}
+            <span className="font-bold text-violet-300 font-mono">
+              Disc: {formatCurrency(displayDiscountTotal)}
             </span>
           </div>
-          <div className="mt-2 h-1.5 w-full bg-purple-100 rounded-full overflow-hidden">
+          <div className="mt-2.5 h-1.5 w-full bg-slate-900 rounded-full overflow-hidden border border-slate-800">
             <div
-              className="h-full bg-purple-500 rounded-full transition-all duration-500"
+              className="h-full bg-gradient-to-r from-violet-500 to-purple-400 rounded-full transition-all duration-500 shadow-sm shadow-violet-500/50"
               style={{ width: "100%" }}
             />
           </div>

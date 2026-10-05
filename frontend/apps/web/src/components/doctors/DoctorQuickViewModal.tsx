@@ -20,6 +20,7 @@ import {
   Activity,
   Calendar,
   Sparkles,
+  AlertCircle,
 } from "lucide-react";
 import { doctorApi } from "@/lib/api";
 import { showSuccess, showError } from "@/lib/notifications";

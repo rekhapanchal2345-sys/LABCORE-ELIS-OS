@@ -1,7 +1,7 @@
-let Bhconst;
-Bhconst path = require('path');
+const path = require('path');
 
-const targetApi = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+const rawTarget = process.env.INTERNAL_API_URL || process.env.NEXT_PUBLIC_API_URL || 'http://127.0.0.1:5000';
+const targetApi = rawTarget.replace('localhost', '127.0.0.1');
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -9,14 +9,6 @@ const nextConfig = {
   compress: true,
   poweredByHeader: false,
   outputFileTracingRoot: path.join(__dirname),
-
-  // Vercel deployment ke liye strict errors ignore karne ki settings
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
 
   experimental: {
     optimizePackageImports: ['lucide-react', 'recharts'],

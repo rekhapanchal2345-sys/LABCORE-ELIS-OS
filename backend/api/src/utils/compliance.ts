@@ -1,3 +1,4 @@
+import { Prisma } from '@prisma/client';
 import prisma from '../lib/prisma';
 
 /**
@@ -31,8 +32,8 @@ export const createAuditLog = async (data: AuditLogData) => {
         recordId: data.recordId,
         ipAddress: data.ipAddress,
         userAgent: data.userAgent,
-        oldData: data.oldData ? JSON.stringify(data.oldData) : null,
-        newData: data.newData ? JSON.stringify(data.newData) : null,
+        oldData: data.oldData ?? Prisma.DbNull,
+        newData: data.newData ?? Prisma.DbNull,
       },
     });
   } catch (error) {

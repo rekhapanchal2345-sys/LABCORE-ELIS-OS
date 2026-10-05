@@ -196,62 +196,88 @@ export default function ReportsPage() {
 
   return (
     <DashboardLayout title="Reports">
-      <div className="min-h-screen space-y-5 bg-gradient-to-br from-slate-50 via-white to-indigo-50/40">
+      <div className="space-y-6">
         {/* Page Header */}
-        <div className="flex flex-wrap items-end justify-between gap-4 rounded-2xl border border-indigo-100 bg-white/80 p-5 shadow-sm">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between border-b border-slate-800 pb-5">
           <div>
-            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-700"><ShieldCheck className="h-3.5 w-3.5" /> Verified reporting center</div>
-            <h1 className="text-2xl font-extrabold tracking-tight text-slate-950">Reports Management</h1>
-            <p className="mt-1 text-sm text-slate-500">
-              View, manage, and dispatch diagnostic reports
-            </p>
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 shadow-sm">
+                <FileText className="h-5 w-5" />
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h1 className="text-xl font-bold tracking-tight text-white">
+                    Diagnostic Reports &amp; Clinical Dispatch
+                  </h1>
+                  <span className="inline-flex items-center gap-1 rounded-full border border-cyan-500/30 bg-cyan-950/60 px-2.5 py-0.5 text-xs font-bold text-cyan-300">
+                    <ShieldCheck className="h-3.5 w-3.5 text-cyan-400" />
+                    NABL ISO 15189:2022
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mt-0.5">
+                  Dual-signoff verification queue, digital dispatch, delivery tracking, and clinical report management.
+                </p>
+              </div>
+            </div>
           </div>
-          
-          <div className="flex gap-2">
+
+          <div className="flex flex-wrap items-center gap-2.5">
+            <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1.5 text-xs font-medium text-emerald-300">
+              <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+              Live Clinical Dispatch Sync
+            </span>
+
             <button
               onClick={fetchReports}
               disabled={loading}
-              className="inline-flex items-center gap-2 rounded-xl border border-indigo-200 bg-white px-4 py-2.5 text-sm font-bold text-indigo-700 shadow-sm transition hover:bg-indigo-50"
+              className="inline-flex items-center gap-2 rounded-xl border border-slate-800 bg-slate-900/90 px-3.5 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition shadow-sm"
             >
-              <RefreshCw className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-3.5 w-3.5 ${loading ? "animate-spin text-cyan-400" : "text-cyan-400"}`} />
               Refresh
             </button>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex gap-2 rounded-xl border border-indigo-100 bg-white p-1 shadow-sm">
+        <div className="flex overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/90 p-1.5 text-xs font-semibold scrollbar-none gap-1.5">
           <button
             onClick={() => setActiveTab("reports")}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-xl transition-all ${
               activeTab === "reports"
-                ? "rounded-lg bg-indigo-600 text-white shadow-md"
-                  : "rounded-lg text-gray-500 hover:bg-indigo-50 hover:text-indigo-700"
+                ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold shadow-md shadow-cyan-600/30"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/80 border border-transparent"
             }`}
           >
-            <FileText className="h-4 w-4 inline mr-2" />
-            Reports
+            <FileText className="h-4 w-4" />
+            <span>Reports Worklist</span>
+            <span
+              className={`ml-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                activeTab === "reports" ? "bg-white/20 text-white" : "border border-slate-800 bg-slate-900 text-slate-400"
+              }`}
+            >
+              {reports.length}
+            </span>
           </button>
           <button
             onClick={() => setActiveTab("analytics")}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`flex items-center gap-2 whitespace-nowrap px-4 py-2.5 rounded-xl transition-all ${
               activeTab === "analytics"
-                ? "rounded-lg bg-indigo-600 text-white shadow-md"
-                  : "rounded-lg text-gray-500 hover:bg-indigo-50 hover:text-indigo-700"
+                ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white font-bold shadow-md shadow-cyan-600/30"
+                : "text-slate-400 hover:text-slate-200 hover:bg-slate-900/80 border border-transparent"
             }`}
           >
-            <TrendingUp className="h-4 w-4 inline mr-2" />
-            Performance Analytics
+            <TrendingUp className="h-4 w-4" />
+            <span>Performance Analytics</span>
           </button>
         </div>
 
         {error && (
-          <div className="alert alert-danger">
-            <AlertCircle className="alert-icon" />
-            <div className="alert-content">
-              <div className="alert-title">Error</div>
-              <div className="alert-message">{error}</div>
+          <div className="rounded-2xl border border-rose-500/30 bg-rose-950/30 p-4 text-rose-300">
+            <div className="flex items-center gap-2 font-bold">
+              <AlertCircle className="h-4 w-4 text-rose-400" />
+              <span>System Error</span>
             </div>
+            <p className="mt-1 text-xs text-rose-300/80">{error}</p>
           </div>
         )}
 
@@ -262,20 +288,34 @@ export default function ReportsPage() {
 
             <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-7">
               {[
-                { label: "Completed today", value: completedToday, icon: CalendarCheck, tone: "indigo" },
-                { label: "Verified reports", value: filteredReports.filter(r => Boolean(r.approvedBy) || ["APPROVED", "PUBLISHED", "VERIFIED", "COMPLETED"].includes(r.status.toUpperCase())).length, icon: ShieldCheck, tone: "emerald" },
-                { label: "Digital dispatch", value: filteredReports.filter(r => r.deliveryStatus === "WHATSAPP_DELIVERED" || r.deliveryStatus === "EMAIL_DELIVERED").length, icon: Send, tone: "cyan" },
-                { label: "Delivery watch", value: filteredReports.filter(r => r.deliveryStatus === "UNDELIVERED").length, icon: Clock3, tone: "rose" },
-                { label: "Critical pending", value: criticalResultsPending, icon: AlertTriangle, tone: "amber" },
-                { label: "Average TAT", value: averageTat === null ? "—" : `${averageTat.toFixed(1)}h`, icon: Timer, tone: "violet" },
-                { label: "Within-time %", value: withinTimePct === null ? "—" : `${withinTimePct}%`, icon: Gauge, tone: "orange" },
-              ].map(({ label, value, icon: Icon, tone }) => (
-                <div key={label} className={`relative overflow-hidden rounded-2xl border bg-white p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md ${
-                  tone === "rose" ? "border-rose-200" : tone === "emerald" ? "border-emerald-200" : tone === "cyan" ? "border-cyan-200" : tone === "amber" ? "border-amber-200 bg-gradient-to-br from-white to-amber-50/70" : tone === "violet" ? "border-violet-200 bg-gradient-to-br from-white to-violet-50/70" : tone === "orange" ? "border-orange-200 bg-gradient-to-br from-white to-orange-50/70" : "border-indigo-200"
-                }`}>
-                  <div className="flex items-center justify-between"><span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">{label}</span><Icon className={`h-4 w-4 ${tone === "rose" ? "text-rose-500" : tone === "emerald" ? "text-emerald-500" : tone === "cyan" ? "text-cyan-500" : tone === "amber" ? "text-amber-500" : tone === "violet" ? "text-violet-500" : tone === "orange" ? "text-orange-500" : "text-indigo-500"}`} /></div>
-                  <p className="mt-2 text-2xl font-extrabold text-slate-950">{value}</p>
-                  <p className="mt-1 text-[11px] text-slate-400">{label === "Completed today" ? "Reports published today" : label === "Average TAT" ? "Created to published" : label === "Critical pending" ? "Requires priority review" : label === "Within-time %" ? "On-time within 24h SLA" : "Live operational count"}</p>
+                { label: "Completed today", value: completedToday, icon: CalendarCheck, border: "border-l-indigo-500", iconColor: "text-indigo-400" },
+                { label: "Verified reports", value: filteredReports.filter(r => Boolean(r.approvedBy) || ["APPROVED", "PUBLISHED", "VERIFIED", "COMPLETED"].includes(r.status.toUpperCase())).length, icon: ShieldCheck, border: "border-l-emerald-500", iconColor: "text-emerald-400" },
+                { label: "Digital dispatch", value: filteredReports.filter(r => r.deliveryStatus === "WHATSAPP_DELIVERED" || r.deliveryStatus === "EMAIL_DELIVERED").length, icon: Send, border: "border-l-cyan-500", iconColor: "text-cyan-400" },
+                { label: "Delivery watch", value: filteredReports.filter(r => r.deliveryStatus === "UNDELIVERED").length, icon: Clock3, border: "border-l-rose-500", iconColor: "text-rose-400" },
+                { label: "Critical pending", value: criticalResultsPending, icon: AlertTriangle, border: "border-l-amber-500", iconColor: "text-amber-400" },
+                { label: "Average TAT", value: averageTat === null ? "—" : `${averageTat.toFixed(1)}h`, icon: Timer, border: "border-l-violet-500", iconColor: "text-violet-400" },
+                { label: "Within-time %", value: withinTimePct === null ? "—" : `${withinTimePct}%`, icon: Gauge, border: "border-l-orange-500", iconColor: "text-orange-400" },
+              ].map(({ label, value, icon: Icon, border, iconColor }) => (
+                <div
+                  key={label}
+                  className={`relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 p-4 shadow-xl transition hover:bg-slate-900/60 border-l-4 ${border}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">{label}</span>
+                    <Icon className={`h-4 w-4 ${iconColor}`} />
+                  </div>
+                  <p className="mt-2 text-2xl font-black text-white font-mono">{value}</p>
+                  <p className="mt-1 text-[10px] text-slate-400">
+                    {label === "Completed today"
+                      ? "Published today"
+                      : label === "Average TAT"
+                      ? "Created to published"
+                      : label === "Critical pending"
+                      ? "Priority review"
+                      : label === "Within-time %"
+                      ? "Within 24h SLA"
+                      : "Live queue count"}
+                  </p>
                 </div>
               ))}
             </div>
@@ -314,10 +354,10 @@ export default function ReportsPage() {
               }}
             />
 
-            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-indigo-100 bg-white p-3 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-800 bg-slate-950/90 p-3 shadow-xl">
               <div className="flex items-center gap-2">
-                <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                <span className="text-xs font-bold uppercase tracking-wider text-slate-600">Verification view</span>
+                <ShieldCheck className="h-4 w-4 text-emerald-400" />
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-300">Verification view</span>
               </div>
               <div className="flex flex-wrap gap-2">
                 {[
@@ -329,14 +369,10 @@ export default function ReportsPage() {
                     key={filter.value}
                     type="button"
                     onClick={() => setVerificationFilter(filter.value)}
-                    className={`rounded-full px-3 py-1.5 text-[11px] font-bold transition ${
+                    className={`rounded-xl px-3 py-1.5 text-xs font-bold transition ${
                       verificationFilter === filter.value
-                        ? filter.value === "verified"
-                          ? "bg-emerald-600 text-white shadow-sm"
-                          : filter.value === "watch"
-                            ? "bg-amber-500 text-white shadow-sm"
-                            : "bg-indigo-600 text-white shadow-sm"
-                        : "border border-slate-200 bg-slate-50 text-slate-600 hover:bg-indigo-50"
+                        ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/30"
+                        : "border border-slate-800 bg-slate-900/80 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
                     }`}
                   >
                     {filter.label}

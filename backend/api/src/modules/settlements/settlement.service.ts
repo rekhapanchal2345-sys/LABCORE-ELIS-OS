@@ -1,10 +1,6 @@
 import prisma from "../../../config/database";
-
-const generateSettlementNumber = () => {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 1000);
-  return `STL-${timestamp}-${random}`;
-};
+import type { ReconciliationStatus } from "@prisma/client";
+import { getNextSequenceNumber } from "../../services/sequence.service";
 
 // =======================================================
 // CREATE SETTLEMENT
@@ -27,10 +23,11 @@ export const createSettlement = async (
     const grossAmount = Number(data.grossAmount);
     const fees = Number(data.fees || 0);
     const netAmount = grossAmount - fees;
+    const stlNumber = await getNextSequenceNumber("SET", "MAIN");
 
     const settlement = await prisma.settlement.create({
       data: {
-        settlementNumber: generateSettlementNumber(),
+        settlementNumber: stlNumber,
         provider: data.provider,
         providerType: data.providerType,
         grossAmount,
@@ -248,7 +245,7 @@ export const createReconciliationRecord = async (
     sourceId: string;
     transactionId: string;
     amount: number;
-    status: string;
+    status: ReconciliationStatus;
     discrepancy?: string;
     notes?: string;
   }

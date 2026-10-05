@@ -1,6 +1,7 @@
 import prisma from "../../lib/prisma";
 import { sendWhatsApp } from "../../lib/communication-providers";
 import { WhatsAppAIService } from "../../lib/whatsapp-ai.service";
+import { Prisma } from "@prisma/client";
 
 // Campaign Management Service
 export class WhatsAppCampaignService {
@@ -27,7 +28,7 @@ export class WhatsAppCampaignService {
       const costPerMessage = 0.05; // Adjust based on actual WhatsApp pricing
       const costEstimate = recipientCount * costPerMessage;
       
-      const campaign = await prisma.whatsappCampaign.create({
+      const campaign = await prisma.whatsAppCampaign.create({
         data: {
           name: data.name,
           description: data.description,
@@ -127,7 +128,7 @@ export class WhatsAppCampaignService {
    */
   static async scheduleCampaign(campaignId: string, scheduledFor: Date) {
     try {
-      const campaign = await prisma.whatsappCampaign.update({
+      const campaign = await prisma.whatsAppCampaign.update({
         where: { id: campaignId },
         data: {
           scheduledFor,
@@ -139,8 +140,9 @@ export class WhatsAppCampaignService {
       const recipients = await this.getCampaignRecipients(campaign.targetAudience);
       
       for (const recipient of recipients) {
-        await prisma.whatsappScheduledMessage.create({
+        await prisma.whatsAppScheduledMessage.create({
           data: {
+            phoneNumber: recipient.phone,
             recipientPhone: recipient.phone,
             patientId: recipient.patientId,
             templateName: campaign.messageContent || 'Campaign Message',
@@ -165,7 +167,7 @@ export class WhatsAppCampaignService {
    */
   static async sendCampaign(campaignId: string) {
     try {
-      const campaign = await prisma.whatsappCampaign.update({
+      const campaign = await prisma.whatsAppCampaign.update({
         where: { id: campaignId },
         data: {
           status: 'SENDING',
@@ -193,13 +195,13 @@ export class WhatsAppCampaignService {
               result = await sendWhatsApp({
                 to: recipient.phone,
                 templateName: campaign.templateId,
-                message: campaign.messageContent
+                message: campaign.messageContent || ''
               });
             } else {
               // Send custom message
               result = await sendWhatsApp({
                 to: recipient.phone,
-                message: campaign.messageContent
+                message: campaign.messageContent || ''
               });
             }
             
@@ -214,9 +216,9 @@ export class WhatsAppCampaignService {
                     patientId: recipient.patientId,
                     type: 'WHATSAPP',
                     status: 'SENT',
-                    recipientContact: recipient.phone,
+                    recipientContact: recipient.phone || '',
                     subject: `Campaign: ${campaign.name}`,
-                    message: campaign.messageContent,
+                    message: campaign.messageContent || '',
                     provider: 'whatsapp',
                     providerMessageId: result.messageId,
                     sentAt: new Date()
@@ -239,7 +241,7 @@ export class WhatsAppCampaignService {
       }
       
       // Update campaign with results
-      const updatedCampaign = await prisma.whatsappCampaign.update({
+      const updatedCampaign = await prisma.whatsAppCampaign.update({
         where: { id: campaignId },
         data: {
           status: 'SENT',
@@ -262,7 +264,7 @@ export class WhatsAppCampaignService {
    */
   static async getCampaign(campaignId: string) {
     try {
-      const campaign = await prisma.whatsappCampaign.findUnique({
+      const campaign = await prisma.whatsAppCampaign.findUnique({
         where: { id: campaignId },
         include: {
           creator: {
@@ -309,7 +311,7 @@ export class WhatsAppCampaignService {
         where.createdBy = filters.createdBy;
       }
       
-      const campaigns = await prisma.whatsappCampaign.findMany({
+      const campaigns = await prisma.whatsAppCampaign.findMany({
         where,
         orderBy: { createdAt: 'desc' },
         take: filters?.limit || 50,
@@ -325,7 +327,7 @@ export class WhatsAppCampaignService {
         }
       });
       
-      const total = await prisma.whatsappCampaign.count({ where });
+      const total = await prisma.whatsAppCampaign.count({ where });
       
       return {
         campaigns,
@@ -343,7 +345,7 @@ export class WhatsAppCampaignService {
    */
   static async updateCampaign(campaignId: string, data: any) {
     try {
-      const campaign = await prisma.whatsappCampaign.findUnique({
+      const campaign = await prisma.whatsAppCampaign.findUnique({
         where: { id: campaignId }
       });
       
@@ -362,10 +364,10 @@ export class WhatsAppCampaignService {
       
       if (data.targetAudience) {
         recipientCount = await this.calculateRecipientCount(data.targetAudience);
-        costEstimate = recipientCount * 0.05;
+        costEstimate = new Prisma.Decimal(recipientCount * 0.05);
       }
       
-      const updatedCampaign = await prisma.whatsappCampaign.update({
+      const updatedCampaign = await prisma.whatsAppCampaign.update({
         where: { id: campaignId },
         data: {
           ...data,
@@ -386,7 +388,7 @@ export class WhatsAppCampaignService {
    */
   static async cancelCampaign(campaignId: string) {
     try {
-      const campaign = await prisma.whatsappCampaign.update({
+      const campaign = await prisma.whatsAppCampaign.update({
         where: { id: campaignId },
         data: {
           status: 'CANCELLED'
@@ -394,7 +396,7 @@ export class WhatsAppCampaignService {
       });
       
       // Cancel all associated scheduled messages
-      await prisma.whatsappScheduledMessage.updateMany({
+      await prisma.whatsAppScheduledMessage.updateMany({
         where: { campaignId },
         data: {
           status: 'CANCELLED'
@@ -414,12 +416,12 @@ export class WhatsAppCampaignService {
   static async deleteCampaign(campaignId: string) {
     try {
       // Delete associated scheduled messages first
-      await prisma.whatsappScheduledMessage.deleteMany({
+      await prisma.whatsAppScheduledMessage.deleteMany({
         where: { campaignId }
       });
       
       // Delete campaign
-      await prisma.whatsappCampaign.delete({
+      await prisma.whatsAppCampaign.delete({
         where: { id: campaignId }
       });
       
@@ -435,7 +437,7 @@ export class WhatsAppCampaignService {
    */
   static async getCampaignStats(campaignId: string) {
     try {
-      const campaign = await prisma.whatsappCampaign.findUnique({
+      const campaign = await prisma.whatsAppCampaign.findUnique({
         where: { id: campaignId },
         include: {
           messages: true
@@ -474,7 +476,7 @@ export class WhatsAppCampaignService {
    */
   static async getCampaignPerformance(campaignId: string) {
     try {
-      const campaign = await prisma.whatsappCampaign.findUnique({
+      const campaign = await prisma.whatsAppCampaign.findUnique({
         where: { id: campaignId },
         include: {
           messages: {
@@ -526,7 +528,7 @@ export class WhatsAppCampaignService {
     try {
       const now = new Date();
       
-      const campaigns = await prisma.whatsappCampaign.findMany({
+      const campaigns = await prisma.whatsAppCampaign.findMany({
         where: {
           status: 'SCHEDULED',
           scheduledFor: { lte: now }
@@ -564,7 +566,7 @@ export class WhatsAppCampaignService {
    */
   static async duplicateCampaign(campaignId: string, newName?: string) {
     try {
-      const originalCampaign = await prisma.whatsappCampaign.findUnique({
+      const originalCampaign = await prisma.whatsAppCampaign.findUnique({
         where: { id: campaignId }
       });
       
@@ -572,18 +574,18 @@ export class WhatsAppCampaignService {
         throw new Error('Campaign not found');
       }
       
-      const duplicatedCampaign = await prisma.whatsappCampaign.create({
+      const duplicatedCampaign = await prisma.whatsAppCampaign.create({
         data: {
           name: newName || `${originalCampaign.name} (Copy)`,
           description: originalCampaign.description,
           campaignType: originalCampaign.campaignType,
           templateId: originalCampaign.templateId,
           messageContent: originalCampaign.messageContent,
-          targetAudience: originalCampaign.targetAudience,
+          targetAudience: originalCampaign.targetAudience as any,
           recipientCount: originalCampaign.recipientCount,
           costEstimate: originalCampaign.costEstimate,
           aBTestEnabled: originalCampaign.aBTestEnabled,
-          aBTestVariants: originalCampaign.aBTestVariants,
+          aBTestVariants: originalCampaign.aBTestVariants as any,
           createdBy: originalCampaign.createdBy,
           status: 'DRAFT'
         }

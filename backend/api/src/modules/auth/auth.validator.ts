@@ -74,6 +74,49 @@ export const changePasswordSchema = z.object({
     .max(128),
 });
 
+export const ownerVerifySchema = z.object({
+  password: z
+    .string({ message: "Password is required" })
+    .min(1, "Password is required")
+    .max(128),
+});
+
+/** Addresses are normalised before validation so Gmail variants all pass. */
+const emailField = z
+  .string()
+  .trim()
+  .min(3, "Enter a valid email address")
+  .max(254)
+  .email("Enter a valid email address");
+
+export const forgotPasswordSchema = z.object({
+  email: emailField,
+});
+
+export const resetPasswordSchema = z.object({
+  email: emailField,
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Enter the 6-digit code from your email"),
+  newPassword: z
+    .string()
+    .min(12, "Password must be at least 12 characters")
+    .max(128),
+});
+
+export const verifyEmailRequestSchema = z.object({
+  email: emailField,
+});
+
+export const verifyEmailConfirmSchema = z.object({
+  email: emailField,
+  code: z
+    .string()
+    .trim()
+    .regex(/^\d{6}$/, "Enter the 6-digit code from your email"),
+});
+
 export const sessionIdParamSchema = z.object({
   id: z.string().min(1),
 });

@@ -16,8 +16,19 @@ export const authorize = (...allowedRoles: UserRole[]) => {
     }
 
     const role = req.user.role;
-    const elevated = role === "SUPER_ADMIN" || role === "ADMIN";
-    if (!elevated && !allowedRoles.includes(role)) {
+
+    /**
+     * Membership of the allowed list is required, with no administrator
+     * override.
+     *
+     * The previous behaviour let ADMIN and SUPER_ADMIN through every gate
+     * regardless of its contents, which meant `authorize(UserRole.PATHOLOGIST)`
+     * was in practice "any pathologist, admin or super admin" — an access
+     * policy nobody had written down. Routes that admins may use now name the
+     * admin role explicitly, and `authorize(...PATIENT_STAFF_ROLES)` already
+     * includes it.
+     */
+    if (!allowedRoles.includes(role)) {
       return res.status(403).json({
         success: false,
         message: "Access denied. Insufficient permissions.",

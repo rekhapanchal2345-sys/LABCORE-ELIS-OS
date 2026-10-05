@@ -3,13 +3,13 @@ import { UserRole } from "@prisma/client";
 
 import { authenticate } from "../../../middleware/auth.middleware";
 import { authorize } from "../../../middleware/rbac.middleware";
-import { validate } from "../../../middleware/validate.middleware";
+import { validate as validateRequest } from "../../../middleware/validate.middleware";
 
 import {
   generateOrder,
   generateSample,
   generatePatient,
-  validate,
+  validate as validateBarcode,
   getPrintData,
   generateBatch,
   regenerate,
@@ -86,7 +86,7 @@ router.get(
     UserRole.LAB_TECH,
     UserRole.PATHOLOGIST
   ),
-  validate
+  validateBarcode
 );
 
 // Scan barcode (for barcode scanners)
@@ -98,7 +98,7 @@ router.post(
     UserRole.LAB_TECH,
     UserRole.PATHOLOGIST
   ),
-  validate({
+  validateRequest({
     body: scanBarcodeSchema,
   }),
   scanBarcode
@@ -132,7 +132,7 @@ router.post(
     UserRole.FRONT_DESK,
     UserRole.LAB_TECH
   ),
-  validate({
+  validateRequest({
     body: batchBarcodeSchema,
   }),
   generateBatch

@@ -19,6 +19,7 @@ import ShiftHandoverModal from "@/components/payments/ShiftHandoverModal";
 import AdvanceDepositModal from "@/components/payments/AdvanceDepositModal";
 import RefundRequestModal from "@/components/payments/RefundRequestModal";
 import WhatsAppReceiptModal from "@/components/payments/WhatsAppReceiptModal";
+import NotificationDispatchModal, { NotificationPayload } from "@/components/common/NotificationDispatchModal";
 import {
   Search,
   Plus,
@@ -61,6 +62,9 @@ import {
   Sparkles,
   Tag,
   Activity,
+  Receipt,
+  Barcode,
+  PenLine,
 } from "lucide-react";
 
 type PaymentStatus =
@@ -220,22 +224,20 @@ const demoPayments: Payment[] = [
   },
 ];
 
+import { formatIndianRupees, maskPhoneNumber, roundHalfUp } from "@/lib/money";
+
 const defaultSummary: SummaryStats = {
-  totalCollection: 342000,
-  todayCollection: 124200,
-  cashInHand: 37600,
-  digitalPayments: 86600,
-  pendingSettlements: 21500,
-  outstandingReceivables: 91800,
-  cashDrawer: 40850,
+  totalCollection: 0,
+  todayCollection: 0,
+  cashInHand: 0,
+  digitalPayments: 0,
+  pendingSettlements: 0,
+  outstandingReceivables: 0,
+  cashDrawer: 0,
 };
 
 function formatCurrency(value: number) {
-  return new Intl.NumberFormat("en-IN", {
-    style: "currency",
-    currency: "INR",
-    maximumFractionDigits: 2,
-  }).format(value);
+  return formatIndianRupees(value || 0);
 }
 
 function formatDate(date: string | number) {
@@ -307,7 +309,7 @@ function getStatusLabel(status: PaymentStatus) {
 
 export default function PaymentsPage() {
   const [activeTab, setActiveTab] = useState<PaymentTab>("Overview");
-  const [payments, setPayments] = useState<Payment[]>(demoPayments);
+  const [payments, setPayments] = useState<Payment[]>([]);
   const [orders, setOrders] = useState<any[]>([]);
   const [patients, setPatients] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
@@ -413,10 +415,33 @@ export default function PaymentsPage() {
   // WhatsApp Modal
   const [whatsAppModalData, setWhatsAppModalData] = useState<any | null>(null);
 
+  // Notification Dispatch Modal
+  const [notifyModalOpen, setNotifyModalOpen] = useState(false);
+  const [notifyPayload, setNotifyPayload] = useState<NotificationPayload | null>(null);
+
+  const handleNotifyPayment = (payment: Payment) => {
+    setNotifyPayload({
+      patientId: payment.patientId,
+      patientName: payment.patientName,
+      phone: payment.phone,
+      email: payment.patientEmail || undefined,
+      uhid: payment.patientUhid,
+      context: "PAYMENT",
+      receiptNumber: payment.receiptNumber,
+      amount: payment.amount,
+      dueBalance: payment.dueBalance,
+      orderNumber: payment.orderNumber,
+      date: payment.paidAt,
+    });
+    setNotifyModalOpen(true);
+  };
+
   // Recent Payment Ledger Advanced State
   const [expandedLedgerRowId, setExpandedLedgerRowId] = useState<string | null>(null);
   const [copiedText, setCopiedText] = useState<string | null>(null);
-  const [ledgerQuickFilter, setLedgerQuickFilter] = useState<"ALL" | "CASH" | "UPI" | "CARD" | "REFUNDED">("ALL");
+  const [ledgerQuickFilter, setLedgerQuickFilter] = useState<
+    "ALL" | "CASH" | "UPI" | "CARD" | "NET_BANKING" | "CHEQUE" | "REFUNDED"
+  >("ALL");
 
   const handleCopy = (text: string, label: string) => {
     if (typeof navigator !== "undefined" && navigator.clipboard) {
@@ -477,14 +502,13 @@ export default function PaymentsPage() {
       if (response?.success && response?.data) {
         const data = response.data as Partial<SummaryStats>;
         setSummary({
-          totalCollection: data.totalCollection ?? defaultSummary.totalCollection,
-          todayCollection: data.todayCollection ?? defaultSummary.todayCollection,
-          cashInHand: data.cashInHand ?? defaultSummary.cashInHand,
-          digitalPayments: data.digitalPayments ?? defaultSummary.digitalPayments,
-          pendingSettlements: data.pendingSettlements ?? defaultSummary.pendingSettlements,
-          outstandingReceivables:
-            data.outstandingReceivables ?? defaultSummary.outstandingReceivables,
-          cashDrawer: data.cashDrawer ?? defaultSummary.cashDrawer,
+          totalCollection: data.totalCollection ?? 0,
+          todayCollection: data.todayCollection ?? 0,
+          cashInHand: data.cashInHand ?? 0,
+          digitalPayments: data.digitalPayments ?? 0,
+          pendingSettlements: data.pendingSettlements ?? 0,
+          outstandingReceivables: data.outstandingReceivables ?? 0,
+          cashDrawer: data.cashDrawer ?? 0,
         });
       }
     } catch (err) {
@@ -515,7 +539,7 @@ export default function PaymentsPage() {
   const fetchPayments = async () => {
     try {
       setLoading(true);
-      const response = await paymentApi.getAll("page=1&limit=150");
+      const response = await paymentApi.getAll("page=1&limit=100");
       if (response?.success && response?.data) {
         const payload = response.data as any;
         const rawPayments =
@@ -563,13 +587,15 @@ export default function PaymentsPage() {
 
           setPayments(mapped);
         } else {
-          setPayments(demoPayments);
+          setPayments([]);
         }
+      } else {
+        setPayments([]);
       }
     } catch (err) {
       console.error("Payment data load error:", err);
-      setError("Unable to load latest live payments. Showing cached records.");
-      setPayments(demoPayments);
+      setError("Unable to reach payment service. Showing current ledger.");
+      setPayments([]);
     } finally {
       setLoading(false);
       setIsRefreshing(false);
@@ -775,9 +801,11 @@ export default function PaymentsPage() {
     if (ledgerQuickFilter === "CASH") list = list.filter((p) => p.method === "CASH");
     else if (ledgerQuickFilter === "UPI") list = list.filter((p) => p.method === "UPI");
     else if (ledgerQuickFilter === "CARD") list = list.filter((p) => p.method === "CARD");
+    else if (ledgerQuickFilter === "NET_BANKING") list = list.filter((p) => p.method === "NET_BANKING");
+    else if (ledgerQuickFilter === "CHEQUE") list = list.filter((p) => p.method === "CHEQUE");
     else if (ledgerQuickFilter === "REFUNDED")
-      list = list.filter((p) => p.status === "REFUNDED" || p.status === "REFUND_PENDING");
-    return list.slice(0, 10);
+      list = list.filter((p) => p.status === "REFUNDED" || p.status === "REFUND_PENDING" || p.status === "PARTIALLY_REFUNDED");
+    return list.slice(0, 15);
   }, [filteredPayments, ledgerQuickFilter]);
 
   // Payment Mix Distribution
@@ -836,8 +864,17 @@ export default function PaymentsPage() {
       });
   }, [orders, agingFilter]);
 
-  // Export to CSV
+  // Export to CSV with Formula Injection Protection (CWE-1236)
   const handleExportCSV = () => {
+    const sanitizeCsvCell = (val: any): string => {
+      if (val === null || val === undefined) return '""';
+      let str = String(val).replace(/"/g, '""');
+      if (/^[=+\-@\t\r%]/.test(str)) {
+        str = "'" + str;
+      }
+      return `"${str}"`;
+    };
+
     const headers = [
       "Receipt Number",
       "Transaction ID",
@@ -855,19 +892,19 @@ export default function PaymentsPage() {
     ];
 
     const rows = filteredPayments.map((p) => [
-      `"${p.receiptNumber}"`,
-      `"${p.transactionId}"`,
-      `"${p.patientName}"`,
-      `"${p.patientUhid || ""}"`,
-      `"${p.phone || ""}"`,
-      `"${p.orderNumber || ""}"`,
-      `"${p.invoiceNumber || ""}"`,
-      String(p.amount),
-      `"${p.method}"`,
-      `"${p.status}"`,
-      `"${formatDateTime(p.paidAt)}"`,
-      `"${p.collectedBy || ""}"`,
-      `"${p.counter || ""}"`,
+      sanitizeCsvCell(p.receiptNumber),
+      sanitizeCsvCell(p.transactionId),
+      sanitizeCsvCell(p.patientName),
+      sanitizeCsvCell(p.patientUhid || ""),
+      sanitizeCsvCell(p.phone || ""),
+      sanitizeCsvCell(p.orderNumber || ""),
+      sanitizeCsvCell(p.invoiceNumber || ""),
+      sanitizeCsvCell(p.amount),
+      sanitizeCsvCell(p.method),
+      sanitizeCsvCell(p.status),
+      sanitizeCsvCell(formatDateTime(p.paidAt)),
+      sanitizeCsvCell(p.collectedBy || ""),
+      sanitizeCsvCell(p.counter || ""),
     ]);
 
     const csvContent =
@@ -880,7 +917,7 @@ export default function PaymentsPage() {
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-    showNotification("Transactions exported to CSV successfully!", "success");
+    showNotification("Transactions exported to CSV securely!", "success");
   };
 
   return (
@@ -976,7 +1013,7 @@ export default function PaymentsPage() {
               <button
                 type="button"
                 onClick={() => setIsShiftHandoverOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-2xl border border-amber-400/40 bg-amber-500/20 px-3.5 py-2.5 text-sm font-semibold text-amber-200 transition hover:bg-amber-500/30 active:scale-95"
+                className="inline-flex items-center gap-1.5 rounded-2xl border border-amber-300 bg-amber-400 px-3.5 py-2.5 text-sm font-bold text-slate-950 shadow-sm transition hover:bg-amber-300 active:scale-95"
               >
                 <Clock className="h-4 w-4" />
                 Close Till
@@ -985,7 +1022,7 @@ export default function PaymentsPage() {
               <button
                 type="button"
                 onClick={() => setIsReportModalOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-2xl border border-white/20 bg-white/10 px-3.5 py-2.5 text-sm font-semibold text-white transition hover:bg-white/20 active:scale-95"
+                className="inline-flex items-center gap-1.5 rounded-2xl border border-white/30 bg-white/20 px-3.5 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-white/30 active:scale-95"
               >
                 <FileText className="h-4 w-4" />
                 Reports
@@ -1086,40 +1123,51 @@ export default function PaymentsPage() {
         {/* TAB 1: OVERVIEW TAB CONTENT */}
         {activeTab === "Overview" && (
           <div className="grid gap-6 xl:grid-cols-[1.75fr_0.95fr]">
-            {/* Left: Advanced Recent Payment Ledger */}
-            <div className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-sm transition hover:shadow-md">
-              {/* Header & Quick Toolbar */}
-              <div className="border-b border-slate-100 p-5 bg-gradient-to-r from-slate-50/90 via-white to-blue-50/30">
+            {/* Left: Advanced Recent Payment Ledger (Styled like Result Operations & Clinical Review Desk) */}
+            <div className="overflow-hidden rounded-3xl border border-slate-800 bg-slate-950 shadow-2xl shadow-slate-950/80">
+              {/* Operations Command Bar Header */}
+              <div className="border-b border-slate-800 bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 px-6 py-5 text-white">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                   <div>
-                    <div className="flex items-center gap-2">
-                      <h3 className="text-base font-extrabold text-slate-900 tracking-tight flex items-center gap-2">
-                        Recent Payment Ledger
-                      </h3>
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-2.5 py-0.5 text-[11px] font-bold text-emerald-700 ring-1 ring-emerald-200/80">
-                        <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                        Live Cashier Stream
-                      </span>
+                    <div className="flex items-center gap-2.5">
+                      <div className="flex h-9 w-9 items-center justify-center rounded-xl border border-cyan-500/30 bg-cyan-500/10 text-cyan-400 shadow-sm">
+                        <Receipt className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <h2 className="text-base font-bold tracking-tight text-white">
+                            Recent Payment Ledger
+                          </h2>
+                          <span className="rounded-full border border-cyan-500/30 bg-cyan-950/60 px-2.5 py-0.5 text-[11px] font-bold text-cyan-300">
+                            {filteredPayments.length} Active Stream
+                          </span>
+                        </div>
+                        <p className="mt-0.5 text-xs text-slate-400">
+                          Real-time counter collections, POS authorization, receipts, and clinical billing reconciliation
+                        </p>
+                      </div>
                     </div>
-                    <p className="mt-0.5 text-xs text-slate-500">
-                      Real-time counter collections, POS authorization, receipts, and clinical billing reconciliation
-                    </p>
                   </div>
 
                   {/* Actions & Search */}
                   <div className="flex flex-wrap items-center gap-2">
+                    <span className="inline-flex items-center gap-2 rounded-full border border-emerald-500/30 bg-emerald-950/40 px-3 py-1 text-xs font-medium text-emerald-300">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-ping" />
+                      Live Cashier Stream Active
+                    </span>
+
                     <div className="relative">
-                      <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                      <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-slate-500" />
                       <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search patient, receipt, UHID..."
-                        className="w-full rounded-xl border border-slate-200 bg-white py-2 pl-9 pr-3 text-xs outline-none transition focus:border-blue-500 focus:ring-2 focus:ring-blue-100 sm:w-56"
+                        className="w-full rounded-xl border border-slate-800 bg-slate-900/90 py-1.5 pl-9 pr-7 text-xs text-slate-200 placeholder-slate-500 outline-none transition focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500/30 sm:w-52"
                       />
                       {search && (
                         <button
                           onClick={() => setSearch("")}
-                          className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-300"
                         >
                           <X className="h-3 w-3" />
                         </button>
@@ -1128,10 +1176,10 @@ export default function PaymentsPage() {
 
                     <button
                       onClick={handleExportCSV}
-                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50 shadow-sm transition"
+                      className="inline-flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900/90 px-3 py-1.5 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition shadow-sm"
                       title="Export CSV"
                     >
-                      <Download className="h-3.5 w-3.5 text-slate-500" />
+                      <Download className="h-3.5 w-3.5 text-cyan-400" />
                       CSV
                     </button>
 
@@ -1141,7 +1189,7 @@ export default function PaymentsPage() {
                         setInitialCollectAmount("");
                         setIsCollectModalOpen(true);
                       }}
-                      className="inline-flex items-center gap-1.5 rounded-xl bg-emerald-600 px-3.5 py-2 text-xs font-bold text-white shadow-sm hover:bg-emerald-500 active:scale-95 transition"
+                      className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-cyan-500 to-blue-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-md shadow-cyan-500/30 hover:from-cyan-400 hover:to-blue-500 active:scale-95 transition"
                     >
                       <Plus className="h-3.5 w-3.5" />
                       Collect
@@ -1149,47 +1197,166 @@ export default function PaymentsPage() {
                   </div>
                 </div>
 
-                {/* Quick Tender Filter Pills */}
-                <div className="mt-3.5 flex flex-wrap items-center gap-1.5 border-t border-slate-100 pt-3">
-                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Filter:</span>
-                  {[
-                    { id: "ALL", label: `All (${filteredPayments.length})` },
-                    { id: "CASH", label: "💵 Cash" },
-                    { id: "UPI", label: "📱 UPI / QR" },
-                    { id: "CARD", label: "💳 Card POS" },
-                    { id: "REFUNDED", label: "↩ Refunded" },
-                  ].map((chip) => (
-                    <button
-                      key={chip.id}
-                      onClick={() => setLedgerQuickFilter(chip.id as any)}
-                      className={`rounded-full px-3 py-1 text-[11px] font-bold transition ${
-                        ledgerQuickFilter === chip.id
-                          ? "bg-slate-900 text-white shadow-sm"
-                          : "bg-white text-slate-600 ring-1 ring-slate-200/90 hover:bg-slate-100"
-                      }`}
-                    >
-                      {chip.label}
-                    </button>
-                  ))}
+                {/* View Switchers & High-Yield Metric Counters */}
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-slate-800/80 pt-3">
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mr-1">
+                      Tender View:
+                    </span>
+                    {[
+                      { id: "ALL", label: `All (${filteredPayments.length})` },
+                      {
+                        id: "CASH",
+                        label: `💵 Cash (${filteredPayments.filter((p) => p.method === "CASH").length})`,
+                      },
+                      {
+                        id: "UPI",
+                        label: `📱 UPI / QR (${filteredPayments.filter((p) => p.method === "UPI").length})`,
+                      },
+                      {
+                        id: "CARD",
+                        label: `💳 Card POS (${filteredPayments.filter((p) => p.method === "CARD").length})`,
+                      },
+                      {
+                        id: "NET_BANKING",
+                        label: `🏦 Net Banking (${filteredPayments.filter((p) => p.method === "NET_BANKING").length})`,
+                      },
+                      {
+                        id: "CHEQUE",
+                        label: `🧾 Cheque (${filteredPayments.filter((p) => p.method === "CHEQUE").length})`,
+                      },
+                      {
+                        id: "REFUNDED",
+                        label: `↩ Refunded (${
+                          filteredPayments.filter(
+                            (p) =>
+                              p.status === "REFUNDED" ||
+                              p.status === "REFUND_PENDING" ||
+                              p.status === "PARTIALLY_REFUNDED"
+                          ).length
+                        })`,
+                      },
+                    ].map((chip) => (
+                      <button
+                        key={chip.id}
+                        onClick={() => setLedgerQuickFilter(chip.id as any)}
+                        className={`rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+                          ledgerQuickFilter === chip.id
+                            ? "bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md shadow-cyan-600/30"
+                            : "border border-slate-800 bg-slate-900/80 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
+                        }`}
+                      >
+                        {chip.label}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2 text-xs">
+                    <span className="rounded-xl border border-emerald-500/30 bg-emerald-950/30 px-3 py-1 font-semibold text-emerald-300">
+                      Cash: {formatCurrency(filteredPayments.filter((p) => p.method === "CASH").reduce((sum, p) => sum + p.amount, 0))}
+                    </span>
+                    <span className="rounded-xl border border-cyan-500/30 bg-cyan-950/30 px-3 py-1 font-semibold text-cyan-300">
+                      Digital: {formatCurrency(filteredPayments.filter((p) => p.method !== "CASH").reduce((sum, p) => sum + p.amount, 0))}
+                    </span>
+                  </div>
                 </div>
               </div>
 
               {/* Table */}
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1050px] text-left text-sm">
-                  <thead className="bg-slate-50/80 text-[10px] uppercase font-extrabold tracking-wider text-slate-500 border-b border-slate-100">
+                <table className="w-full min-w-[1050px] border-collapse text-left text-sm">
+                  <thead className="border-b border-slate-800 bg-slate-900/90 text-slate-300 backdrop-blur-md">
                     <tr>
-                      <th className="px-4 py-3.5">TRANSACTION</th>
-                      <th className="px-4 py-3.5">PATIENT</th>
-                      <th className="px-4 py-3.5">ORDER / INVOICE</th>
-                      <th className="px-4 py-3.5">AMOUNT</th>
-                      <th className="px-4 py-3.5">METHOD</th>
-                      <th className="px-4 py-3.5">STATUS</th>
-                      <th className="px-4 py-3.5">DATE & TIME</th>
-                      <th className="px-4 py-3.5 text-right">ACTIONS</th>
+                      {/* 1. TRANSACTION */}
+                      <th className="px-4 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-300 border-r border-slate-800/80">
+                        <div className="flex items-center gap-1.5">
+                          <Barcode className="h-3.5 w-3.5 text-cyan-400" />
+                          <span>Transaction</span>
+                        </div>
+                        <span className="block text-[9px] font-normal normal-case text-slate-400">
+                          Txn ID + Receipt + Counter
+                        </span>
+                      </th>
+
+                      {/* 2. PATIENT */}
+                      <th className="px-4 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-300 border-r border-slate-800/80">
+                        <div className="flex items-center gap-1.5">
+                          <User className="h-3.5 w-3.5 text-indigo-400" />
+                          <span>Patient Info</span>
+                        </div>
+                        <span className="block text-[9px] font-normal normal-case text-slate-400">
+                          Identity + UHID + Phone
+                        </span>
+                      </th>
+
+                      {/* 3. ORDER / INVOICE */}
+                      <th className="px-4 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-300 border-r border-slate-800/80">
+                        <div className="flex items-center gap-1.5">
+                          <FileText className="h-3.5 w-3.5 text-emerald-400" />
+                          <span>Order / Invoice</span>
+                        </div>
+                        <span className="block text-[9px] font-normal normal-case text-slate-400">
+                          Order # + Invoice # + Tests
+                        </span>
+                      </th>
+
+                      {/* 4. AMOUNT */}
+                      <th className="px-4 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-300 border-r border-slate-800/80">
+                        <div className="flex items-center gap-1.5">
+                          <DollarSign className="h-3.5 w-3.5 text-amber-400" />
+                          <span>Amount</span>
+                        </div>
+                        <span className="block text-[9px] font-normal normal-case text-slate-400">
+                          Gross + GST Breakup
+                        </span>
+                      </th>
+
+                      {/* 5. METHOD */}
+                      <th className="px-4 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-300 border-r border-slate-800/80">
+                        <div className="flex items-center gap-1.5">
+                          <CreditCard className="h-3.5 w-3.5 text-cyan-400" />
+                          <span>Payment Method</span>
+                        </div>
+                        <span className="block text-[9px] font-normal normal-case text-slate-400">
+                          Tender Channel + Gateway
+                        </span>
+                      </th>
+
+                      {/* 6. STATUS */}
+                      <th className="px-4 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-300 border-r border-slate-800/80">
+                        <div className="flex items-center gap-1.5">
+                          <Clock className="h-3.5 w-3.5 text-cyan-400" />
+                          <span>Status</span>
+                        </div>
+                        <span className="block text-[9px] font-normal normal-case text-slate-400">
+                          Settlement Lifecycle
+                        </span>
+                      </th>
+
+                      {/* 7. DATE & TIME */}
+                      <th className="px-4 py-3.5 text-[11px] font-bold uppercase tracking-wider text-slate-300 border-r border-slate-800/80">
+                        <div className="flex items-center gap-1.5">
+                          <Calendar className="h-3.5 w-3.5 text-slate-400" />
+                          <span>Date & Time</span>
+                        </div>
+                        <span className="block text-[9px] font-normal normal-case text-slate-400">
+                          Timestamp + Cashier
+                        </span>
+                      </th>
+
+                      {/* 8. ACTIONS */}
+                      <th className="px-4 py-3.5 text-right text-[11px] font-bold uppercase tracking-wider text-slate-300">
+                        <div className="flex items-center justify-end gap-1.5">
+                          <PenLine className="h-3.5 w-3.5 text-cyan-400" />
+                          <span>Actions</span>
+                        </div>
+                        <span className="block text-[9px] font-normal normal-case text-slate-400">
+                          Receipt & Controls
+                        </span>
+                      </th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-800/70">
                     {displayedLedgerPayments.length > 0 ? (
                       displayedLedgerPayments.map((payment) => {
                         const isExpanded = expandedLedgerRowId === payment.id;
@@ -1202,10 +1369,14 @@ export default function PaymentsPage() {
                         return (
                           <React.Fragment key={payment.id}>
                             <tr
-                              className={`group cursor-pointer transition-all ${
-                                isExpanded
-                                  ? "bg-blue-50/50"
-                                  : "hover:bg-slate-50/80"
+                              className={`group cursor-pointer transition-colors duration-150 ${
+                                payment.status === "REFUNDED" || payment.status === "REFUND_PENDING"
+                                  ? "bg-red-950/20 hover:bg-red-950/30 border-l-4 border-l-rose-500"
+                                  : payment.status === "PAID"
+                                  ? isExpanded
+                                    ? "bg-slate-900/90 border-l-4 border-l-cyan-500"
+                                    : "bg-slate-950 hover:bg-slate-900/60 border-l-4 border-l-emerald-500"
+                                  : "bg-slate-950 hover:bg-slate-900/50 border-l-4 border-l-amber-500/70"
                               }`}
                               onClick={() => setExpandedLedgerRowId(isExpanded ? null : payment.id)}
                             >
@@ -1213,21 +1384,21 @@ export default function PaymentsPage() {
                               <td className="px-4 py-3.5">
                                 <div className="flex items-center gap-3">
                                   <div
-                                    className={`h-9 w-9 rounded-xl flex items-center justify-center text-sm shadow-sm shrink-0 ${
+                                    className={`h-9 w-9 rounded-xl flex items-center justify-center text-sm shrink-0 border ${
                                       payment.method === "CASH"
-                                        ? "bg-emerald-100 text-emerald-800 ring-1 ring-emerald-200"
+                                        ? "bg-emerald-950/50 border-emerald-500/30 text-emerald-400"
                                         : payment.method === "UPI"
-                                        ? "bg-violet-100 text-violet-800 ring-1 ring-violet-200"
+                                        ? "bg-violet-950/50 border-violet-500/30 text-violet-400"
                                         : payment.method === "CARD"
-                                        ? "bg-sky-100 text-sky-800 ring-1 ring-sky-200"
-                                        : "bg-amber-100 text-amber-800 ring-1 ring-amber-200"
+                                        ? "bg-sky-950/50 border-sky-500/30 text-sky-400"
+                                        : "bg-amber-950/50 border-amber-500/30 text-amber-400"
                                     }`}
                                   >
                                     {getMethodIcon(payment.method)}
                                   </div>
                                   <div>
                                     <div className="flex items-center gap-1.5">
-                                      <span className="font-mono font-bold text-slate-900 text-xs tracking-tight">
+                                      <span className="font-mono font-bold text-white text-xs tracking-tight">
                                         {payment.transactionId}
                                       </span>
                                       <button
@@ -1236,20 +1407,20 @@ export default function PaymentsPage() {
                                           e.stopPropagation();
                                           handleCopy(payment.transactionId, "Txn ID");
                                         }}
-                                        className="text-slate-400 hover:text-blue-600 transition"
+                                        className="text-slate-500 hover:text-cyan-400 transition"
                                         title="Copy Transaction ID"
                                       >
                                         {copiedText === payment.transactionId ? (
-                                          <Check className="h-3 w-3 text-emerald-600" />
+                                          <Check className="h-3 w-3 text-emerald-400" />
                                         ) : (
                                           <Copy className="h-3 w-3" />
                                         )}
                                       </button>
                                     </div>
-                                    <div className="text-[11px] font-mono text-slate-500 mt-0.5">
+                                    <div className="text-[11px] font-mono text-slate-400 mt-0.5">
                                       {payment.receiptNumber}
                                     </div>
-                                    <div className="text-[10px] font-semibold text-slate-400">
+                                    <div className="text-[10px] font-semibold text-slate-500">
                                       {payment.counter || "Counter 01"}
                                     </div>
                                   </div>
@@ -1259,7 +1430,7 @@ export default function PaymentsPage() {
                               {/* 2. PATIENT */}
                               <td className="px-4 py-3.5">
                                 <div className="flex items-center gap-2.5">
-                                  <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-blue-700 to-indigo-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm">
+                                  <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-cyan-600 to-blue-600 text-white font-bold text-xs flex items-center justify-center shrink-0 shadow-sm ring-1 ring-cyan-500/30">
                                     {payment.patientName
                                       ? payment.patientName
                                           .split(" ")
@@ -1270,20 +1441,22 @@ export default function PaymentsPage() {
                                       : "PT"}
                                   </div>
                                   <div>
-                                    <div className="font-bold text-slate-900 group-hover:text-blue-600 transition text-xs">
+                                    <div className="font-bold text-slate-100 group-hover:text-cyan-400 transition text-xs">
                                       {payment.patientName}
                                     </div>
-                                    <div className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-500 font-mono">
+                                    <div className="mt-0.5 flex items-center gap-1 text-[11px] text-slate-400 font-mono">
                                       <span>{payment.patientUhid || "UHID-—"}</span>
                                       {payment.phone && payment.phone !== "No phone" && (
                                         <>
-                                          <span className="text-slate-300">•</span>
-                                          <span className="text-slate-600">{payment.phone}</span>
+                                          <span className="text-slate-600">•</span>
+                                          <span className="text-slate-400" title="Masked for DPDP Act 2023 compliance">
+                                            {maskPhoneNumber(payment.phone)}
+                                          </span>
                                         </>
                                       )}
                                     </div>
                                     {doctorName && (
-                                      <div className="text-[10px] text-slate-400 truncate max-w-[150px]">
+                                      <div className="text-[10px] text-slate-500 truncate max-w-[150px]">
                                         Ref: {doctorName}
                                       </div>
                                     )}
@@ -1294,14 +1467,14 @@ export default function PaymentsPage() {
                               {/* 3. ORDER / INVOICE */}
                               <td className="px-4 py-3.5">
                                 <div>
-                                  <span className="inline-flex items-center gap-1 rounded-md bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-800 ring-1 ring-slate-200">
+                                  <span className="inline-flex items-center gap-1 rounded-md bg-slate-900 border border-slate-800 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-200">
                                     {payment.orderNumber || "ORD-—"}
                                   </span>
-                                  <div className="mt-0.5 text-[11px] font-mono text-slate-500">
+                                  <div className="mt-0.5 text-[11px] font-mono text-slate-400">
                                     {payment.invoiceNumber || "INV-Pending"}
                                   </div>
                                   {testsList.length > 0 && (
-                                    <div className="mt-0.5 text-[10px] text-blue-600 font-semibold truncate max-w-[160px]">
+                                    <div className="mt-0.5 text-[10px] text-cyan-400 font-semibold truncate max-w-[160px]">
                                       {testsList.length} test{testsList.length > 1 ? "s" : ""}:{" "}
                                       {testsList.map((t: any) => t.test?.testName || t.testName || "Test").slice(0, 2).join(", ")}
                                     </div>
@@ -1312,14 +1485,14 @@ export default function PaymentsPage() {
                               {/* 4. AMOUNT */}
                               <td className="px-4 py-3.5">
                                 <div>
-                                  <div className="text-sm font-mono font-extrabold text-slate-900">
+                                  <div className="text-sm font-mono font-extrabold text-white">
                                     {formatCurrency(payment.amount)}
                                   </div>
-                                  <div className="text-[10px] font-medium text-emerald-700 flex items-center gap-1">
-                                    <CheckCircle2 className="h-3 w-3 text-emerald-600" />
+                                  <div className="text-[10px] font-medium text-emerald-400 flex items-center gap-1">
+                                    <CheckCircle2 className="h-3 w-3 text-emerald-400" />
                                     <span>Settled Full</span>
                                   </div>
-                                  <div className="text-[9px] text-slate-400">
+                                  <div className="text-[9px] text-slate-500">
                                     Inc. 18% GST (₹{Math.round(payment.amount * 0.1525)})
                                   </div>
                                 </div>
@@ -1329,9 +1502,15 @@ export default function PaymentsPage() {
                               <td className="px-4 py-3.5">
                                 <div>
                                   <span
-                                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold ${getMethodBadge(
-                                      payment.method
-                                    )}`}
+                                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold border ${
+                                      payment.method === "CASH"
+                                        ? "bg-emerald-950/60 border-emerald-500/40 text-emerald-300"
+                                        : payment.method === "CARD"
+                                        ? "bg-sky-950/60 border-sky-500/40 text-sky-300"
+                                        : payment.method === "UPI"
+                                        ? "bg-violet-950/60 border-violet-500/40 text-violet-300"
+                                        : "bg-amber-950/60 border-amber-500/40 text-amber-300"
+                                    }`}
                                   >
                                     <span>{getMethodIcon(payment.method)}</span>
                                     <span>{payment.method.replace("_", " ")}</span>
@@ -1350,22 +1529,26 @@ export default function PaymentsPage() {
                               <td className="px-4 py-3.5">
                                 <div>
                                   <span
-                                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold ${getStatusBadge(
-                                      payment.status
-                                    )}`}
+                                    className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${
+                                      payment.status === "PAID"
+                                        ? "bg-emerald-950/60 border-emerald-500/40 text-emerald-300"
+                                        : payment.status === "REFUNDED"
+                                        ? "bg-rose-950/60 border-rose-500/40 text-rose-300"
+                                        : "bg-amber-950/60 border-amber-500/40 text-amber-300"
+                                    }`}
                                   >
                                     <span
                                       className={`h-1.5 w-1.5 rounded-full ${
                                         payment.status === "PAID"
-                                          ? "bg-emerald-500"
+                                          ? "bg-emerald-400"
                                           : payment.status === "REFUNDED"
-                                          ? "bg-rose-500"
-                                          : "bg-amber-500"
+                                          ? "bg-rose-400"
+                                          : "bg-amber-400"
                                       }`}
                                     />
                                     {getStatusLabel(payment.status)}
                                   </span>
-                                  <div className="mt-0.5 text-[10px] text-slate-400 pl-0.5">
+                                  <div className="mt-0.5 text-[10px] text-slate-500 pl-0.5">
                                     {payment.settlement || "Bank Settled"}
                                   </div>
                                 </div>
@@ -1374,16 +1557,16 @@ export default function PaymentsPage() {
                               {/* 7. DATE & TIME */}
                               <td className="px-4 py-3.5">
                                 <div>
-                                  <div className="font-bold text-slate-900 text-xs">
+                                  <div className="font-bold text-slate-200 text-xs">
                                     {new Date(payment.paidAt).toLocaleTimeString([], {
                                       hour: "2-digit",
                                       minute: "2-digit",
                                     })}
                                   </div>
-                                  <div className="text-[10px] text-slate-500">
+                                  <div className="text-[10px] text-slate-400">
                                     {formatDate(payment.paidAt)}
                                   </div>
-                                  <div className="text-[10px] font-semibold text-slate-400">
+                                  <div className="text-[10px] font-semibold text-slate-500">
                                     👤 {payment.collectedBy ? payment.collectedBy.split(" ")[0] : "Cashier"}
                                   </div>
                                 </div>
@@ -1398,10 +1581,11 @@ export default function PaymentsPage() {
                                   <button
                                     type="button"
                                     onClick={() => handleOpenReceipt(payment)}
-                                    className="inline-flex items-center gap-1 rounded-xl border border-slate-200 bg-white px-2.5 py-1 text-xs font-bold text-slate-700 shadow-sm hover:border-blue-400 hover:bg-blue-50 hover:text-blue-700 transition"
+                                    className="inline-flex items-center gap-1 rounded-xl bg-gradient-to-r from-cyan-600 to-blue-600 px-2.5 py-1 text-xs font-bold text-white shadow-md shadow-cyan-600/30 hover:from-cyan-500 hover:to-blue-500 transition"
                                     title="Print / View Receipt"
+                                    aria-label="Print or View Receipt"
                                   >
-                                    <Printer className="h-3.5 w-3.5 text-slate-500" />
+                                    <Printer className="h-3.5 w-3.5" />
                                     Receipt
                                   </button>
 
@@ -1420,8 +1604,9 @@ export default function PaymentsPage() {
                                         date: formatDate(payment.paidAt),
                                       })
                                     }
-                                    className="rounded-xl border border-emerald-200 bg-emerald-50/70 p-1.5 text-emerald-700 hover:bg-emerald-100 transition shadow-sm"
+                                    className="rounded-xl border border-slate-800 bg-slate-900/80 p-1.5 text-emerald-400 hover:border-emerald-500/40 hover:bg-emerald-950/40 transition shadow-sm"
                                     title="Send Receipt via WhatsApp"
+                                    aria-label="Send Receipt via WhatsApp"
                                   >
                                     <MessageSquare className="h-3.5 w-3.5" />
                                   </button>
@@ -1429,8 +1614,9 @@ export default function PaymentsPage() {
                                   <button
                                     type="button"
                                     onClick={() => setSelectedDetailPaymentId(payment.id)}
-                                    className="rounded-xl border border-slate-200 bg-white p-1.5 text-slate-500 hover:bg-slate-100 transition shadow-sm"
+                                    className="rounded-xl border border-slate-800 bg-slate-900/80 p-1.5 text-slate-400 hover:border-slate-700 hover:bg-slate-800 hover:text-cyan-300 transition shadow-sm"
                                     title="Inspect Full Payment Detail"
+                                    aria-label="Inspect Full Payment Detail"
                                   >
                                     <Eye className="h-3.5 w-3.5" />
                                   </button>
@@ -1442,8 +1628,9 @@ export default function PaymentsPage() {
                                       setInitialRefundAmount(String(payment.amount));
                                       setIsRefundModalOpen(true);
                                     }}
-                                    className="rounded-xl border border-slate-200 bg-white p-1.5 text-slate-400 hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 transition shadow-sm"
+                                    className="rounded-xl border border-slate-800 bg-slate-900/80 p-1.5 text-slate-400 hover:border-rose-500/40 hover:bg-rose-950/40 hover:text-rose-400 transition shadow-sm"
                                     title="Issue Refund / Credit Note"
+                                    aria-label="Issue Refund or Credit Note"
                                   >
                                     <RotateCcw className="h-3.5 w-3.5" />
                                   </button>
@@ -1453,10 +1640,12 @@ export default function PaymentsPage() {
                                     onClick={() => setExpandedLedgerRowId(isExpanded ? null : payment.id)}
                                     className={`rounded-xl border p-1.5 transition ${
                                       isExpanded
-                                        ? "border-blue-300 bg-blue-100/70 text-blue-800"
-                                        : "border-slate-200 bg-white text-slate-400 hover:bg-slate-100 hover:text-slate-700"
+                                        ? "border-cyan-500/50 bg-cyan-950/50 text-cyan-300"
+                                        : "border-slate-800 bg-slate-900/80 text-slate-400 hover:bg-slate-800 hover:text-slate-200"
                                     }`}
                                     title={isExpanded ? "Collapse details" : "Expand itemized tests"}
+                                    aria-label={isExpanded ? "Collapse test items" : "Expand itemized test breakdown"}
+                                    aria-expanded={isExpanded}
                                   >
                                     {isExpanded ? (
                                       <ChevronUp className="h-3.5 w-3.5" />
@@ -1470,66 +1659,66 @@ export default function PaymentsPage() {
 
                             {/* INLINE EXPANDABLE SUB-DRAWER */}
                             {isExpanded && (
-                              <tr className="bg-gradient-to-r from-blue-50/40 via-indigo-50/20 to-slate-50/50">
-                                <td colSpan={8} className="p-4 border-b border-blue-100">
-                                  <div className="rounded-2xl border border-blue-200/70 bg-white p-4 shadow-sm space-y-3">
-                                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                              <tr className="bg-slate-900/80">
+                                <td colSpan={8} className="p-4 border-b border-slate-800">
+                                  <div className="rounded-2xl border border-slate-800 bg-slate-950/90 p-4 shadow-xl space-y-3">
+                                    <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800/80 pb-3">
                                       <div className="flex items-center gap-2">
-                                        <span className="rounded-md bg-blue-100 px-2 py-0.5 font-mono text-[10px] font-bold text-blue-800">
+                                        <span className="rounded-md border border-cyan-500/30 bg-cyan-950/50 px-2 py-0.5 font-mono text-[10px] font-bold text-cyan-300">
                                           CLINICAL & FINANCIAL SPECIFICATION
                                         </span>
-                                        <span className="text-xs font-bold text-slate-900">
+                                        <span className="text-xs font-bold text-white">
                                           {payment.receiptNumber} • Order: {payment.orderNumber || "—"}
                                         </span>
                                       </div>
                                       <div className="flex items-center gap-2 text-xs">
-                                        <span className="text-slate-500">Collected By:</span>
-                                        <strong className="text-slate-800 font-semibold">{payment.collectedBy || "Cashier"}</strong>
-                                        <span className="text-slate-300">•</span>
-                                        <span className="text-slate-500">Terminal:</span>
-                                        <strong className="text-slate-800 font-semibold">{payment.counter || "Counter 01"}</strong>
+                                        <span className="text-slate-400">Collected By:</span>
+                                        <strong className="text-slate-200 font-semibold">{payment.collectedBy || "Cashier"}</strong>
+                                        <span className="text-slate-600">•</span>
+                                        <span className="text-slate-400">Terminal:</span>
+                                        <strong className="text-slate-200 font-semibold">{payment.counter || "Counter 01"}</strong>
                                       </div>
                                     </div>
 
                                     <div className="grid gap-4 md:grid-cols-3">
                                       {/* Ordered Tests List */}
-                                      <div className="md:col-span-2 rounded-xl bg-slate-50/70 p-3 border border-slate-200/80">
-                                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-600 mb-2 flex items-center justify-between">
+                                      <div className="md:col-span-2 rounded-xl bg-slate-900/90 p-3 border border-slate-800">
+                                        <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2 flex items-center justify-between">
                                           <span>Included Diagnostic Investigations</span>
-                                          <span className="font-mono text-blue-700">{testsList.length || 1} Item(s)</span>
+                                          <span className="font-mono text-cyan-400">{testsList.length || 1} Item(s)</span>
                                         </div>
                                         {testsList.length > 0 ? (
                                           <div className="space-y-1.5 text-xs">
                                             {testsList.map((item: any, idx: number) => (
                                               <div
                                                 key={idx}
-                                                className="flex items-center justify-between bg-white p-2 rounded-lg border border-slate-100"
+                                                className="flex items-center justify-between bg-slate-950 p-2 rounded-lg border border-slate-800"
                                               >
                                                 <div className="flex items-center gap-2">
-                                                  <span className="h-5 w-5 rounded bg-blue-50 text-blue-700 font-bold text-[10px] flex items-center justify-center">
+                                                  <span className="h-5 w-5 rounded bg-cyan-950/60 border border-cyan-500/30 text-cyan-300 font-bold text-[10px] flex items-center justify-center">
                                                     {idx + 1}
                                                   </span>
                                                   <div>
-                                                    <span className="font-bold text-slate-800">
+                                                    <span className="font-bold text-slate-200">
                                                       {item.test?.testName || item.testName || "Diagnostic Investigation"}
                                                     </span>
-                                                    <span className="text-[10px] text-slate-400 ml-1.5 font-mono">
+                                                    <span className="text-[10px] text-slate-500 ml-1.5 font-mono">
                                                       ({item.test?.testCode || "TEST"})
                                                     </span>
                                                   </div>
                                                 </div>
-                                                <span className="font-mono font-bold text-slate-900">
+                                                <span className="font-mono font-bold text-white">
                                                   {formatCurrency(Number(item.price || item.finalPrice || payment.amount))}
                                                 </span>
                                               </div>
                                             ))}
                                           </div>
                                         ) : (
-                                          <div className="bg-white p-2.5 rounded-lg border border-slate-100 flex items-center justify-between text-xs">
-                                            <span className="font-semibold text-slate-800">
+                                          <div className="bg-slate-950 p-2.5 rounded-lg border border-slate-800 flex items-center justify-between text-xs">
+                                            <span className="font-semibold text-slate-300">
                                               Laboratory Diagnostic Pathology Test Panel
                                             </span>
-                                            <span className="font-mono font-bold text-slate-900">
+                                            <span className="font-mono font-bold text-white">
                                               {formatCurrency(payment.amount)}
                                             </span>
                                           </div>
@@ -1537,51 +1726,51 @@ export default function PaymentsPage() {
                                       </div>
 
                                       {/* Tax & Reconciliation Card */}
-                                      <div className="rounded-xl bg-blue-50/50 p-3.5 border border-blue-100 text-xs space-y-2 flex flex-col justify-between">
+                                      <div className="rounded-xl bg-slate-900/90 p-3.5 border border-slate-800 text-xs space-y-2 flex flex-col justify-between">
                                         <div>
-                                          <div className="text-[11px] font-bold uppercase tracking-wider text-blue-950 mb-2">
+                                          <div className="text-[11px] font-bold uppercase tracking-wider text-cyan-300 mb-2">
                                             Tax & Accounting Breakdown
                                           </div>
                                           <div className="space-y-1.5 text-[11px]">
-                                            <div className="flex justify-between text-slate-600">
+                                            <div className="flex justify-between text-slate-400">
                                               <span>Taxable Turnover:</span>
-                                              <span className="font-mono font-bold text-slate-900">
+                                              <span className="font-mono font-bold text-slate-200">
                                                 {formatCurrency(Math.round((payment.amount / 1.18) * 100) / 100)}
                                               </span>
                                             </div>
-                                            <div className="flex justify-between text-slate-600">
+                                            <div className="flex justify-between text-slate-400">
                                               <span>CGST (9%):</span>
-                                              <span className="font-mono text-slate-800">
+                                              <span className="font-mono text-slate-300">
                                                 {formatCurrency(Math.round(((payment.amount - payment.amount / 1.18) / 2) * 100) / 100)}
                                               </span>
                                             </div>
-                                            <div className="flex justify-between text-slate-600">
+                                            <div className="flex justify-between text-slate-400">
                                               <span>SGST (9%):</span>
-                                              <span className="font-mono text-slate-800">
+                                              <span className="font-mono text-slate-300">
                                                 {formatCurrency(Math.round(((payment.amount - payment.amount / 1.18) / 2) * 100) / 100)}
                                               </span>
                                             </div>
-                                            <div className="flex justify-between font-bold text-slate-900 border-t border-blue-200/60 pt-1 text-xs">
+                                            <div className="flex justify-between font-bold text-white border-t border-slate-800 pt-1 text-xs">
                                               <span>Total Paid:</span>
-                                              <span className="font-mono text-blue-700 font-extrabold">
+                                              <span className="font-mono text-cyan-400 font-extrabold">
                                                 {formatCurrency(payment.amount)}
                                               </span>
                                             </div>
                                           </div>
                                         </div>
 
-                                        <div className="pt-2 border-t border-blue-200/50 flex gap-2">
+                                        <div className="pt-2 border-t border-slate-800 flex gap-2">
                                           <button
                                             type="button"
                                             onClick={() => handleOpenReceipt(payment)}
-                                            className="flex-1 rounded-lg bg-blue-700 py-1.5 text-center text-[11px] font-bold text-white hover:bg-blue-600 transition"
+                                            className="flex-1 rounded-lg bg-gradient-to-r from-cyan-600 to-blue-600 py-1.5 text-center text-[11px] font-bold text-white shadow-md shadow-cyan-600/30 hover:from-cyan-500 hover:to-blue-500 transition"
                                           >
                                             Print 80mm Slip
                                           </button>
                                           <button
                                             type="button"
                                             onClick={() => setSelectedDetailPaymentId(payment.id)}
-                                            className="rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-slate-100 transition"
+                                            className="rounded-lg border border-slate-800 bg-slate-900 px-2 py-1.5 text-[11px] font-bold text-slate-300 hover:bg-slate-800 transition"
                                           >
                                             Full Audit
                                           </button>
@@ -1606,42 +1795,42 @@ export default function PaymentsPage() {
                 </table>
               </div>
 
-              <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50/70 px-5 py-3 text-xs text-slate-600">
+              <div className="flex items-center justify-between border-t border-slate-800 bg-slate-950 px-5 py-3 text-xs text-slate-400">
                 <span>
                   Showing latest {Math.min(displayedLedgerPayments.length, 10)} of {filteredPayments.length} transactions
                 </span>
                 <button
                   onClick={() => setActiveTab("Transactions")}
-                  className="font-bold text-blue-700 hover:text-blue-900 transition flex items-center gap-1"
+                  className="font-bold text-cyan-400 hover:text-cyan-300 transition flex items-center gap-1"
                 >
                   View Full Transactions Ledger ({payments.length}) →
                 </button>
               </div>
             </div>
 
-            {/* Right: Payment Method Mix & Cash Drawer Snapshot */}
+            {/* Right: Payment Method Mix & Cash Drawer Snapshot (Harmonized Dark Slate Design) */}
             <div className="space-y-5">
               {/* Payment Mix Widget */}
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="rounded-3xl border border-slate-800 bg-slate-950 p-5 shadow-2xl shadow-slate-950/80">
                 <div className="mb-4 flex items-center justify-between">
-                  <h3 className="text-base font-bold text-slate-900">Payment Tender Mix</h3>
-                  <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-xs font-semibold text-emerald-700 ring-1 ring-emerald-200">
+                  <h3 className="text-base font-bold text-white">Payment Tender Mix</h3>
+                  <span className="rounded-full border border-emerald-500/30 bg-emerald-950/50 px-2.5 py-0.5 text-xs font-semibold text-emerald-300">
                     Live Breakdown
                   </span>
                 </div>
                 <div className="space-y-3.5">
                   {paymentMix.map(({ method, amount, share }) => (
                     <div key={method}>
-                      <div className="mb-1 flex items-center justify-between text-xs text-slate-600">
-                        <span className="inline-flex items-center gap-1.5 font-medium text-slate-800">
+                      <div className="mb-1 flex items-center justify-between text-xs text-slate-400">
+                        <span className="inline-flex items-center gap-1.5 font-medium text-slate-200">
                           <span>{getMethodIcon(method)}</span>
                           {method.replace("_", " ")}
                         </span>
-                        <span className="font-mono font-bold text-slate-900">{formatCurrency(amount)}</span>
+                        <span className="font-mono font-bold text-white">{formatCurrency(amount)}</span>
                       </div>
-                      <div className="h-2 w-full rounded-full bg-slate-100">
+                      <div className="h-2 w-full rounded-full bg-slate-900 border border-slate-800/80 overflow-hidden">
                         <div
-                          className="h-2 rounded-full bg-gradient-to-r from-[#0f2d52] to-[#3b82f6] transition-all"
+                          className="h-2 rounded-full bg-gradient-to-r from-cyan-500 to-blue-600 transition-all shadow-sm"
                           style={{ width: `${Math.max(share, 6)}%` }}
                         />
                       </div>
@@ -1651,30 +1840,30 @@ export default function PaymentsPage() {
               </div>
 
               {/* Cash Counter Till Status */}
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <div className="rounded-3xl border border-slate-800 bg-slate-950 p-5 shadow-2xl shadow-slate-950/80">
                 <div className="mb-3 flex items-center justify-between">
                   <div>
-                    <h3 className="text-base font-bold text-slate-900">Till Register Snapshot</h3>
-                    <p className="text-[11px] text-slate-500">{activeCounter}</p>
+                    <h3 className="text-base font-bold text-white">Till Register Snapshot</h3>
+                    <p className="text-[11px] text-slate-400">{activeCounter}</p>
                   </div>
-                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
+                  <span className="h-2.5 w-2.5 rounded-full bg-emerald-400 animate-pulse shadow-sm shadow-emerald-400/50" />
                 </div>
                 <div className="space-y-2 text-xs">
-                  <div className="flex items-center justify-between rounded-xl bg-slate-50 p-2.5 text-slate-700">
+                  <div className="flex items-center justify-between rounded-xl bg-slate-900 border border-slate-800/80 p-2.5 text-slate-300">
                     <span>Shift Opening Float</span>
-                    <strong className="font-mono text-slate-900">{formatCurrency(26250)}</strong>
+                    <strong className="font-mono text-white">{formatCurrency(26250)}</strong>
                   </div>
-                  <div className="flex items-center justify-between rounded-xl bg-emerald-50 p-2.5 text-emerald-800">
+                  <div className="flex items-center justify-between rounded-xl bg-emerald-950/40 border border-emerald-500/20 p-2.5 text-emerald-300">
                     <span>Cash Collections (Today)</span>
-                    <strong className="font-mono text-emerald-900">+{formatCurrency(summary.cashInHand || 17800)}</strong>
+                    <strong className="font-mono text-emerald-400">+{formatCurrency(summary.cashInHand || 17800)}</strong>
                   </div>
-                  <div className="flex items-center justify-between rounded-xl bg-rose-50 p-2.5 text-rose-800">
+                  <div className="flex items-center justify-between rounded-xl bg-rose-950/40 border border-rose-500/20 p-2.5 text-rose-300">
                     <span>Cash Refunds / Payouts</span>
-                    <strong className="font-mono text-rose-900">-{formatCurrency(3200)}</strong>
+                    <strong className="font-mono text-rose-400">-{formatCurrency(3200)}</strong>
                   </div>
-                  <div className="flex items-center justify-between rounded-2xl border border-blue-200 bg-blue-50/80 p-3 text-blue-950">
+                  <div className="flex items-center justify-between rounded-2xl border border-cyan-500/30 bg-cyan-950/40 p-3 text-cyan-200">
                     <span className="font-bold">Expected in Drawer:</span>
-                    <strong className="font-mono text-base font-extrabold text-blue-950">
+                    <strong className="font-mono text-base font-extrabold text-cyan-300">
                       {formatCurrency(summary.cashDrawer || 40850)}
                     </strong>
                   </div>
@@ -1684,14 +1873,14 @@ export default function PaymentsPage() {
                   <button
                     type="button"
                     onClick={() => setIsPettyModalOpen(true)}
-                    className="flex-1 rounded-xl border border-slate-200 bg-slate-50 py-2 text-center text-xs font-bold text-slate-700 transition hover:bg-slate-100"
+                    className="flex-1 rounded-xl border border-slate-800 bg-slate-900 py-2 text-center text-xs font-bold text-slate-300 transition hover:bg-slate-800 hover:text-white"
                   >
                     + Petty Movement
                   </button>
                   <button
                     type="button"
                     onClick={() => setIsShiftHandoverOpen(true)}
-                    className="flex-1 rounded-xl bg-amber-600 py-2 text-center text-xs font-bold text-white shadow-sm transition hover:bg-amber-500"
+                    className="flex-1 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 py-2 text-center text-xs font-bold text-white shadow-md shadow-amber-600/30 transition hover:from-amber-500 hover:to-orange-500"
                   >
                     Close Till & Handover
                   </button>
@@ -1699,19 +1888,19 @@ export default function PaymentsPage() {
               </div>
 
               {/* Operational Audit Highlights */}
-              <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
-                <h3 className="text-base font-bold text-slate-900">Compliance & Alerts</h3>
-                <ul className="mt-3 space-y-2 text-xs text-slate-600">
+              <div className="rounded-3xl border border-slate-800 bg-slate-950 p-5 shadow-2xl shadow-slate-950/80">
+                <h3 className="text-base font-bold text-white">Compliance & Alerts</h3>
+                <ul className="mt-3 space-y-2 text-xs text-slate-300">
                   <li className="flex items-start gap-2">
-                    <span className="mt-0.5 text-emerald-500">✔</span>
+                    <span className="mt-0.5 text-emerald-400">✔</span>
                     <span>PineLabs Card POS terminal settlement completed for previous shift.</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="mt-0.5 text-amber-500">⚠️</span>
+                    <span className="mt-0.5 text-amber-400">⚠️</span>
                     <span>1 pending refund authorization awaiting Accounts review.</span>
                   </li>
                   <li className="flex items-start gap-2">
-                    <span className="mt-0.5 text-blue-500">ℹ</span>
+                    <span className="mt-0.5 text-cyan-400">ℹ</span>
                     <span>UPI QR instant reconciliation active on Counter 01 and Counter 02.</span>
                   </li>
                 </ul>
@@ -2100,7 +2289,9 @@ export default function PaymentsPage() {
                               <div className="text-xs text-slate-500">
                                 <span className="font-mono">{o.patient?.uhid || "—"}</span>
                                 {o.patient?.phone && (
-                                  <span className="ml-1.5">• {o.patient.phone}</span>
+                                  <span className="ml-1.5 font-mono" title="Masked for DPDP Act 2023 compliance">
+                                    • {maskPhoneNumber(o.patient.phone)}
+                                  </span>
                                 )}
                               </div>
                             </td>
@@ -2973,6 +3164,15 @@ export default function PaymentsPage() {
               setInitialRefundAmount(String(amt));
               setIsRefundModalOpen(true);
             }}
+          />
+        )}
+
+        {/* NOTIFICATION DISPATCH MODAL */}
+        {notifyModalOpen && notifyPayload && (
+          <NotificationDispatchModal
+            isOpen={notifyModalOpen}
+            onClose={() => setNotifyModalOpen(false)}
+            payload={notifyPayload}
           />
         )}
       </div>

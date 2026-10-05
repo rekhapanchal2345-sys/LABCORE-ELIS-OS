@@ -4,6 +4,28 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { testApi } from "@/lib/api";
+import {
+  Package,
+  Plus,
+  Sparkles,
+  Search,
+  Star,
+  CheckCircle2,
+  Trash2,
+  Edit,
+  Clock3,
+  DollarSign,
+  Percent,
+  ShieldCheck,
+  ChevronRight,
+  Eye,
+  X,
+  FlaskConical,
+  HeartPulse,
+  Activity,
+  Layers,
+  Tag
+} from "lucide-react";
 
 interface TestPackage {
   id: string;
@@ -105,13 +127,11 @@ export default function TestPackagesPage() {
       setError(null);
       const response = await testApi.getPackages();
       if (response.success && response.data) {
-        setPackages(response.data.packages || response.data || []);
-      } else {
-        setError(response.message || "Failed to fetch packages");
+        setPackages(response.data);
       }
     } catch (err) {
       console.error("Error fetching packages:", err);
-      setError(err instanceof Error ? err.message : "Failed to fetch packages");
+      setError(err instanceof Error ? err.message : "Failed to fetch health packages");
     } finally {
       setLoading(false);
     }
@@ -122,49 +142,52 @@ export default function TestPackagesPage() {
     setTimeout(() => setSuccessMessage(null), 3500);
   };
 
-  const handleTogglePopular = async (pkg: TestPackage) => {
+  const handleTogglePopular = async (pkg: TestPackage, e: React.MouseEvent) => {
+    e.stopPropagation();
     const updated = !pkg.isPopular;
     try {
       await testApi.updatePackage(pkg.id, { isPopular: updated });
       setPackages(packages.map((p) => (p.id === pkg.id ? { ...p, isPopular: updated } : p)));
-      showNotification(`Package "${pkg.packageName}" ${updated ? "marked as Featured" : "unfeatured"}`);
+      showNotification(`Package "${pkg.packageName}" ${updated ? "marked as Featured" : "unmarked"}`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to toggle popular status");
+      alert(err instanceof Error ? err.message : "Failed to update package");
     }
   };
 
-  const handleToggleActive = async (pkg: TestPackage) => {
+  const handleToggleActive = async (pkg: TestPackage, e: React.MouseEvent) => {
+    e.stopPropagation();
     const updated = !pkg.isActive;
     try {
       await testApi.updatePackage(pkg.id, { isActive: updated });
       setPackages(packages.map((p) => (p.id === pkg.id ? { ...p, isActive: updated } : p)));
-      showNotification(`Package "${pkg.packageName}" marked as ${updated ? "Active" : "Inactive"}`);
+      showNotification(`Package "${pkg.packageName}" ${updated ? "activated" : "deactivated"}`);
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to toggle active status");
+      alert(err instanceof Error ? err.message : "Failed to update status");
     }
   };
 
-  const handleDeletePackage = async (id: string, packageName: string) => {
-    if (!confirm(`Are you sure you want to delete package "${packageName}"?`)) {
-      return;
-    }
+  const handleDeletePackage = async (id: string, name: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!confirm(`Are you sure you want to delete package "${name}"?`)) return;
 
     try {
       await testApi.deletePackage(id);
+      showNotification(`Package "${name}" deleted`);
       setPackages(packages.filter((p) => p.id !== id));
-      showNotification(`Package "${packageName}" deleted`);
+      if (inspectingPackage?.id === id) setInspectingPackage(null);
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to delete package");
     }
   };
 
   const handleSeedStandardPackages = async () => {
-    if (!confirm("Generate standard pathology wellness packages (Full Body Checkup, Diabetic Panel, Senior Wellness, Fever Profile)?")) {
+    if (!confirm("This will configure 4 standard multi-test health checkup packages (Full Body, Diabetic, Senior Citizen, Acute Fever). Proceed?")) {
       return;
     }
 
     setSeeding(true);
-    let count = 0;
+    let created = 0;
+
     for (const pkg of STANDARD_PACKAGES) {
       const exists = packages.some((p) => p.packageCode === pkg.packageCode);
       if (!exists) {
@@ -172,44 +195,50 @@ export default function TestPackagesPage() {
           await testApi.createPackage({
             ...pkg,
             isActive: true,
-            displayOrder: count + 1,
           });
-          count++;
+          created++;
         } catch (e) {
           console.warn("Failed seeding package:", e);
         }
       }
     }
+
     setSeeding(false);
-    showNotification(`Generated ${count} standard health packages!`);
+    showNotification(`Generated ${created} standard health checkup packages!`);
     await fetchPackages();
   };
 
-  const filteredPackages = packages.filter(
-    (pkg) =>
+  const filteredPackages = packages.filter((pkg) => {
+    return (
       pkg.packageName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       pkg.packageCode.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (pkg.targetAudience || "").toLowerCase().includes(searchTerm.toLowerCase())
-  );
+      (pkg.description && pkg.description.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+  });
 
   return (
     <ProtectedRoute requiredRoles={["ADMIN", "FRONT_DESK", "LAB_TECH", "PATHOLOGIST", "DOCTOR"]}>
-      <div className="space-y-6">
-        {/* Floating Notification */}
+      <div className="space-y-6 pb-24">
+        {/* Success Toast */}
         {successMessage && (
-          <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-xs font-bold text-green-800 shadow-lg animate-in slide-in-from-top duration-200">
-            <span>✓</span> {successMessage}
+          <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl border border-emerald-500/40 bg-emerald-950/90 px-5 py-3 text-xs font-black text-emerald-300 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            <span>{successMessage}</span>
           </div>
         )}
 
-        {/* Top Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Master Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
-              Health Checkup & Wellness Packages
+            <div className="flex items-center gap-2 text-xs font-bold text-blue-400 mb-1">
+              <Package className="h-3.5 w-3.5" />
+              <span>Preventive Healthcare & Multi-Test Health Profiles</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+              <span>Health Packages & Preventive Panels</span>
             </h1>
-            <p className="text-xs text-gray-500 mt-1">
-              Bundle investigations into high-value diagnostic checkup profiles with promotional pricing
+            <p className="text-xs font-medium text-slate-400 mt-1">
+              Bundle multiple diagnostic investigations into high-value health checkup packages with bundled savings
             </p>
           </div>
 
@@ -217,207 +246,186 @@ export default function TestPackagesPage() {
             <button
               onClick={handleSeedStandardPackages}
               disabled={seeding}
-              className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-2 text-xs font-semibold text-emerald-700 hover:bg-emerald-100 transition shadow-2xs disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-950/40 px-4 py-2.5 text-xs font-bold text-indigo-300 hover:bg-indigo-900/60 hover:text-white transition shadow-lg shadow-indigo-500/10 disabled:opacity-50"
             >
-              <span>📦</span>
-              {seeding ? "Generating..." : "Load Standard Packages"}
+              <Sparkles className="h-4 w-4 text-indigo-400" />
+              <span>{seeding ? "Generating..." : "Generate 4 Standard Packages"}</span>
             </button>
 
             <Link
               href="/tests/packages/new"
-              className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition shadow-sm"
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4.5 py-2.5 text-xs font-black text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-lg shadow-blue-500/25"
             >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
-              Create Package
+              <Plus className="h-4 w-4" />
+              <span>Create New Package</span>
             </Link>
           </div>
         </div>
 
+        {/* Search Bar */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-3 shadow-xl flex items-center justify-between gap-3">
+          <div className="relative w-full sm:w-96">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search packages by name, code, or clinical scope..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900 pl-10 pr-4 py-2 text-xs font-semibold text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            />
+          </div>
+
+          <span className="text-xs font-bold text-slate-400 px-2">
+            {filteredPackages.length} Health Packages
+          </span>
+        </div>
+
         {error && (
-          <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-xs text-red-800">
+          <div className="rounded-2xl bg-rose-950/60 border border-rose-500/40 p-4 text-xs font-bold text-rose-300">
             {error}
           </div>
         )}
 
-        {/* Search & Filter */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-          <input
-            type="text"
-            placeholder="Search packages by title, code (e.g. PKG-FULLBODY), or target audience..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full rounded-xl border border-gray-300 px-3.5 py-2 text-xs focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-          />
-        </div>
-
         {/* Packages Grid */}
         {loading ? (
-          <div className="py-16 text-center text-sm text-gray-500">
-            <div className="h-7 w-7 animate-spin rounded-full border-2 border-blue-600 border-t-transparent mx-auto mb-2" />
-            Loading diagnostic health checkup packages...
+          <div className="py-20 text-center space-y-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-3 border-blue-500 border-t-transparent mx-auto" />
+            <div className="text-xs font-bold text-slate-400">Loading Health Packages Catalog...</div>
           </div>
         ) : filteredPackages.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-white p-12 text-center">
-            <span className="text-4xl">📦</span>
-            <h3 className="mt-3 text-base font-bold text-gray-900">No health packages found</h3>
-            <p className="text-xs text-gray-500 mt-1 max-w-sm mx-auto">
-              Create your first package or click &quot;Load Standard Packages&quot; to populate standard diagnostic panels.
+          <div className="rounded-2xl border-2 border-dashed border-slate-800 bg-slate-900/40 p-12 text-center space-y-4">
+            <Package className="h-10 w-10 text-slate-600 mx-auto" />
+            <h3 className="text-base font-black text-white">No health packages found</h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Create multi-test health checkup profiles or auto-generate 4 standard hospital packages.
             </p>
-            <div className="mt-4">
-              <button
-                onClick={handleSeedStandardPackages}
-                className="rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition"
-              >
-                Load Standard Packages
-              </button>
-            </div>
+            <button
+              onClick={handleSeedStandardPackages}
+              className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-xs font-bold text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-lg shadow-blue-500/25"
+            >
+              ⚡ Generate Standard Packages
+            </button>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredPackages.map((pkg) => {
-              const totalWorth = Number(pkg.totalPrice) || 0;
-              const offerPrice = pkg.offerPrice ? Number(pkg.offerPrice) : totalWorth;
-              const hasDiscount = offerPrice < totalWorth;
-              const savings = hasDiscount ? totalWorth - offerPrice : 0;
-              const discountPercent = hasDiscount
-                ? Math.round(((totalWorth - offerPrice) / totalWorth) * 100)
-                : pkg.discountPercentage || 0;
-
-              const testsCount = pkg.includesTestsCount || pkg.items?.length || 0;
-              const pkgColor = pkg.color || "#10B981";
+              const offerRate = pkg.offerPrice || pkg.totalPrice;
+              const hasDiscount = pkg.offerPrice && pkg.offerPrice < pkg.totalPrice;
+              const discountPct = hasDiscount ? Math.round(((pkg.totalPrice - offerRate) / pkg.totalPrice) * 100) : 0;
+              const pkgColor = pkg.color || "#3B82F6";
 
               return (
                 <div
                   key={pkg.id}
-                  className="rounded-2xl border border-gray-200 bg-white shadow-sm hover:shadow-md transition-shadow overflow-hidden flex flex-col justify-between"
+                  onClick={() => setInspectingPackage(pkg)}
+                  className={`group relative rounded-2xl border transition-all duration-200 overflow-hidden backdrop-blur-xl cursor-pointer ${
+                    pkg.isActive
+                      ? "border-slate-800 bg-slate-900/70 hover:border-slate-700 hover:shadow-2xl"
+                      : "border-slate-800/50 bg-slate-950/40 opacity-70"
+                  }`}
                 >
-                  <div className="h-2 w-full" style={{ backgroundColor: pkgColor }} />
+                  <div
+                    className="h-1.5 w-full transition-all group-hover:h-2"
+                    style={{ backgroundColor: pkgColor, boxShadow: `0 0 12px ${pkgColor}88` }}
+                  />
 
-                  <div className="p-5 flex-1 flex flex-col justify-between">
-                    <div>
-                      {/* Top Badges */}
-                      <div className="flex items-start justify-between gap-2">
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-bold px-2 py-0.5 rounded bg-gray-100 text-gray-800">
-                            {pkg.packageCode}
+                  <div className="p-5 space-y-4">
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="flex items-center gap-3">
+                        <span
+                          className="flex h-11 w-11 items-center justify-center rounded-2xl text-xl shadow-lg border border-white/10"
+                          style={{ backgroundColor: `${pkgColor}25` }}
+                        >
+                          {pkg.icon || "🌟"}
+                        </span>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs font-mono font-black text-slate-400">
+                              {pkg.packageCode}
+                            </span>
+                            {pkg.isPopular && (
+                              <span className="flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-black text-amber-400 border border-amber-500/30">
+                                <Star className="h-2.5 w-2.5 fill-amber-400" />
+                                <span>FEATURED</span>
+                              </span>
+                            )}
+                          </div>
+                          <h3 className="text-base font-black text-white leading-tight mt-0.5">
+                            {pkg.packageName}
+                          </h3>
+                        </div>
+                      </div>
+
+                      {/* Status Toggle */}
+                      <button
+                        type="button"
+                        onClick={(e) => handleToggleActive(pkg, e)}
+                        className={`px-2 py-0.5 rounded-full text-[9px] font-black border ${
+                          pkg.isActive
+                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
+                            : "bg-slate-800 border-slate-700 text-slate-400"
+                        }`}
+                      >
+                        {pkg.isActive ? "ACTIVE" : "INACTIVE"}
+                      </button>
+                    </div>
+
+                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed min-h-[36px]">
+                      {pkg.description || "Comprehensive multi-test diagnostic screening package."}
+                    </p>
+
+                    {/* Pricing & Savings Box */}
+                    <div className="rounded-xl bg-slate-950/80 p-3 border border-slate-800 flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] font-bold text-slate-400 block">Package Offer Price</span>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-lg font-black text-emerald-400">
+                            ₹{offerRate.toLocaleString("en-IN")}
                           </span>
-                          {pkg.targetAudience && (
-                            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-100">
-                              {pkg.targetAudience.replace(/_/g, " ")}
+                          {hasDiscount && (
+                            <span className="text-xs font-bold text-slate-500 line-through">
+                              ₹{pkg.totalPrice.toLocaleString("en-IN")}
                             </span>
                           )}
                         </div>
+                      </div>
 
-                        {/* Popular Star Toggle */}
+                      {hasDiscount && (
+                        <span className="rounded-lg bg-emerald-500/10 px-2 py-1 text-xs font-black text-emerald-400 border border-emerald-500/30">
+                          {discountPct}% OFF
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Footer Info */}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[11px] text-slate-400">
+                      <span className="flex items-center gap-1 font-semibold">
+                        <Clock3 className="h-3.5 w-3.5 text-amber-400" />
+                        <span>{pkg.tatDisplay || "Same Day"}</span>
+                      </span>
+
+                      <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                         <button
-                          onClick={() => handleTogglePopular(pkg)}
-                          className={`flex items-center gap-1 text-xs font-bold rounded-lg px-2 py-0.5 border transition ${
+                          type="button"
+                          onClick={(e) => handleTogglePopular(pkg, e)}
+                          className={`p-1.5 rounded-lg border transition ${
                             pkg.isPopular
-                              ? "border-amber-300 bg-amber-50 text-amber-700"
-                              : "border-gray-200 text-gray-400 hover:text-amber-500"
+                              ? "bg-amber-500/20 border-amber-500/40 text-amber-400"
+                              : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
                           }`}
-                          title={pkg.isPopular ? "Featured Package" : "Mark as Featured"}
+                          title="Toggle Popular"
                         >
-                          ★ {pkg.isPopular ? "Popular" : "Feature"}
+                          <Star className={`h-3.5 w-3.5 ${pkg.isPopular ? "fill-amber-400" : ""}`} />
+                        </button>
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeletePackage(pkg.id, pkg.packageName, e)}
+                          className="p-1.5 rounded-lg border border-slate-800 bg-slate-800 text-slate-400 hover:bg-rose-950/50 hover:text-rose-400 transition"
+                          title="Delete Package"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
                         </button>
                       </div>
-
-                      {/* Package Name */}
-                      <h3 className="text-base font-bold text-gray-900 mt-2.5 leading-snug">
-                        {pkg.packageName}
-                      </h3>
-
-                      {pkg.description && (
-                        <p className="text-xs text-gray-500 mt-1.5 line-clamp-2 leading-relaxed">
-                          {pkg.description}
-                        </p>
-                      )}
-
-                      {/* Diagnostic Scope Pill */}
-                      <div className="mt-3.5 flex flex-wrap items-center gap-2 text-xs">
-                        <span className="rounded-full bg-indigo-50 border border-indigo-100 px-2.5 py-0.5 font-bold text-indigo-700">
-                          {testsCount > 0 ? `${testsCount} Tests Bundled` : "Configured Bundle"}
-                        </span>
-                        <span className="text-gray-400 font-medium">
-                          TAT: {pkg.tatDisplay || `${pkg.tatHours || 24}h`}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Pricing Matrix */}
-                    <div className="mt-5 rounded-xl border border-gray-100 bg-gray-50/80 p-3">
-                      <div className="flex items-baseline justify-between">
-                        <div>
-                          <div className="text-lg font-extrabold text-gray-900">
-                            ₹{offerPrice.toLocaleString("en-IN")}
-                          </div>
-                          {hasDiscount && (
-                            <div className="text-xs text-gray-400 line-through">
-                              Total Value: ₹{totalWorth.toLocaleString("en-IN")}
-                            </div>
-                          )}
-                        </div>
-
-                        {hasDiscount && (
-                          <div className="text-right">
-                            <span className="inline-block text-[11px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full">
-                              {discountPercent}% OFF
-                            </span>
-                            <span className="block text-[10px] text-emerald-600 font-bold mt-0.5">
-                              Save ₹{savings.toLocaleString("en-IN")}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Card Actions Footer */}
-                  <div className="border-t border-gray-100 bg-gray-50/70 px-5 py-3 flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2">
-                      {/* Active switch */}
-                      <button
-                        onClick={() => handleToggleActive(pkg)}
-                        className={`relative inline-flex h-4 w-7 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                          pkg.isActive !== false ? "bg-green-600" : "bg-gray-300"
-                        }`}
-                        title={pkg.isActive !== false ? "Click to Deactivate" : "Click to Activate"}
-                      >
-                        <span
-                          className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                            pkg.isActive !== false ? "translate-x-3" : "translate-x-0"
-                          }`}
-                        />
-                      </button>
-                      <span className="text-[11px] text-gray-500 font-medium">
-                        {pkg.isActive !== false ? "Active" : "Inactive"}
-                      </span>
-                    </div>
-
-                    <div className="flex items-center gap-1.5">
-                      <button
-                        onClick={() => setInspectingPackage(pkg)}
-                        className="rounded-lg bg-white border border-gray-200 px-2.5 py-1 text-xs font-semibold text-gray-700 hover:bg-gray-50 shadow-2xs"
-                      >
-                        Inspect
-                      </button>
-                      <Link
-                        href={`/tests/packages/${pkg.id}`}
-                        className="rounded-lg bg-blue-50 px-2.5 py-1 text-xs font-semibold text-blue-700 hover:bg-blue-100"
-                      >
-                        Edit
-                      </Link>
-                      <button
-                        onClick={() => handleDeletePackage(pkg.id, pkg.packageName)}
-                        className="rounded-lg p-1 text-red-600 hover:bg-red-50"
-                        title="Delete Package"
-                      >
-                        <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
-                      </button>
                     </div>
                   </div>
                 </div>
@@ -426,102 +434,75 @@ export default function TestPackagesPage() {
           </div>
         )}
 
-        {/* Modal: Package Inspector */}
+        {/* DRAWER / INSPECTOR: HEALTH PACKAGE DETAILS */}
         {inspectingPackage && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200">
-            <div className="relative w-full max-w-2xl rounded-2xl bg-white shadow-2xl overflow-hidden border border-gray-100">
-              <div className="border-b border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-between">
-                <div>
-                  <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded">
-                    {inspectingPackage.packageCode}
+          <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
+            <div className="h-full w-full max-w-md bg-slate-900 border-l border-slate-800 p-6 overflow-y-auto space-y-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+                <div className="flex items-center gap-2">
+                  <Package className="h-5 w-5 text-blue-400" />
+                  <span className="text-xs font-black uppercase tracking-wider text-blue-400">
+                    Health Package Dossier
                   </span>
-                  <h2 className="text-base font-bold text-gray-900 mt-1">
-                    {inspectingPackage.packageName}
-                  </h2>
                 </div>
                 <button
+                  type="button"
                   onClick={() => setInspectingPackage(null)}
-                  className="rounded-lg p-1 text-gray-400 hover:bg-gray-200"
+                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <div className="p-6 space-y-4 max-h-[75vh] overflow-y-auto text-xs">
-                {inspectingPackage.description && (
-                  <p className="text-gray-600 leading-relaxed bg-gray-50 p-3 rounded-xl">
-                    {inspectingPackage.description}
-                  </p>
-                )}
-
-                {/* Target & Preparation */}
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="rounded-xl border border-gray-200 p-3">
-                    <span className="text-gray-400 font-semibold block uppercase text-[10px]">Target Audience</span>
-                    <span className="font-bold text-gray-800 text-sm mt-0.5 block">
-                      {inspectingPackage.targetAudience?.replace(/_/g, " ") || "General Public"}
-                    </span>
-                  </div>
-
-                  <div className="rounded-xl border border-gray-200 p-3">
-                    <span className="text-gray-400 font-semibold block uppercase text-[10px]">Turnaround Time</span>
-                    <span className="font-bold text-blue-700 text-sm mt-0.5 block">
-                      {inspectingPackage.tatDisplay || "24 Hours"}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Bundled Tests */}
-                <div>
-                  <h4 className="font-bold text-gray-800 mb-2">
-                    Included Investigations in this Checkup Profile:
-                  </h4>
-                  {inspectingPackage.items && inspectingPackage.items.length > 0 ? (
-                    <div className="divide-y divide-gray-100 rounded-xl border border-gray-200 overflow-hidden">
-                      {inspectingPackage.items.map((item: any, idx: number) => (
-                        <div key={item.id || idx} className="p-3 flex items-center justify-between hover:bg-gray-50">
-                          <div>
-                            <span className="font-mono text-xs font-bold text-blue-700 mr-2">
-                              {item.test?.testCode || "TEST"}
-                            </span>
-                            <span className="font-semibold text-gray-900">
-                              {item.test?.testName || item.testName || `Test #${idx + 1}`}
-                            </span>
-                            <span className="text-[11px] text-gray-400 ml-2">
-                              ({item.test?.sampleType || "Specimen"})
-                            </span>
-                          </div>
-                          <span className="font-bold text-gray-800">
-                            ₹{(Number(item.testPrice) || Number(item.test?.price) || 0).toLocaleString("en-IN")}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="rounded-xl bg-gray-50 p-4 text-center text-gray-500">
-                      Standard package bundling comprehensive organ panels (CBC, Lipid, LFT, KFT, Glucose).
-                    </div>
-                  )}
-                </div>
-
-                {/* Phlebotomy Specimen Preparation Rule */}
-                <div className="rounded-xl border border-blue-200 bg-blue-50/60 p-3 text-blue-900 space-y-1">
-                  <span className="font-bold flex items-center gap-1.5">
-                    <span>🧪</span> Specimen Collection Advice:
-                  </span>
-                  <p>• Requires 10-12 hours overnight fasting. Water permitted.</p>
-                  <p>• Collect Purple EDTA vial (CBC/HbA1c) + Gold SST Gel vial (Biochemistry/Lipid) + Grey Fluoride vial (Glucose).</p>
+              <div>
+                <h2 className="text-xl font-black text-white">
+                  {inspectingPackage.packageName}
+                </h2>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs font-mono text-blue-400">{inspectingPackage.packageCode}</span>
+                  <span className="text-slate-600">•</span>
+                  <span className="text-xs text-slate-400">{inspectingPackage.targetAudience || "General Adult"}</span>
                 </div>
               </div>
 
-              <div className="border-t border-gray-100 px-6 py-3 bg-gray-50 flex justify-end">
+              <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 space-y-3">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-400 block">
+                  Package Pricing & Commercials
+                </span>
+                <div className="space-y-2 text-xs">
+                  <div className="flex justify-between py-1 border-b border-slate-800">
+                    <span className="text-slate-400">Standard Sum of MRPs:</span>
+                    <span className="font-bold text-white">₹{inspectingPackage.totalPrice}</span>
+                  </div>
+                  <div className="flex justify-between py-1 border-b border-slate-800">
+                    <span className="text-slate-400">Package Offer Rate:</span>
+                    <span className="font-bold text-emerald-400">₹{inspectingPackage.offerPrice || inspectingPackage.totalPrice}</span>
+                  </div>
+                  <div className="flex justify-between py-1">
+                    <span className="text-slate-400">Patient Savings:</span>
+                    <span className="font-bold text-emerald-400">
+                      ₹{inspectingPackage.totalPrice - (inspectingPackage.offerPrice || inspectingPackage.totalPrice)}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-400 block">
+                  Clinical Scope & Description
+                </span>
+                <p className="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-xl border border-slate-800">
+                  {inspectingPackage.description || "Comprehensive diagnostic health screening profile."}
+                </p>
+              </div>
+
+              <div className="flex items-center gap-3 pt-4 border-t border-slate-800">
                 <button
+                  type="button"
                   onClick={() => setInspectingPackage(null)}
-                  className="rounded-xl bg-gray-900 px-5 py-2 text-xs font-bold text-white hover:bg-black"
+                  className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white hover:bg-blue-500 transition text-center"
                 >
-                  Close Preview
+                  Close Dossier
                 </button>
               </div>
             </div>

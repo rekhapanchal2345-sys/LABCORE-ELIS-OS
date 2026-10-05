@@ -1182,7 +1182,7 @@ export const sendReportToDoctor = async (
     const order = await prisma.order.findUnique({
       where: { id: report.orderId },
       include: {
-        patient: { select: { id: true, firstName: true, lastName: true } },
+        patient: { select: { id: true, firstName: true, middleName: true, lastName: true } },
       },
     });
 

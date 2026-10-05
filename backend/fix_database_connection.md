@@ -55,9 +55,10 @@ npm run dev
 
 3. **Test login endpoint:**
 ```bash
+# Credentials come from your environment, never from this file.
 curl -X POST http://localhost:5000/api/auth/login \
   -H "Content-Type: application/json" \
-  -d '{"email":"nikilpanchal0@gmail.com","password":"mns98754321"}'
+  -d "{\"identifier\":\"$ADMIN_EMAIL\",\"password\":\"$ADMIN_PASSWORD\"}"
 ```
 
 ## Quick Fix for Current Issue
@@ -87,13 +88,15 @@ To properly implement the WhatsApp integration later:
 
 ## Current Database Status
 
-Your current database connection string is:
+Your database connection string lives in `backend/.env` as `DATABASE_URL`
+(never commit it). It is normally shaped like:
+
 ```
-postgresql://postgres:nikil%407041@localhost:5432/labcore_elis
+postgresql://USER:PASSWORD@localhost:5432/labcore_elis
 ```
 
 Make sure:
 - PostgreSQL is running on localhost:5432
 - Database `labcore_elis` exists
-- User `postgres` with password `nikil@7041` has access
+- The role in `DATABASE_URL` has access to it
 - The database schema matches the Prisma schema

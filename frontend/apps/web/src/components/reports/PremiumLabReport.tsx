@@ -354,6 +354,72 @@ const premiumReportStyles = `
     color: #16a34a;
   }
 
+  /* Signatures Block */
+  .signatures-section {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    margin-top: 25px;
+    margin-bottom: 20px;
+    padding: 0 10px;
+  }
+
+  .signature-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    min-width: 180px;
+  }
+
+  .signature-space {
+    height: 48px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    margin-bottom: 4px;
+  }
+
+  .signature-img {
+    max-height: 44px;
+    max-width: 160px;
+    object-fit: contain;
+  }
+
+  .signature-stamp {
+    font-size: 10px;
+    font-weight: bold;
+    color: #0f766e;
+    background: #f0fdfa;
+    border: 1px dashed #0f766e;
+    padding: 3px 8px;
+    border-radius: 4px;
+  }
+
+  .signature-line {
+    width: 100%;
+    height: 1px;
+    background: #cbd5e1;
+    margin-bottom: 4px;
+  }
+
+  .signature-name {
+    font-size: 11px;
+    font-weight: bold;
+    color: #0a2540;
+  }
+
+  .signature-role {
+    font-size: 9px;
+    color: #64748b;
+  }
+
+  .signature-council {
+    font-size: 8px;
+    color: #94a3b8;
+    font-family: monospace;
+  }
+
   /* Footer */
   .report-footer {
     margin-top: 30px;
@@ -512,6 +578,14 @@ interface PremiumReportData {
   externalQAScheme?: string;
   calibrationStatus?: string;
   reportConfidenceScore?: string;
+
+  // Authorization Signatures
+  technicianName?: string;
+  technicianSignatureUrl?: string;
+  pathologistName?: string;
+  pathologistDegree?: string;
+  pathologistRegNo?: string;
+  pathologistSignatureUrl?: string;
 }
 
 interface PremiumLabReportProps {
@@ -712,6 +786,38 @@ export default function PremiumLabReport({
                 <span className="qa-label">Report Confidence Score</span>
                 <span className="qa-value">{report.reportConfidenceScore || "—"}</span>
               </div>
+            </div>
+          </div>
+
+          {/* Clinical Authorization & Pathologist Signature Block */}
+          <div className="signatures-section">
+            <div className="signature-box">
+              <div className="signature-space">
+                {report.technicianSignatureUrl ? (
+                  <img src={report.technicianSignatureUrl} alt="Technician Signature" className="signature-img" />
+                ) : (
+                  <div className="signature-stamp">✓ Verified in Lab</div>
+                )}
+              </div>
+              <div className="signature-line" />
+              <div className="signature-name">{report.technicianName || "Medical Lab Technologist"}</div>
+              <div className="signature-role">MLT / Quality Controller</div>
+            </div>
+
+            <div className="signature-box">
+              <div className="signature-space">
+                {report.pathologistSignatureUrl ? (
+                  <img src={report.pathologistSignatureUrl} alt="Pathologist Signature" className="signature-img" />
+                ) : (
+                  <div className="signature-stamp">✓ Digitally Signed & Authorized</div>
+                )}
+              </div>
+              <div className="signature-line" />
+              <div className="signature-name">{report.pathologistName || "Dr. Authorized Pathologist"}</div>
+              <div className="signature-role">{report.pathologistDegree || "MBBS, MD (Pathology)"}</div>
+              {report.pathologistRegNo && (
+                <div className="signature-council">Reg No: {report.pathologistRegNo}</div>
+              )}
             </div>
           </div>
 

@@ -44,7 +44,8 @@ import {
   Lock,
   Unlock,
   XCircle,
-  FileCheck
+  FileCheck,
+  Sparkles
 } from "lucide-react";
 
 const statusStyles: Record<string, string> = {

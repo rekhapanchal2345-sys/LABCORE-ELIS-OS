@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import DashboardLayout from "@/components/layout/dashboardlayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import PixelPerfectPatientRegistration from "@/components/patients/PixelPerfectPatientRegistration";
@@ -142,14 +143,19 @@ export default function NewPatientPage() {
         call: notifs.includes('Phone Call'),
       };
 
-      // Privacy consent: map to individual consent fields
-      // consentForMarketing is intentionally kept false — user did not explicitly opt in for marketing
+      // Privacy consent: map to individual consent fields & DPDP Act 2023 versioned record
       const consent = Boolean(formData.privacyConsent);
       requestData.consentForTreatment = consent;
       requestData.consentForDataSharing = consent;
       requestData.consentForMarketing = false; // never default marketing consent to true
-      // Also pass privacyConsent for backend fallback
       requestData.privacyConsent = consent;
+      requestData.dpdpConsent = {
+        version: "DPDP-v1.0-2024",
+        timestamp: new Date().toISOString(),
+        clinicalDiagnostics: consent,
+        digitalCommunication: formData.dpdpDigitalCommConsent !== false,
+        abhaRecordExchange: Boolean(formData.dpdpAbhaExchangeConsent),
+      };
 
       // Get auth token
       const token = getAccessToken();
@@ -221,8 +227,17 @@ export default function NewPatientPage() {
     <ProtectedRoute requiredRoles={["ADMIN", "SUPER_ADMIN", "BRANCH_ADMIN", "FRONT_DESK", "LAB_TECH", "DOCTOR", "PATHOLOGIST"]}>
       <DashboardLayout title="Add New Patient">
         <div className="min-h-screen bg-gray-50">
+          {/* Breadcrumbs */}
+          <div className="max-w-7xl mx-auto px-4 pt-4 flex items-center gap-2 text-xs font-semibold text-slate-500">
+            <Link href="/dashboard" className="hover:text-indigo-600 transition-colors">Dashboard</Link>
+            <span>/</span>
+            <Link href="/patients" className="hover:text-indigo-600 transition-colors">Patients</Link>
+            <span>/</span>
+            <span className="text-slate-900 font-bold">New Patient Registration</span>
+          </div>
+
           {error && (
-            <div className="max-w-7xl mx-auto px-4 pt-6">
+            <div className="max-w-7xl mx-auto px-4 pt-4">
               <div className="rounded-lg bg-red-50 border border-red-200 p-4 flex items-start">
                 <svg className="w-5 h-5 text-red-600 mt-0.5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -232,13 +247,22 @@ export default function NewPatientPage() {
             </div>
           )}
 
-          <PixelPerfectPatientRegistration
-            onSubmit={handlePixelPerfectSubmit}
-            onCancel={() => router.push('/patients')}
-            loading={loading}
-          />
+          <Suspense
+            fallback={
+              <div className="flex h-96 items-center justify-center">
+                <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+              </div>
+            }
+          >
+            <PixelPerfectPatientRegistration
+              onSubmit={handlePixelPerfectSubmit}
+              onCancel={() => router.push('/patients')}
+              loading={loading}
+            />
+          </Suspense>
         </div>
       </DashboardLayout>
     </ProtectedRoute>
   );
 }
+

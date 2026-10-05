@@ -3,6 +3,23 @@ import prisma from '../api/config/database';
 import bcrypt from 'bcryptjs';
 import { UserRole, AccountStatus } from '@prisma/client';
 
+/**
+ * Reads the admin password from the environment.
+ * A built-in default here would provision an account whose password is
+ * published in this repository, so the script refuses to run without one.
+ */
+function requireAdminPassword(): string {
+  const password = process.env.ADMIN_PASSWORD;
+
+  if (!password) {
+    throw new Error(
+      'ADMIN_PASSWORD is not set. Add a strong password to backend/.env first.'
+    );
+  }
+
+  return password;
+}
+
 async function createAdminUser() {
   try {
     // Admin user configuration
@@ -10,7 +27,7 @@ async function createAdminUser() {
       employeeCode: process.env.ADMIN_EMPLOYEE_CODE || 'ADMIN001',
       fullName: process.env.ADMIN_FULL_NAME || 'System Administrator',
       email: process.env.ADMIN_EMAIL || 'admin@labcore.local',
-      password: process.env.ADMIN_PASSWORD || 'CHANGE_ME_IN_PRODUCTION',
+      password: requireAdminPassword(),
       role: UserRole.ADMIN,
       phone: '',
       status: AccountStatus.ACTIVE,
@@ -19,8 +36,7 @@ async function createAdminUser() {
 
     console.log('Creating admin user...');
     console.log(`Email: ${adminUser.email}`);
-    console.log(`Password: ${adminUser.password}`);
-    console.log('⚠️  IMPORTANT: Change this password in production!');
+    console.log('Password: [HIDDEN - set ADMIN_PASSWORD in your environment]');
 
     // Check if admin user already exists
     const existingUser = await prisma.user.findFirst({
@@ -83,7 +99,7 @@ async function createAdminUser() {
 async function updateAdminPassword() {
   try {
     const email = process.env.ADMIN_EMAIL || 'admin@labcore.local';
-    const newPassword = process.env.ADMIN_PASSWORD || 'CHANGE_ME_IN_PRODUCTION';
+    const newPassword = requireAdminPassword();
 
     console.log('Updating admin password...');
     console.log(`Email: ${email}`);

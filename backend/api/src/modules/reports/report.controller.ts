@@ -4,6 +4,8 @@ import {
     NextFunction,
   } from "express";
   
+  import { pathParam } from "../../utils/request-meta";
+  
   import {
     getOrderReport,
     getPatientReports,
@@ -170,7 +172,7 @@ export const createAddendum =
         });
       }
 
-      const { id } = req.params;
+      const id = pathParam(req, "id");
       const { content, isPrivate } = req.body;
 
       const addendum = await createReportAddendum(
@@ -209,7 +211,7 @@ export const applySignature =
         });
       }
 
-      const { id } = req.params;
+      const id = pathParam(req, "id");
       const { signatureData } = req.body;
 
       const report = await applyDigitalSignature(
@@ -247,7 +249,7 @@ export const inlineApprove =
         });
       }
 
-      const { id } = req.params;
+      const id = pathParam(req, "id");
       const { notes } = req.body;
 
       const report = await inlineApproveReport(
@@ -285,7 +287,7 @@ export const inlineReject =
         });
       }
 
-      const { id } = req.params;
+      const id = pathParam(req, "id");
       const { reason } = req.body;
 
       const report = await inlineRejectReport(
@@ -323,7 +325,7 @@ export const generateShareLink =
         });
       }
 
-      const { id } = req.params;
+      const id = pathParam(req, "id");
       const { expiresIn } = req.body;
 
       const shareLink = await generateShareableLink(
@@ -358,7 +360,7 @@ export const validateShareLink =
     next: NextFunction
   ) => {
     try {
-      const { token } = req.params;
+      const token = pathParam(req, "token");
 
       const shareLink = await validateShareableLink(token);
 
@@ -391,7 +393,7 @@ export const revokeShareLink =
         });
       }
 
-      const { linkId } = req.params;
+      const linkId = pathParam(req, "linkId");
 
       const shareLink = await revokeShareableLink(linkId, userId);
 
@@ -424,7 +426,7 @@ export const addToHistory =
         });
       }
 
-      const { id } = req.params;
+      const id = pathParam(req, "id");
       const { notes } = req.body;
 
       const historyEntry = await addToPatientHistory(
@@ -454,7 +456,7 @@ export const patientTimeline =
     next: NextFunction
   ) => {
     try {
-      const { patientId } = req.params;
+      const patientId = pathParam(req, "patientId");
       const page = Number(req.query.page) || 1;
       const limit = Number(req.query.limit) || 20;
 
@@ -493,7 +495,7 @@ export const amendReportHandler =
         });
       }
 
-      const { id } = req.params;
+      const id = pathParam(req, "id");
       const { amendmentType, reason } = req.body;
 
       const report = await amendReport(
@@ -532,7 +534,7 @@ export const sendReportToDoctorHandler =
         });
       }
 
-      const { id } = req.params;
+      const id = pathParam(req, "id");
       const { doctorId, channel } = req.body;
 
       const result = await sendReportToDoctor(

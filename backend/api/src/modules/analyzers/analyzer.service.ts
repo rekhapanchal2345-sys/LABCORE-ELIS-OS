@@ -597,7 +597,7 @@ export const getMaintenances = async (analyzerId?: string, status?: string, page
 
 interface CreateTestMappingInput {
   analyzerId: string;
-  labCoreTestId?: string;
+  labCoreTestId: string;
   labCoreTestCode: string;
   labCoreTestName: string;
   analyzerTestCode: string;
@@ -1246,8 +1246,8 @@ export const getConnectionMetrics = async (analyzerId: string, hours = 24) => {
     : 0;
 
   const latencies = communicationLogs
-    .filter(log => log.latency !== null)
-    .map(log => log.latency as number);
+    .filter(log => log.connectionLatency !== null)
+    .map(log => log.connectionLatency as number);
   
   const avgLatency = latencies.length > 0
     ? latencies.reduce((sum, lat) => sum + lat, 0) / latencies.length

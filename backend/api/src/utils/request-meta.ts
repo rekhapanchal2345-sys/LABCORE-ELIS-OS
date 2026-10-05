@@ -17,3 +17,18 @@ export function getDeviceFingerprint(req: Request): string {
   const ua = req.headers["user-agent"] || "unknown";
   return crypto.createHash("sha256").update(`${getClientIp(req)}|${ua}`).digest("hex");
 }
+
+/**
+ * Express types path/query values as `string | string[]`, but a single URL
+ * segment (or a query key the client never repeats) always resolves to one string.
+ */
+export function pathParam(req: Request, name: string): string {
+  const value = req.params[name];
+  return Array.isArray(value) ? String(value[0] ?? "") : String(value ?? "");
+}
+
+export function queryParam(req: Request, name: string): string | undefined {
+  const value = (req.query as Record<string, unknown>)[name];
+  if (value === undefined || value === null) return undefined;
+  return Array.isArray(value) ? String(value[0]) : String(value);
+}

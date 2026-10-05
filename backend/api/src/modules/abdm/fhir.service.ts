@@ -53,7 +53,12 @@ function buildPatientResource(patient: any): object {
     resourceType: "Patient",
     id: "patient-" + patient.id,
     identifier,
-    name: [{ use: "official", text: `${patient.firstName} ${patient.lastName}`, family: patient.lastName, given: [patient.firstName] }],
+    name: [{
+      use: "official",
+      text: [patient.firstName, patient.middleName, patient.lastName].filter(Boolean).join(" ").trim(),
+      family: patient.lastName,
+      given: [patient.firstName, patient.middleName].filter(Boolean) as string[],
+    }],
     gender,
     ...(patient.dateOfBirth ? { birthDate: new Date(patient.dateOfBirth).toISOString().slice(0, 10) } : {}),
     telecom: patient.phone ? [{ system: "phone", value: patient.phone }] : [],
@@ -128,24 +133,39 @@ function buildSpecimenResource(sample: any): object {
   };
 }
 
-function buildObservationResource(param: any, patientRef: string, specimenRef: string): object {
-  const interpretation = resolveInterpretation(param);
+// A ResultValue row joined with its TestParameter and (optional) reference range
+// is what backs a laboratory Observation.
+function buildObservationResource(
+  resultValue: any,
+  patientRef: string,
+  specimenRef: string
+): object {
+  const parameter = resultValue.parameter ?? {};
+  const range = parameter.referenceRanges?.[0] ?? {};
 
-  const value: any = {};
-  if (param.numericValue !== null && param.numericValue !== undefined) {
-    value.valueQuantity = {
-      value: parseFloat(param.numericValue),
-      unit: param.unit ?? "",
-      system: "http://unitsofmeasure.org",
-      code: param.unit ?? "",
-    };
-  } else if (param.textValue) {
-    value.valueString = param.textValue;
-  }
+  const numericValue = parseFloat(resultValue.value);
+  const isNumeric =
+    parameter.dataType === "NUMERIC" && Number.isFinite(numericValue);
+
+  const value: any = isNumeric
+    ? {
+        valueQuantity: {
+          value: numericValue,
+          unit: parameter.unit ?? "",
+          system: "http://unitsofmeasure.org",
+          code: parameter.unit ?? "",
+        },
+      }
+    : { valueString: resultValue.value ?? "" };
+
+  const low = range.normalLow ?? null;
+  const high = range.normalHigh ?? null;
+
+  const interpretation = resolveInterpretation(resultValue.flag);
 
   return {
     resourceType: "Observation",
-    id: "obs-" + param.id,
+    id: "obs-" + resultValue.id,
     status: "final",
     category: [
       {
@@ -159,22 +179,22 @@ function buildObservationResource(param: any, patientRef: string, specimenRef: s
       },
     ],
     code: {
-      coding: param.loincCode
-        ? [{ system: "http://loinc.org", code: param.loincCode, display: param.parameterName }]
-        : [],
-      text: param.parameterName,
+      coding: [],
+      text: parameter.parameterName ?? "Result",
     },
     subject: { reference: patientRef },
     specimen: { reference: specimenRef },
-    effectiveDateTime: param.reportedAt ? new Date(param.reportedAt).toISOString() : new Date().toISOString(),
+    effectiveDateTime: new Date(
+      resultValue.updatedAt ?? Date.now()
+    ).toISOString(),
     ...value,
     referenceRange:
-      param.normalRange || (param.lowValue !== null && param.highValue !== null)
+      low !== null || high !== null
         ? [
             {
-              ...(param.lowValue !== null ? { low: { value: parseFloat(param.lowValue), unit: param.unit ?? "" } } : {}),
-              ...(param.highValue !== null ? { high: { value: parseFloat(param.highValue), unit: param.unit ?? "" } } : {}),
-              text: param.normalRange ?? `${param.lowValue} - ${param.highValue} ${param.unit ?? ""}`.trim(),
+              ...(low !== null ? { low: { value: parseFloat(low), unit: parameter.unit ?? "" } } : {}),
+              ...(high !== null ? { high: { value: parseFloat(high), unit: parameter.unit ?? "" } } : {}),
+              text: `${low ?? ""}${low !== null && high !== null ? " - " : ""}${high ?? ""} ${parameter.unit ?? ""}`.trim(),
             },
           ]
         : [],
@@ -192,25 +212,22 @@ function buildObservationResource(param: any, patientRef: string, specimenRef: s
           },
         ]
       : [],
-    note: param.remarks ? [{ text: param.remarks }] : [],
+    note: resultValue.remark ? [{ text: resultValue.remark }] : [],
   };
 }
 
-function resolveInterpretation(param: any): { code: string; display: string } | null {
-  if (param.isAbnormal === true || param.flag === "ABNORMAL" || param.flag === "H" || param.flag === "L") {
-    const flag = param.flag ?? (param.numericValue > param.highValue ? "H" : "L");
-    if (flag === "H" || (param.numericValue && param.highValue && parseFloat(param.numericValue) > parseFloat(param.highValue))) {
+// ResultValue.flag is the authoritative abnormality marker written at result entry.
+function resolveInterpretation(flag: string | null): { code: string; display: string } | null {
+  switch (flag) {
+    case "HIGH":
       return { code: "H", display: "High" };
-    }
-    if (flag === "L" || (param.numericValue && param.lowValue && parseFloat(param.numericValue) < parseFloat(param.lowValue))) {
+    case "LOW":
       return { code: "L", display: "Low" };
-    }
-    return { code: "A", display: "Abnormal" };
+    case "CRITICAL":
+      return { code: "AA", display: "Critical abnormal" };
+    default:
+      return null;
   }
-  if (param.isCritical === true || param.flag === "CRITICAL") {
-    return { code: "AA", display: "Critical abnormal" };
-  }
-  return null;
 }
 
 // ─────────────────────────────────────────────────────────────
@@ -218,26 +235,41 @@ function resolveInterpretation(param: any): { code: string; display: string } | 
 // ─────────────────────────────────────────────────────────────
 
 export async function buildFhirBundle(orderId: string): Promise<object> {
-  // Load full order with patient, samples, and results
+  // Load order with patient and specimens; results hang off the Order (not the
+  // Sample), so they are fetched separately and matched by testId.
   const order = await prisma.order.findUnique({
     where: { id: orderId },
     include: {
       patient: true,
-      samples: {
-        include: {
-          results: {
-            include: {
-              parameters: true,
-              test: { select: { testCode: true, testName: true } },
-              verifiedBy: { select: { id: true, fullName: true } },
-            },
-          },
-        },
-      },
+      samples: true,
     },
   });
 
   if (!order) throw new Error(`Order ${orderId} not found`);
+
+  const results = await prisma.result.findMany({
+    where: { orderId },
+    include: {
+      values: {
+        include: {
+          parameter: { include: { referenceRanges: true } },
+        },
+      },
+      test: { select: { testCode: true, testName: true } },
+      verifiedBy: { select: { id: true, fullName: true } },
+    },
+    orderBy: { createdAt: "asc" },
+  });
+
+  const resultsByTestId = new Map<string, typeof results>();
+  for (const result of results) {
+    const bucket = resultsByTestId.get(result.testId);
+    if (bucket) {
+      bucket.push(result);
+    } else {
+      resultsByTestId.set(result.testId, [result]);
+    }
+  }
 
   const patient = order.patient as any;
   const samples = order.samples as any[];
@@ -255,32 +287,38 @@ export async function buildFhirBundle(orderId: string): Promise<object> {
   const specimenRefs: any[] = [];
 
   // Get first verifying doctor across all results
-  let verifyingPractitioner: any = null;
-  for (const sample of samples) {
-    for (const result of sample.results ?? []) {
-      if ((result as any).verifiedBy && !verifyingPractitioner) {
-        verifyingPractitioner = (result as any).verifiedBy;
-      }
-    }
-  }
+  const verifyingPractitioner = results.find(r => r.verifiedBy)?.verifiedBy ?? null;
 
   const practitionerResource = buildPractitionerResource(verifyingPractitioner);
   const practitionerRef = `Practitioner/practitioner-${verifyingPractitioner?.id ?? "default"}`;
 
-  // Specimens and Observations
+  // Specimens: one per sample, keyed by testId so results can find their specimen.
+  const specimenIdByTestId = new Map<string, string>();
   for (const sample of samples) {
     const specimenResource = buildSpecimenResource(sample);
     const specimenId = `Specimen/specimen-${sample.id}`;
     specimenRefs.push({ reference: specimenId });
     entries.push({ fullUrl: specimenId, resource: specimenResource });
+    if (!specimenIdByTestId.has(sample.testId)) {
+      specimenIdByTestId.set(sample.testId, specimenId);
+    }
+  }
 
-    for (const result of sample.results ?? []) {
-      for (const param of (result as any).parameters ?? []) {
-        const obsResource = buildObservationResource(param, patientRef, specimenId);
-        const obsId = `Observation/obs-${param.id}`;
-        drObsRefs.push({ reference: obsId });
-        entries.push({ fullUrl: obsId, resource: obsResource });
-      }
+  // Observations: every stored result value, regardless of sample linkage.
+  const fallbackSpecimenId = specimenRefs[0]?.reference ?? "";
+  for (const result of results) {
+    const specimenId =
+      specimenIdByTestId.get(result.testId) ?? fallbackSpecimenId;
+
+    for (const resultValue of result.values) {
+      const obsResource = buildObservationResource(
+        resultValue,
+        patientRef,
+        specimenId
+      );
+      const obsId = `Observation/obs-${resultValue.id}`;
+      drObsRefs.push({ reference: obsId });
+      entries.push({ fullUrl: obsId, resource: obsResource });
     }
   }
 

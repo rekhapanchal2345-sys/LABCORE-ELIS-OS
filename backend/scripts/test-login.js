@@ -2,8 +2,15 @@ require('dotenv').config();
 
 async function testLogin() {
   try {
-    const email = process.env.ADMIN_EMAIL || 'admin@labcore.local';
-    const password = process.env.ADMIN_PASSWORD || 'CHANGE_ME_IN_PRODUCTION';
+    const email = process.env.ADMIN_EMAIL;
+    const password = process.env.ADMIN_PASSWORD;
+
+    if (!email || !password) {
+      // No defaults: a fallback password would be published in this repo.
+      throw new Error(
+        'ADMIN_EMAIL and ADMIN_PASSWORD must be set in backend/.env first.'
+      );
+    }
 
     const response = await fetch('http://localhost:5000/api/auth/login', {
       method: 'POST',

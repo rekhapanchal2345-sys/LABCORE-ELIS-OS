@@ -24,6 +24,10 @@ import {
   ArrowRight,
   ShieldCheck,
   Building,
+  Layers,
+  HelpCircle,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 import { patientApi, doctorApi, testApi, orderApi, invoiceApi, paymentsApi } from "@/lib/api";
 import { showInvoiceToast } from "./InvoiceToast";
@@ -64,6 +68,12 @@ interface QuickPOSBillingProps {
   onSuccess?: (createdInvoice: any) => void;
 }
 
+function formatDoctorName(name?: string): string {
+  if (!name) return "";
+  const cleaned = name.trim().replace(/^(dr\.?|dr\b)\s+/i, "").replace(/^(dr\.?|dr\b)\s+/i, "").trim();
+  return cleaned ? `Dr. ${cleaned}` : "";
+}
+
 export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
   const router = useRouter();
 
@@ -95,15 +105,21 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
   // Cart
   const [cart, setCart] = useState<CartItem[]>([]);
 
-  // Billing & Discounts
+  // Billing & Tax
   const [discountPercent, setDiscountPercent] = useState<number>(0);
   const [flatDiscount, setFlatDiscount] = useState<number>(0);
   const [discountMode, setDiscountMode] = useState<"percent" | "flat">("percent");
-  const [isGstApplicable, setIsGstApplicable] = useState<boolean>(true); // 18% vs 0% healthcare exempt
+  const [gstType, setGstType] = useState<"INTRA_18" | "INTER_18" | "EXEMPT_0">("INTRA_18");
 
-  // Payment
-  const [paymentMode, setPaymentMode] = useState<"CASH" | "UPI" | "CARD">("CASH");
+  // Payment Mode: Single vs Split Tender
+  const [paymentMode, setPaymentMode] = useState<"CASH" | "UPI" | "CARD" | "SPLIT">("CASH");
   const [cashTendered, setCashTendered] = useState<number | "">("");
+  
+  // Split Tender Inputs
+  const [splitCash, setSplitCash] = useState<number | "">("");
+  const [splitUpi, setSplitUpi] = useState<number | "">("");
+  const [splitCard, setSplitCard] = useState<number | "">("");
+
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Initial Data Fetching
@@ -146,6 +162,15 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
     }
   };
 
+  // Duplicate detection in quick register
+  const existingDuplicatePatient = useMemo(() => {
+    if (!quickForm.phone.trim() || quickForm.phone.trim().length < 5) return null;
+    const cleanPhone = quickForm.phone.replace(/\s+/g, "");
+    return patients.find(
+      (p) => p.phone && p.phone.replace(/\s+/g, "") === cleanPhone
+    );
+  }, [patients, quickForm.phone]);
+
   // Filtered Patients
   const filteredPatients = useMemo(() => {
     if (!patientSearch.trim()) return patients.slice(0, 5);
@@ -183,14 +208,20 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
   }, [subtotal, discountMode, discountPercent, flatDiscount]);
 
   const taxableAmount = Math.max(0, subtotal - discountAmount);
-  const gstRate = isGstApplicable ? 18 : 0;
+  const gstRate = gstType === "EXEMPT_0" ? 0 : 18;
+  const isInterState = gstType === "INTER_18";
   const gstAmount = (taxableAmount * gstRate) / 100;
   const grandTotal = Math.round(taxableAmount + gstAmount);
 
+  // Split total and balance
+  const splitTotalEntered =
+    (Number(splitCash) || 0) + (Number(splitUpi) || 0) + (Number(splitCard) || 0);
+  const splitRemaining = Math.max(0, grandTotal - splitTotalEntered);
+
   const changeDue = useMemo(() => {
-    if (typeof cashTendered !== "number") return 0;
+    if (paymentMode !== "CASH" || typeof cashTendered !== "number") return 0;
     return Math.max(0, cashTendered - grandTotal);
-  }, [cashTendered, grandTotal]);
+  }, [paymentMode, cashTendered, grandTotal]);
 
   const handleAddToCart = (test: TestItem) => {
     if (cart.some((c) => c.id === test.id)) {
@@ -235,7 +266,7 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
     }
   };
 
-  // Submit and Create Invoice with Order and Payment
+  // Submit and Create Invoice with Order and Split Payment
   const handleCheckout = async (autoPrintType: "thermal" | "a4" | "none") => {
     if (!selectedPatient) {
       showInvoiceToast("error", "Please select or register a patient first");
@@ -243,6 +274,14 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
     }
     if (cart.length === 0) {
       showInvoiceToast("error", "Please select at least one test in the cart");
+      return;
+    }
+
+    if (paymentMode === "SPLIT" && splitRemaining > 0) {
+      showInvoiceToast(
+        "error",
+        `Split tender incomplete: Remaining balance ₹${splitRemaining.toFixed(2)} must be allocated`
+      );
       return;
     }
 
@@ -275,6 +314,7 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
         orderId: createdOrder.id,
         discount: discountAmount,
         gstPercent: gstRate,
+        isInterState: isInterState,
       };
 
       const invoiceRes = await invoiceApi.create(invoicePayload);
@@ -284,24 +324,54 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
 
       const createdInvoice = invoiceRes.data;
 
-      // 3. Record Payment
-      await paymentsApi.create({
-        orderId: createdOrder.id,
-        amount: grandTotal,
-        method: paymentMode,
-        remarks: `POS Counter Bill: Tendered ₹${cashTendered || grandTotal}`,
-      });
+      // 3. Record Payment(s)
+      if (paymentMode === "SPLIT") {
+        if (Number(splitCash) > 0) {
+          await paymentsApi.create({
+            orderId: createdOrder.id,
+            amount: Number(splitCash),
+            method: "CASH",
+            remarks: `POS Split Tender - Cash Part: ₹${splitCash}`,
+          });
+        }
+        if (Number(splitUpi) > 0) {
+          await paymentsApi.create({
+            orderId: createdOrder.id,
+            amount: Number(splitUpi),
+            method: "UPI",
+            remarks: `POS Split Tender - UPI Part: ₹${splitUpi}`,
+          });
+        }
+        if (Number(splitCard) > 0) {
+          await paymentsApi.create({
+            orderId: createdOrder.id,
+            amount: Number(splitCard),
+            method: "CARD",
+            remarks: `POS Split Tender - Card Part: ₹${splitCard}`,
+          });
+        }
+      } else {
+        await paymentsApi.create({
+          orderId: createdOrder.id,
+          amount: grandTotal,
+          method: paymentMode,
+          remarks: `POS Counter Bill: Tendered ₹${cashTendered || grandTotal}`,
+        });
+      }
 
       showInvoiceToast(
         "success",
         `Invoice #${createdInvoice.invoiceNumber || ""} billed & settled successfully!`
       );
 
-      // Reset cart
+      // Reset cart & state
       setCart([]);
       setSelectedPatient(null);
       setPatientSearch("");
       setCashTendered("");
+      setSplitCash("");
+      setSplitUpi("");
+      setSplitCard("");
 
       if (onSuccess) {
         onSuccess(createdInvoice);
@@ -426,7 +496,7 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
             </div>
           )}
 
-          {/* Doctor Selector */}
+          {/* Doctor Selector with Name Normalization */}
           <div className="pt-2 border-t border-slate-100 flex items-center gap-3">
             <Stethoscope className="h-4 w-4 text-slate-400 shrink-0" />
             <select
@@ -435,11 +505,14 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
               className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-800 focus:border-indigo-500 focus:outline-none"
             >
               <option value="">Direct Walk-in / Self-Referred</option>
-              {doctors.map((doc) => (
-                <option key={doc.id} value={doc.id}>
-                  Dr. {doc.fullName} {doc.specialization ? `(${doc.specialization})` : ""}
-                </option>
-              ))}
+              {doctors.map((doc) => {
+                const docLabel = formatDoctorName(doc.fullName) || doc.fullName;
+                return (
+                  <option key={doc.id} value={doc.id}>
+                    {docLabel} {doc.specialization ? `(${doc.specialization})` : ""}
+                  </option>
+                );
+              })}
             </select>
           </div>
         </div>
@@ -449,10 +522,10 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
           <div className="flex items-center justify-between border-b border-slate-100 pb-3">
             <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
               <FlaskConical className="h-4 w-4 text-emerald-600" />
-              2. Add Tests & Profiles
+              2. Add Diagnostic Investigations (SAC 999312)
             </h3>
             <span className="text-xs font-semibold text-slate-500">
-              {cart.length} Test{cart.length === 1 ? "" : "s"} Selected
+              {cart.length} Test{cart.length === 1 ? "" : "s"} in Cart
             </span>
           </div>
 
@@ -640,27 +713,36 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
               )}
             </div>
 
-            {/* GST Rate Switcher */}
-            <div className="flex items-center justify-between py-1 border-t border-slate-100">
-              <div className="flex items-center gap-2">
-                <span className="text-slate-600">GST (18% Diagnostic):</span>
-                <button
-                  type="button"
-                  onClick={() => setIsGstApplicable(!isGstApplicable)}
-                  className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                    isGstApplicable
-                      ? "bg-emerald-100 text-emerald-800"
-                      : "bg-slate-100 text-slate-500"
-                  }`}
-                >
-                  {isGstApplicable ? "Applicable (18%)" : "Exempt (0%)"}
-                </button>
+            {/* Place of Supply / GST Rate Switcher */}
+            <div className="space-y-1.5 py-1 border-t border-slate-100">
+              <div className="flex items-center justify-between text-slate-700">
+                <span className="font-semibold">Place of Supply & GST:</span>
+                <span className="font-mono font-bold text-indigo-700">+{formatINR(gstAmount)}</span>
               </div>
-              <span className="font-semibold text-slate-800">{formatINR(gstAmount)}</span>
+              <div className="grid grid-cols-3 gap-1.5">
+                {[
+                  { id: "INTRA_18", label: "Intra-State (9+9%)" },
+                  { id: "INTER_18", label: "Inter-State IGST (18%)" },
+                  { id: "EXEMPT_0", label: "Clinical Exempt (0%)" },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setGstType(item.id as any)}
+                    className={`rounded-lg py-1 px-1 text-[10px] font-bold text-center border transition-all ${
+                      gstType === item.id
+                        ? "bg-indigo-50 border-indigo-600 text-indigo-700 shadow-sm"
+                        : "bg-white border-slate-200 text-slate-600 hover:bg-slate-50"
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Net Payable Grand Total */}
-            <div className="rounded-xl bg-gradient-to-r from-slate-900 to-indigo-950 p-4 text-white flex items-center justify-between">
+            <div className="rounded-xl bg-gradient-to-r from-slate-900 to-indigo-950 p-4 text-white flex items-center justify-between shadow-md">
               <div>
                 <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-300">
                   Net Payable Amount
@@ -673,27 +755,38 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
             </div>
           </div>
 
-          {/* Payment Method Selector */}
+          {/* Payment Method Selector (Single vs Multi-Tender Split) */}
           <div className="space-y-3">
-            <span className="text-xs font-bold text-slate-700">Tender Mode:</span>
-            <div className="grid grid-cols-3 gap-2">
-              {(["CASH", "UPI", "CARD"] as const).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setPaymentMode(mode)}
-                  className={`flex flex-col items-center gap-1 rounded-xl p-2.5 text-xs font-bold transition-all ${
-                    paymentMode === mode
-                      ? "bg-indigo-600 text-white shadow-md ring-2 ring-indigo-300"
-                      : "bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100"
-                  }`}
-                >
-                  {mode === "CASH" && <Banknote className="h-4 w-4" />}
-                  {mode === "UPI" && <QrCode className="h-4 w-4" />}
-                  {mode === "CARD" && <CreditCard className="h-4 w-4" />}
-                  <span>{mode}</span>
-                </button>
-              ))}
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-slate-700">Payment Tender:</span>
+              <span className="text-[10px] font-semibold text-slate-400">Instant Counter Settlement</span>
+            </div>
+            
+            <div className="grid grid-cols-4 gap-1.5">
+              {[
+                { id: "CASH", label: "Cash", icon: Banknote },
+                { id: "UPI", label: "BharatQR / UPI", icon: QrCode },
+                { id: "CARD", label: "Card / POS", icon: CreditCard },
+                { id: "SPLIT", label: "Split Tender", icon: Layers },
+              ].map((t) => {
+                const Icon = t.icon;
+                const isSelected = paymentMode === t.id;
+                return (
+                  <button
+                    key={t.id}
+                    type="button"
+                    onClick={() => setPaymentMode(t.id as any)}
+                    className={`flex flex-col items-center gap-1 rounded-xl p-2 text-xs font-bold transition-all ${
+                      isSelected
+                        ? "bg-indigo-600 text-white shadow-md ring-2 ring-indigo-300"
+                        : "bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4" />
+                    <span className="text-[11px]">{t.label}</span>
+                  </button>
+                );
+              })}
             </div>
 
             {/* Cash Tender Calculation */}
@@ -708,7 +801,7 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
                     onChange={(e) =>
                       setCashTendered(e.target.value === "" ? "" : Number(e.target.value))
                     }
-                    className="w-28 rounded-lg border border-slate-300 px-2 py-1 text-right font-bold text-slate-900 focus:border-indigo-500 focus:outline-none"
+                    className="w-28 rounded-lg border border-slate-300 px-2 py-1 text-right font-bold text-slate-900 focus:border-indigo-500 focus:outline-none font-mono"
                   />
                 </div>
                 {typeof cashTendered === "number" && (
@@ -724,10 +817,54 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
             {paymentMode === "UPI" && (
               <div className="rounded-xl border border-indigo-100 bg-indigo-50/50 p-3 text-center text-xs">
                 <QrCode className="mx-auto h-8 w-8 text-indigo-600 mb-1" />
-                <p className="font-bold text-indigo-950">Patient BharatQR Code</p>
+                <p className="font-bold text-indigo-950">Patient Dynamic BharatQR Code</p>
                 <p className="text-[11px] text-indigo-600">
                   Scan via GPay / PhonePe / Paytm for {formatINR(grandTotal)}
                 </p>
+              </div>
+            )}
+
+            {/* Multi-Tender Split Inputs */}
+            {paymentMode === "SPLIT" && (
+              <div className="rounded-xl bg-violet-50/60 p-3.5 border border-violet-200 space-y-2.5 text-xs">
+                <div className="flex items-center justify-between font-bold text-violet-950 border-b border-violet-200/80 pb-1.5">
+                  <span>Allocate Split Tender</span>
+                  <span className={`font-mono text-[11px] ${splitRemaining === 0 ? "text-emerald-700 font-black" : "text-amber-700"}`}>
+                    {splitRemaining === 0 ? "✓ 100% Balanced" : `Due: ${formatINR(splitRemaining)}`}
+                  </span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-600">Cash (₹)</label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={splitCash}
+                      onChange={(e) => setSplitCash(e.target.value === "" ? "" : Number(e.target.value))}
+                      className="mt-0.5 w-full rounded-lg border border-slate-300 px-2 py-1 font-mono font-bold text-slate-900 focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-600">UPI / QR (₹)</label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={splitUpi}
+                      onChange={(e) => setSplitUpi(e.target.value === "" ? "" : Number(e.target.value))}
+                      className="mt-0.5 w-full rounded-lg border border-slate-300 px-2 py-1 font-mono font-bold text-slate-900 focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-[10px] font-semibold text-slate-600">Card / POS (₹)</label>
+                    <input
+                      type="number"
+                      placeholder="0"
+                      value={splitCard}
+                      onChange={(e) => setSplitCard(e.target.value === "" ? "" : Number(e.target.value))}
+                      className="mt-0.5 w-full rounded-lg border border-slate-300 px-2 py-1 font-mono font-bold text-slate-900 focus:border-indigo-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -736,30 +873,30 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
           <div className="space-y-2 pt-2 border-t border-slate-100">
             <button
               type="button"
-              disabled={isSubmitting || cart.length === 0 || !selectedPatient}
+              disabled={isSubmitting || cart.length === 0 || !selectedPatient || (paymentMode === "SPLIT" && splitRemaining > 0)}
               onClick={() => handleCheckout("thermal")}
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-emerald-600 py-3 text-xs font-bold text-white shadow-lg hover:bg-emerald-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
               <Printer className="h-4 w-4" />
-              {isSubmitting ? "Processing..." : `Collect ${formatINR(grandTotal)} & Print Thermal`}
+              {isSubmitting ? "Processing..." : `Settle ${formatINR(grandTotal)} & Print Thermal (80mm)`}
             </button>
 
             <button
               type="button"
-              disabled={isSubmitting || cart.length === 0 || !selectedPatient}
+              disabled={isSubmitting || cart.length === 0 || !selectedPatient || (paymentMode === "SPLIT" && splitRemaining > 0)}
               onClick={() => handleCheckout("a4")}
               className="w-full flex items-center justify-center gap-2 rounded-xl bg-slate-900 py-2.5 text-xs font-semibold text-white shadow hover:bg-slate-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
             >
-              Print Luxury A4 GST Invoice
+              Settle & Print A4 GST Invoice
             </button>
           </div>
         </div>
       </div>
 
-      {/* Quick Patient Registration Modal */}
+      {/* Quick Patient Registration Modal with Real-time Duplicate Detection */}
       {showQuickRegister && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-4">
+          <div className="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl space-y-4 animate-in fade-in zoom-in-95">
             <div className="flex items-center justify-between border-b border-slate-100 pb-3">
               <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
                 <UserPlus className="h-5 w-5 text-indigo-600" />
@@ -773,6 +910,33 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
                 ✕
               </button>
             </div>
+
+            {/* Potential Duplicate Warning Alert */}
+            {existingDuplicatePatient && (
+              <div className="rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs space-y-1.5 text-amber-900 animate-in fade-in">
+                <div className="flex items-center gap-1.5 font-bold">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <span>Existing Registered Patient Found!</span>
+                </div>
+                <p className="text-[11px] text-amber-800">
+                  A patient with phone <strong>{existingDuplicatePatient.phone}</strong> is already registered:{" "}
+                  <strong>{existingDuplicatePatient.firstName} {existingDuplicatePatient.lastName}</strong> (UHID:{" "}
+                  <span className="font-mono">{existingDuplicatePatient.uhid}</span>).
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedPatient(existingDuplicatePatient);
+                    setShowQuickRegister(false);
+                    showInvoiceToast("success", `Selected existing patient ${existingDuplicatePatient.firstName}`);
+                  }}
+                  className="mt-1 flex items-center gap-1 rounded-lg bg-amber-600 px-2.5 py-1 text-[11px] font-bold text-white hover:bg-amber-700 transition-colors"
+                >
+                  <CheckCircle2 className="h-3 w-3" />
+                  Use Existing Patient (Avoid Duplicate)
+                </button>
+              </div>
+            )}
 
             <form onSubmit={handleQuickRegisterSubmit} className="space-y-3 text-xs">
               <div className="grid grid-cols-2 gap-3">
@@ -800,7 +964,7 @@ export default function QuickPOSBilling({ onSuccess }: QuickPOSBillingProps) {
               </div>
 
               <div>
-                <label className="font-semibold text-slate-700">Phone Number *</label>
+                <label className="font-semibold text-slate-700">Mobile Phone Number *</label>
                 <input
                   type="tel"
                   required

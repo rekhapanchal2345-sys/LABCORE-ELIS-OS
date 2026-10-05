@@ -8,7 +8,7 @@ export class WhatsAppAnalyticsService {
    */
   static async getOverviewMetrics(startDate: Date, endDate: Date) {
     try {
-      const scheduledMessages = await prisma.whatsappScheduledMessage.findMany({
+      const scheduledMessages = await prisma.whatsAppScheduledMessage.findMany({
         where: {
           createdAt: {
             gte: startDate,
@@ -17,7 +17,7 @@ export class WhatsAppAnalyticsService {
         }
       });
       
-      const incomingMessages = await prisma.whatsappIncomingMessage.findMany({
+      const incomingMessages = await prisma.whatsAppIncomingMessage.findMany({
         where: {
           createdAt: {
             gte: startDate,
@@ -26,7 +26,7 @@ export class WhatsAppAnalyticsService {
         }
       });
       
-      const conversations = await prisma.whatsappConversation.findMany({
+      const conversations = await prisma.whatsAppConversation.findMany({
         where: {
           createdAt: {
             gte: startDate,
@@ -35,7 +35,7 @@ export class WhatsAppAnalyticsService {
         }
       });
       
-      const campaigns = await prisma.whatsappCampaign.findMany({
+      const campaigns = await prisma.whatsAppCampaign.findMany({
         where: {
           createdAt: {
             gte: startDate,
@@ -82,7 +82,7 @@ export class WhatsAppAnalyticsService {
    */
   static async getTemplatePerformance(startDate: Date, endDate: Date) {
     try {
-      const messages = await prisma.whatsappScheduledMessage.findMany({
+      const messages = await prisma.whatsAppScheduledMessage.findMany({
         where: {
           createdAt: {
             gte: startDate,
@@ -145,7 +145,7 @@ export class WhatsAppAnalyticsService {
       const endOfDay = new Date(date);
       endOfDay.setHours(23, 59, 59, 999);
       
-      const messages = await prisma.whatsappScheduledMessage.findMany({
+      const messages = await prisma.whatsAppScheduledMessage.findMany({
         where: {
           createdAt: {
             gte: startOfDay,
@@ -175,7 +175,7 @@ export class WhatsAppAnalyticsService {
       });
       
       // Get incoming messages
-      const incomingMessages = await prisma.whatsappIncomingMessage.findMany({
+      const incomingMessages = await prisma.whatsAppIncomingMessage.findMany({
         where: {
           createdAt: {
             gte: startOfDay,
@@ -203,7 +203,7 @@ export class WhatsAppAnalyticsService {
    */
   static async getDailyMetrics(startDate: Date, endDate: Date) {
     try {
-      const messages = await prisma.whatsappScheduledMessage.findMany({
+      const messages = await prisma.whatsAppScheduledMessage.findMany({
         where: {
           createdAt: {
             gte: startDate,
@@ -235,7 +235,7 @@ export class WhatsAppAnalyticsService {
       });
       
       // Get incoming messages
-      const incomingMessages = await prisma.whatsappIncomingMessage.findMany({
+      const incomingMessages = await prisma.whatsAppIncomingMessage.findMany({
         where: {
           createdAt: {
             gte: startDate,
@@ -263,7 +263,7 @@ export class WhatsAppAnalyticsService {
    */
   static async getSentimentTrends(startDate: Date, endDate: Date) {
     try {
-      const sentiments = await prisma.whatsappSentiment.findMany({
+      const sentiments = await prisma.whatsAppSentiment.findMany({
         where: {
           analyzedAt: {
             gte: startDate,
@@ -320,7 +320,7 @@ export class WhatsAppAnalyticsService {
    */
   static async getCostAnalysis(startDate: Date, endDate: Date) {
     try {
-      const messages = await prisma.whatsappScheduledMessage.findMany({
+      const messages = await prisma.whatsAppScheduledMessage.findMany({
         where: {
           createdAt: {
             gte: startDate,
@@ -329,7 +329,7 @@ export class WhatsAppAnalyticsService {
         }
       });
       
-      const campaigns = await prisma.whatsappCampaign.findMany({
+      const campaigns = await prisma.whatsAppCampaign.findMany({
         where: {
           createdAt: {
             gte: startDate,
@@ -383,7 +383,7 @@ export class WhatsAppAnalyticsService {
    */
   static async getConversationAnalytics(startDate: Date, endDate: Date) {
     try {
-      const conversations = await prisma.whatsappConversation.findMany({
+      const conversations = await prisma.whatsAppConversation.findMany({
         where: {
           createdAt: {
             gte: startDate,
@@ -418,7 +418,7 @@ export class WhatsAppAnalyticsService {
           contactCounts[phone] = {
             phone,
             messageCount: 0,
-            patientName: conv.patient ? `${conv.patient.firstName} ${conv.patient.lastName}` : 'Unknown'
+            patientName: conv.patient ? [conv.patient.firstName, conv.patient.middleName, conv.patient.lastName].filter(Boolean).join(' ').trim() : 'Unknown'
           };
         }
         contactCounts[phone].messageCount += conv.messageCount;
@@ -509,7 +509,7 @@ export class WhatsAppAnalyticsService {
       const metrics = await this.getOverviewMetrics(startOfDay, endOfDay);
       
       // Check if analytics already exist for this date
-      const existing = await prisma.whatsappAnalytics.findUnique({
+      const existing = await prisma.whatsAppAnalytics.findUnique({
         where: {
           date_period: {
             date: startOfDay,
@@ -527,17 +527,17 @@ export class WhatsAppAnalyticsService {
         failedCount: metrics.metrics.failed,
         cost: metrics.cost,
         templateBreakdown: null, // Could be populated separately
-        metrics: metrics
+        metrics: metrics as any
       };
       
       if (existing) {
-        return await prisma.whatsappAnalytics.update({
+        return await prisma.whatsAppAnalytics.update({
           where: { id: existing.id },
-          data: analyticsData
+          data: analyticsData as any
         });
       } else {
-        return await prisma.whatsappAnalytics.create({
-          data: analyticsData
+        return await prisma.whatsAppAnalytics.create({
+          data: analyticsData as any
         });
       }
     } catch (error) {
@@ -551,7 +551,7 @@ export class WhatsAppAnalyticsService {
    */
   static async getAggregatedAnalytics(startDate: Date, endDate: Date, period: string = 'DAILY') {
     try {
-      const analytics = await prisma.whatsappAnalytics.findMany({
+      const analytics = await prisma.whatsAppAnalytics.findMany({
         where: {
           date: {
             gte: startDate,
@@ -591,7 +591,7 @@ export class WhatsAppAnalyticsService {
       ] = await Promise.all([
         this.getOverviewMetrics(startOfToday, now),
         this.getOverviewMetrics(startOfWeek, now),
-        prisma.whatsappConversation.findMany({
+        prisma.whatsAppConversation.findMany({
           where: { status: 'ACTIVE' },
           orderBy: { lastMessageAt: 'desc' },
           take: 10,
@@ -605,12 +605,12 @@ export class WhatsAppAnalyticsService {
             }
           }
         }),
-        prisma.whatsappCampaign.findMany({
+        prisma.whatsAppCampaign.findMany({
           where: { status: { in: ['SENDING', 'SCHEDULED'] } },
           orderBy: { scheduledFor: 'asc' },
           take: 5
         }),
-        prisma.whatsappScheduledMessage.count({
+        prisma.whatsAppScheduledMessage.count({
           where: { status: 'PENDING' }
         })
       ]);

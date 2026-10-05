@@ -781,6 +781,7 @@ export const enterResult = async (
                         id: true,
                         uhid: true,
                         firstName: true,
+                        middleName: true,
                         lastName: true,
                         gender: true,
                       },

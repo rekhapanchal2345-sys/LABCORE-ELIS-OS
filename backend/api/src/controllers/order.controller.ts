@@ -233,6 +233,7 @@ export const createOrder = async (
           id: true,
           uhid: true,
           firstName: true,
+          middleName: true,
           lastName: true,
         },
       });
@@ -569,35 +570,6 @@ export const createOrder = async (
                     dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
                   },
                 },
-
-                invoice: {
-                  create: {
-                    invoiceNumber,
-
-                    subtotal,
-
-                    discount:
-                      totalDiscount,
-
-                    taxableAmount: taxableSubtotal,
-
-                    gstPercent:
-                      effectiveGstPercent,
-
-                    cgstAmount: gstAmount / 2,
-                    sgstAmount: gstAmount / 2,
-                    igstAmount: 0,
-
-                    gstAmount,
-
-                    grandTotal,
-
-                    paymentStatus:
-                      "PENDING",
-
-                    dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
-                  },
-                },
               },
 
               include: {
@@ -606,6 +578,7 @@ export const createOrder = async (
                     id: true,
                     uhid: true,
                     firstName: true,
+                    middleName: true,
                     lastName: true,
                     gender: true,
                   },

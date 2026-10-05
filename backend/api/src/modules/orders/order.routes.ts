@@ -12,6 +12,13 @@ import {
   update,
   collect,
   cancel,
+  analytics,
+  tatAnalytics,
+  hourlyThroughput,
+  pipeline,
+  revenueByDoctor,
+  bulkEscalate,
+  bulkStatus,
 } from "./order.controller";
 
 import {
@@ -26,6 +33,56 @@ import {
 const router = Router();
 
 router.use(authenticate);
+
+// =======================================================
+// ANALYTICS ENDPOINTS (before /:id to avoid route conflict)
+// =======================================================
+
+router.get(
+  "/analytics",
+  authorize(UserRole.ADMIN, UserRole.FRONT_DESK, UserRole.LAB_TECH, UserRole.PATHOLOGIST),
+  analytics
+);
+
+router.get(
+  "/analytics/tat",
+  authorize(UserRole.ADMIN, UserRole.LAB_TECH, UserRole.PATHOLOGIST),
+  tatAnalytics
+);
+
+router.get(
+  "/analytics/hourly",
+  authorize(UserRole.ADMIN, UserRole.LAB_TECH, UserRole.PATHOLOGIST, UserRole.FRONT_DESK),
+  hourlyThroughput
+);
+
+router.get(
+  "/analytics/pipeline",
+  authorize(UserRole.ADMIN, UserRole.LAB_TECH, UserRole.PATHOLOGIST, UserRole.FRONT_DESK),
+  pipeline
+);
+
+router.get(
+  "/analytics/revenue-by-doctor",
+  authorize(UserRole.ADMIN, UserRole.PATHOLOGIST),
+  revenueByDoctor
+);
+
+// =======================================================
+// BULK OPERATIONS
+// =======================================================
+
+router.post(
+  "/bulk/escalate-priority",
+  authorize(UserRole.ADMIN, UserRole.LAB_TECH, UserRole.PATHOLOGIST),
+  bulkEscalate
+);
+
+router.post(
+  "/bulk/update-status",
+  authorize(UserRole.ADMIN, UserRole.LAB_TECH, UserRole.PATHOLOGIST),
+  bulkStatus
+);
 
 // =======================================================
 // CREATE ORDER

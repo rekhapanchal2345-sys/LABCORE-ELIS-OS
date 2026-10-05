@@ -29,6 +29,7 @@ import {
   X,
   Plus
 } from "lucide-react";
+import { formatPatientFullName } from "@/lib/patient-utils";
 
 // ==========================================
 // 1. STATUS BADGE & INTERACTIVE PICKER
@@ -1044,7 +1045,7 @@ export function QuickAssignDoctorModal({
               Assign Referring Doctor
             </h3>
             <p className="text-xs text-slate-500">
-              Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}
+              Order {order.orderNumber} • {formatPatientFullName(order.patient)}
             </p>
           </div>
           <button
@@ -1178,7 +1179,7 @@ export function QuickCollectSampleModal({
               Collect Sample
             </h3>
             <p className="text-xs text-slate-500">
-              Order {order.orderNumber} • {order.patient?.firstName} {order.patient?.lastName}
+              Order {order.orderNumber} • {formatPatientFullName(order.patient)}
             </p>
           </div>
           <button
@@ -1444,7 +1445,7 @@ export function CancelOrderModal({
               Cancel Order #{order.orderNumber}
             </h3>
             <p className="text-xs text-slate-500">
-              Patient: {order.patient?.firstName} {order.patient?.lastName}
+              Patient: {formatPatientFullName(order.patient)}
             </p>
           </div>
           <button
@@ -1901,7 +1902,7 @@ export function PhlebotomyCollectionSheetModal({
                       <p className="text-[10px] text-purple-700 font-bold">{o.barcode}</p>
                     </td>
                     <td className="py-2.5 px-2">
-                      <p className="font-bold">{o.patient?.firstName} {o.patient?.lastName}</p>
+                      <p className="font-bold">{formatPatientFullName(o.patient)}</p>
                       <p className="text-[10px] text-slate-500 font-mono">
                         {o.patient?.uhid} • {o.patient?.gender} • {o.patient?.phone}
                       </p>

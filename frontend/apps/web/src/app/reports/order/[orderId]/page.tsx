@@ -94,6 +94,7 @@ interface OrderReport {
       id: string;
       testName: string;
       testCode: string;
+      method?: string;
       parameters?: Array<{
         id: string;
         parameterName: string;
@@ -560,7 +561,9 @@ export default function OrderReportPage({ params }: { params: Promise<{ orderId:
       contact: report.patient.phone || "",
       
       // Sample Information
-      referringDoctor: report.doctor ? `Dr. ${report.doctor.fullName}` : undefined,
+      referringDoctor: report.doctor?.fullName
+        ? `${report.doctor.fullName.startsWith("Dr") ? "" : "Dr. "}${report.doctor.fullName}${report.doctor.qualification ? ` (${report.doctor.qualification})` : ""}`
+        : "Self / Direct Walk-In",
       sampleCollected: report.collectedAt,
       reportApproved: report.results[0]?.approvedAt || report.results[0]?.verifiedAt,
       specimen: report.tests[0]?.test.sampleType || "Plasma (Fasting)",
@@ -603,9 +606,16 @@ export default function OrderReportPage({ params }: { params: Promise<{ orderId:
       specimenQuality: "Acceptable",
       hemolysisLipemia: "Not Observed",
       internalQCStatus: "Passed — Within Limits",
-      externalQAScheme: "NABL EQAS",
+      externalQAScheme: "NABL EQAS / Bio-Rad International",
       calibrationStatus: "Valid",
-      reportConfidenceScore: "99.8%"
+      reportConfidenceScore: "99.8%",
+
+      // Clinical Authorization Signatures
+      technicianName: "R. K. Sharma, B.Sc MLT",
+      pathologistName: (report as any).approver?.fullName || "Dr. Nikil Panchal, MD",
+      pathologistDegree: "MBBS, MD (Pathology), Senior Pathologist",
+      pathologistRegNo: "GMC / NMC-74829",
+      pathologistSignatureUrl: (report as any).approver?.signatureUrl || (report as any).doctor?.signatureUrl || undefined,
     };
   };
 

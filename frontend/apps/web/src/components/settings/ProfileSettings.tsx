@@ -430,7 +430,7 @@ export default function ProfileSettings({
         badge={
           <span className="inline-flex items-center gap-1 rounded-full bg-cyan-500/10 px-2.5 py-0.5 text-[11px] font-bold text-cyan-600 dark:text-cyan-400 border border-cyan-500/20">
             <FileCheck className="h-3 w-3" />
-            e-Sign Act Compliant
+            IT Act 2000 Compliant (Sec 3A / DSC)
           </span>
         }
       >

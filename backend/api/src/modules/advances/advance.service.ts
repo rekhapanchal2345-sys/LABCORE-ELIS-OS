@@ -1,10 +1,6 @@
 import prisma from "../../../config/database";
-
-const generateAdvanceId = () => {
-  const timestamp = Date.now();
-  const random = Math.floor(Math.random() * 1000);
-  return `ADV-${timestamp}-${random}`;
-};
+import type { PaymentStatus } from "@prisma/client";
+import { getNextSequenceNumber } from "../../services/sequence.service";
 
 // =======================================================
 // CREATE PATIENT ADVANCE
@@ -33,6 +29,8 @@ export const createAdvance = async (
     }
 
     const advance = await prisma.$transaction(async (tx) => {
+      const advanceReceiptNo = await getNextSequenceNumber("ADV", "MAIN", tx);
+
       // Create advance record
       const advance = await tx.patientAdvance.create({
         data: {
@@ -40,6 +38,8 @@ export const createAdvance = async (
           amount,
           balance: amount,
           transactionType: "CREDIT",
+          referenceId: advanceReceiptNo,
+          referenceType: "RECEIPT_ADVANCE",
           reason: data.reason || "Advance payment",
           receivedById: data.receivedById,
         },
@@ -204,10 +204,12 @@ export const applyAdvanceToInvoice = async (
         throw new Error("Order not found");
       }
 
+      const receiptNumber = await getNextSequenceNumber("REC", "MAIN", tx);
+
       // Create payment from wallet
       const payment = await tx.payment.create({
         data: {
-          receiptNumber: generateAdvanceId(),
+          receiptNumber,
           orderId: data.orderId,
           amount,
           method: "WALLET",
@@ -261,12 +263,24 @@ export const applyAdvanceToInvoice = async (
         },
       });
 
-      // Update invoice payment status
+      // Update invoice payment status from the payments actually recorded for
+      // this order (the wallet payment created above is visible inside this tx).
       if (order.invoice) {
-        const paidAmount = Number(order.invoice.grandTotal) - Number(order.invoice.dueAmount || 0) + amount;
-        const remainingAmount = Number(order.invoice.grandTotal) - paidAmount;
-        
-        const paymentStatus = remainingAmount <= 0 ? "PAID" : "PARTIAL";
+        const paidTotal = await tx.payment.aggregate({
+          where: { orderId: order.id },
+          _sum: { amount: true },
+        });
+
+        const totalPaid = Number(paidTotal._sum.amount ?? 0);
+        const remainingAmount =
+          Number(order.invoice.grandTotal) - totalPaid;
+
+        const paymentStatus: PaymentStatus =
+          remainingAmount <= 0
+            ? "PAID"
+            : totalPaid > 0
+              ? "PARTIAL"
+              : "PENDING";
 
         await tx.invoice.update({
           where: { id: order.invoice.id },

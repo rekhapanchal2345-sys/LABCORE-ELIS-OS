@@ -28,7 +28,7 @@ export const createTemplate = async (data: {
     }
 
     // Store template in database
-    const template = await prisma.whatsappTemplate.create({
+    const template = await prisma.whatsAppTemplate.create({
       data: {
         name: data.name,
         displayName: data.displayName,
@@ -66,7 +66,7 @@ export const getTemplates = async (filters?: {
       where.isActive = filters.isActive;
     }
 
-    const templates = await prisma.whatsappTemplate.findMany({
+    const templates = await prisma.whatsAppTemplate.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       include: {
@@ -89,7 +89,7 @@ export const getTemplates = async (filters?: {
 
 export const getTemplateById = async (id: string) => {
   try {
-    const template = await prisma.whatsappTemplate.findUnique({
+    const template = await prisma.whatsAppTemplate.findUnique({
       where: { id },
       include: {
         creator: {
@@ -123,7 +123,7 @@ export const updateTemplate = async (id: string, data: {
   isActive?: boolean;
 }) => {
   try {
-    const template = await prisma.whatsappTemplate.update({
+    const template = await prisma.whatsAppTemplate.update({
       where: { id },
       data: {
         ...data,
@@ -141,7 +141,7 @@ export const updateTemplate = async (id: string, data: {
 
 export const deleteTemplate = async (id: string) => {
   try {
-    await prisma.whatsappTemplate.delete({
+    await prisma.whatsAppTemplate.delete({
       where: { id }
     });
 
@@ -167,17 +167,16 @@ export const scheduleMessage = async (data: {
   createdBy?: string;
 }) => {
   try {
-    const scheduledMessage = await prisma.whatsappScheduledMessage.create({
+    const scheduledMessage = await prisma.whatsAppScheduledMessage.create({
       data: {
+        phoneNumber: data.recipientPhone,
         recipientPhone: data.recipientPhone,
-        recipientType: data.recipientType || "individual",
+        templateName: data.templateId || 'Custom Message',
         templateId: data.templateId,
-        messageType: data.messageType || "text",
         messageBody: data.messageBody,
         mediaUrl: data.mediaUrl,
         templateVariables: data.templateVariables,
         scheduledFor: data.scheduledFor,
-        timezone: data.timezone || "UTC",
         patientId: data.patientId,
         createdBy: data.createdBy
       }
@@ -212,7 +211,7 @@ export const getScheduledMessages = async (filters?: {
       where.scheduledFor = { ...where.scheduledFor, gte: filters.scheduledAfter };
     }
 
-    const messages = await prisma.whatsappScheduledMessage.findMany({
+    const messages = await prisma.whatsAppScheduledMessage.findMany({
       where,
       orderBy: { scheduledFor: 'asc' },
       include: {
@@ -221,6 +220,7 @@ export const getScheduledMessages = async (filters?: {
           select: {
             id: true,
             firstName: true,
+            middleName: true,
             lastName: true,
             phone: true
           }
@@ -246,7 +246,7 @@ export const processScheduledMessages = async () => {
   try {
     const now = new Date();
     
-    const pendingMessages = await prisma.whatsappScheduledMessage.findMany({
+    const pendingMessages = await prisma.whatsAppScheduledMessage.findMany({
       where: {
         status: "PENDING",
         scheduledFor: { lte: now }
@@ -266,41 +266,40 @@ export const processScheduledMessages = async () => {
         if (message.template) {
           // Send template message
           result = await sendWhatsApp({
-            to: message.recipientPhone,
+            to: message.recipientPhone || message.phoneNumber,
             templateName: message.template.name,
             templateLanguage: message.template.language,
-            templateVariables: message.templateVariables,
-            message: message.messageBody
+            templateVariables: message.templateVariables as Record<string, any> | undefined,
+            message: message.messageBody || ''
           });
         } else {
           // Send custom message
           result = await sendWhatsApp({
-            to: message.recipientPhone,
-            message: message.messageBody,
-            mediaUrl: message.mediaUrl
+            to: message.recipientPhone || message.phoneNumber,
+            message: message.messageBody || '',
+            mediaUrl: message.mediaUrl || undefined
           });
         }
 
         // Update scheduled message status
-        const updatedMessage = await prisma.whatsappScheduledMessage.update({
+        const updatedMessage = await prisma.whatsAppScheduledMessage.update({
           where: { id: message.id },
           data: {
             status: result.success ? "SENT" : "FAILED",
             providerMessageId: result.messageId,
             sentAt: new Date(),
             failedAt: result.success ? null : new Date(),
-            errorReason: result.error
+            errorMessage: result.error
           }
         });
 
         results.push(updatedMessage);
       } catch (error) {
-        await prisma.whatsappScheduledMessage.update({
+        await prisma.whatsAppScheduledMessage.update({
           where: { id: message.id },
           data: {
             status: "FAILED",
             failedAt: new Date(),
-            errorReason: "Processing error",
             errorMessage: error instanceof Error ? error.message : "Unknown error"
           }
         });
@@ -316,7 +315,7 @@ export const processScheduledMessages = async () => {
 
 export const cancelScheduledMessage = async (id: string) => {
   try {
-    const message = await prisma.whatsappScheduledMessage.update({
+    const message = await prisma.whatsAppScheduledMessage.update({
       where: { id },
       data: {
         status: "CANCELLED"
@@ -422,7 +421,7 @@ export const createAutoReplyRule = async (data: {
   createdBy?: string;
 }) => {
   try {
-    const rule = await prisma.whatsappAutoReplyRule.create({
+    const rule = await prisma.whatsAppAutoReplyRule.create({
       data: {
         name: data.name,
         description: data.description,
@@ -463,7 +462,7 @@ export const getAutoReplyRules = async (filters?: {
       where.triggerType = filters.triggerType;
     }
 
-    const rules = await prisma.whatsappAutoReplyRule.findMany({
+    const rules = await prisma.whatsAppAutoReplyRule.findMany({
       where,
       orderBy: { priority: 'desc' },
       include: {
@@ -486,7 +485,7 @@ export const getAutoReplyRules = async (filters?: {
 
 export const updateAutoReplyRule = async (id: string, data: any) => {
   try {
-    const rule = await prisma.whatsappAutoReplyRule.update({
+    const rule = await prisma.whatsAppAutoReplyRule.update({
       where: { id },
       data
     });
@@ -500,7 +499,7 @@ export const updateAutoReplyRule = async (id: string, data: any) => {
 
 export const deleteAutoReplyRule = async (id: string) => {
   try {
-    await prisma.whatsappAutoReplyRule.delete({
+    await prisma.whatsAppAutoReplyRule.delete({
       where: { id }
     });
 
@@ -526,7 +525,7 @@ export const createNotificationTrigger = async (data: {
   createdBy?: string;
 }) => {
   try {
-    const trigger = await prisma.whatsappNotificationTrigger.create({
+    const trigger = await prisma.whatsAppNotificationTrigger.create({
       data: {
         name: data.name,
         description: data.description,
@@ -563,7 +562,7 @@ export const getNotificationTriggers = async (filters?: {
       where.isActive = filters.isActive;
     }
 
-    const triggers = await prisma.whatsappNotificationTrigger.findMany({
+    const triggers = await prisma.whatsAppNotificationTrigger.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       include: {
@@ -587,7 +586,7 @@ export const getNotificationTriggers = async (filters?: {
 
 export const triggerNotification = async (eventType: string, eventData: any) => {
   try {
-    const triggers = await prisma.whatsappNotificationTrigger.findMany({
+    const triggers = await prisma.whatsAppNotificationTrigger.findMany({
       where: {
         eventType,
         isActive: true
@@ -617,7 +616,8 @@ export const triggerNotification = async (eventType: string, eventData: any) => 
           });
           recipientPhone = patient?.phone;
         } else if (trigger.recipientType === "CUSTOM" && trigger.recipientFilter) {
-          recipientPhone = trigger.recipientFilter.phone;
+          const filter = trigger.recipientFilter as any;
+          recipientPhone = filter.phone;
         }
 
         if (!recipientPhone) {
@@ -645,7 +645,7 @@ export const triggerNotification = async (eventType: string, eventData: any) => 
           });
 
           // Update trigger stats
-          await prisma.whatsappNotificationTrigger.update({
+          await prisma.whatsAppNotificationTrigger.update({
             where: { id: trigger.id },
             data: {
               lastTriggeredAt: new Date(),
@@ -708,7 +708,7 @@ export const getConversations = async (filters?: {
       where.phoneNumber = filters.phoneNumber;
     }
 
-    const conversations = await prisma.whatsappConversation.findMany({
+    const conversations = await prisma.whatsAppConversation.findMany({
       where,
       orderBy: { lastActivity: 'desc' },
       include: {
@@ -716,6 +716,7 @@ export const getConversations = async (filters?: {
           select: {
             id: true,
             firstName: true,
+            middleName: true,
             lastName: true,
             phone: true
           }
@@ -742,7 +743,7 @@ export const updateConversation = async (id: string, data: {
   autoReplyEnabled?: boolean;
 }) => {
   try {
-    const conversation = await prisma.whatsappConversation.update({
+    const conversation = await prisma.whatsAppConversation.update({
       where: { id },
       data: {
         ...data,
@@ -777,7 +778,7 @@ export const getIncomingMessages = async (filters?: {
       where.patientId = filters.patientId;
     }
 
-    const messages = await prisma.whatsappIncomingMessage.findMany({
+    const messages = await prisma.whatsAppIncomingMessage.findMany({
       where,
       orderBy: { createdAt: 'desc' },
       take: filters?.limit || 50,
@@ -793,6 +794,7 @@ export const getIncomingMessages = async (filters?: {
           select: {
             id: true,
             firstName: true,
+            middleName: true,
             lastName: true,
             phone: true
           }
@@ -809,7 +811,7 @@ export const getIncomingMessages = async (filters?: {
 
 export const markMessageAsProcessed = async (id: string) => {
   try {
-    const message = await prisma.whatsappIncomingMessage.update({
+    const message = await prisma.whatsAppIncomingMessage.update({
       where: { id },
       data: {
         isProcessed: true,
@@ -849,7 +851,7 @@ export const sendMessageWithAI = async (data: {
       
       // Store sentiment analysis if conversation exists
       if (data.patientId) {
-        const conversation = await prisma.whatsappConversation.findFirst({
+        const conversation = await prisma.whatsAppConversation.findFirst({
           where: {
             patientId: data.patientId,
             phoneNumber: data.to
@@ -857,7 +859,7 @@ export const sendMessageWithAI = async (data: {
         });
 
         if (conversation) {
-          await prisma.whatsappSentiment.create({
+          await prisma.whatsAppSentiment.create({
             data: {
               conversationId: conversation.id,
               messageCount: 1,
@@ -883,13 +885,14 @@ export const sendMessageWithAI = async (data: {
  */
 export const getConversationWithAI = async (conversationId: string) => {
   try {
-    const conversation = await prisma.whatsappConversation.findUnique({
+    const conversation = await prisma.whatsAppConversation.findUnique({
       where: { id: conversationId },
       include: {
         patient: {
           select: {
             id: true,
             firstName: true,
+            middleName: true,
             lastName: true,
             phone: true,
             email: true
@@ -932,7 +935,7 @@ export const getConversationWithAI = async (conversationId: string) => {
  */
 export const getSuggestedResponse = async (conversationId: string, aiModel: string = 'basic') => {
   try {
-    const conversation = await prisma.whatsappConversation.findUnique({
+    const conversation = await prisma.whatsAppConversation.findUnique({
       where: { id: conversationId },
       include: {
         incomingMessages: {
@@ -996,7 +999,7 @@ export const getPersonalizedContent = async (patientId: string, messageType: str
  */
 export const updateConversationWithBroadcast = async (conversationId: string, data: any) => {
   try {
-    const conversation = await prisma.whatsappConversation.update({
+    const conversation = await prisma.whatsAppConversation.update({
       where: { id: conversationId },
       data: {
         ...data,
@@ -1026,7 +1029,7 @@ export const processIncomingMessageWithAI = async (messageData: {
 }) => {
   try {
     // Find or create conversation
-    let conversation = await prisma.whatsappConversation.findFirst({
+    let conversation = await prisma.whatsAppConversation.findFirst({
       where: {
         phoneNumber: messageData.phoneNumber,
         patientId: messageData.patientId
@@ -1034,7 +1037,7 @@ export const processIncomingMessageWithAI = async (messageData: {
     });
 
     if (!conversation) {
-      conversation = await prisma.whatsappConversation.create({
+      conversation = await prisma.whatsAppConversation.create({
         data: {
           phoneNumber: messageData.phoneNumber,
           patientId: messageData.patientId,
@@ -1045,7 +1048,7 @@ export const processIncomingMessageWithAI = async (messageData: {
         }
       });
     } else {
-      conversation = await prisma.whatsappConversation.update({
+      conversation = await prisma.whatsAppConversation.update({
         where: { id: conversation.id },
         data: {
           lastMessageAt: new Date(),
@@ -1057,7 +1060,7 @@ export const processIncomingMessageWithAI = async (messageData: {
     }
 
     // Store incoming message
-    const incomingMessage = await prisma.whatsappIncomingMessage.create({
+    const incomingMessage = await prisma.whatsAppIncomingMessage.create({
       data: {
         patientId: messageData.patientId,
         phoneNumber: messageData.phoneNumber,
@@ -1113,30 +1116,30 @@ export const getDashboardOverview = async () => {
       recentTemplates,
       activeCampaigns
     ] = await Promise.all([
-      prisma.whatsappScheduledMessage.count({
+      prisma.whatsAppScheduledMessage.count({
         where: {
           createdAt: { gte: startOfToday },
           status: 'SENT'
         }
       }),
-      prisma.whatsappScheduledMessage.count({
+      prisma.whatsAppScheduledMessage.count({
         where: {
           createdAt: { gte: startOfWeek },
           status: 'SENT'
         }
       }),
-      prisma.whatsappConversation.count({
+      prisma.whatsAppConversation.count({
         where: { status: 'ACTIVE' }
       }),
-      prisma.whatsappScheduledMessage.count({
+      prisma.whatsAppScheduledMessage.count({
         where: { status: 'PENDING' }
       }),
-      prisma.whatsappTemplate.findMany({
+      prisma.whatsAppTemplate.findMany({
         where: { isActive: true },
         orderBy: { createdAt: 'desc' },
         take: 5
       }),
-      prisma.whatsappCampaign.findMany({
+      prisma.whatsAppCampaign.findMany({
         where: { status: { in: ['SENDING', 'SCHEDULED'] } },
         orderBy: { scheduledFor: 'asc' },
         take: 5

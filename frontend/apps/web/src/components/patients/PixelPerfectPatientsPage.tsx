@@ -2,12 +2,20 @@
 
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams, usePathname } from "next/navigation";
 import DashboardLayout from "@/components/layout/dashboardlayout";
 import { patientApi, orderApi } from "@/lib/api";
 import { showSuccess, showError, showInfo } from "@/lib/notifications";
 import { PatientQuickRegisterModal } from "@/components/orders/PatientQuickRegisterModal";
 import BarcodeLabelModal, { BarcodeLabelItem } from "@/components/barcodes/BarcodeLabelModal";
+import {
+  formatPatientFullName,
+  calculateClinicalAge,
+  formatIndianPhone,
+  formatBloodGroup,
+  formatAbhaNumber,
+  sanitizeMedicalConditions,
+} from "@/lib/patient-utils";
 import {
   Users,
   UserCheck,
@@ -207,6 +215,45 @@ function PatientIdentityMark({ firstName, lastName, status, size = "compact", ge
 
 export default function PixelPerfectPatientsPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
+  // URL Parameter Synchronization Helper
+  const updateUrlParams = useCallback((updates: Record<string, string | number | null | undefined>) => {
+    if (typeof window === "undefined") return;
+    const currentParams = new URLSearchParams(window.location.search);
+    Object.entries(updates).forEach(([key, val]) => {
+      if (
+        val === null ||
+        val === undefined ||
+        val === "" ||
+        (key === "page" && Number(val) === 1) ||
+        (key === "limit" && Number(val) === 10) ||
+        (key === "chip" && val === "ALL") ||
+        (key === "gender" && val === "All") ||
+        (key === "bloodGroup" && val === "All") ||
+        (key === "sortBy" && val === "recent") ||
+        (key === "viewMode" && val === "table")
+      ) {
+        currentParams.delete(key);
+      } else {
+        currentParams.set(key, String(val));
+      }
+    });
+    const qs = currentParams.toString();
+    const newUrl = `${pathname}${qs ? `?${qs}` : ""}`;
+    window.history.replaceState(null, "", newUrl);
+  }, [pathname]);
+
+  // Search & Filtering initial state from URL
+  const initialSearch = searchParams.get("q") || searchParams.get("search") || "";
+  const initialChip = (searchParams.get("chip") as any) || "ALL";
+  const initialGender = searchParams.get("gender") || "All";
+  const initialBloodGroup = searchParams.get("bloodGroup") || "All";
+  const initialSortBy = (searchParams.get("sortBy") as any) || "recent";
+  const initialPage = Number(searchParams.get("page")) || 1;
+  const initialLimit = Number(searchParams.get("limit")) || 10;
+  const initialViewMode = (searchParams.get("viewMode") as any) || "table";
 
   // Primary Data State
   const [patients, setPatients] = useState<Patient[]>([]);
@@ -219,12 +266,14 @@ export default function PixelPerfectPatientsPage() {
     activeCount: 0,
     todayCount: 0,
     criticalCount: 0,
+    pendingCount: 0,
+    seniorCount: 0,
   });
 
   // Server Pagination Metadata
   const [paginationInfo, setPaginationInfo] = useState({
-    page: 1,
-    limit: 20,
+    page: initialPage,
+    limit: initialLimit,
     total: 0,
     totalPages: 1,
   });
@@ -233,27 +282,33 @@ export default function PixelPerfectPatientsPage() {
   const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
   const [drawerFullPatient, setDrawerFullPatient] = useState<any>(null);
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [drawerTab, setDrawerTab] = useState<"overview" | "orders" | "vitals" | "documents">("overview");
+  const [drawerTab, setDrawerTab] = useState<"overview" | "orders" | "vitals" | "documents">(
+    (searchParams.get("tab") as any) || "overview"
+  );
   const [patientOrders, setPatientOrders] = useState<any[]>([]);
   const [loadingOrders, setLoadingOrders] = useState(false);
 
   // View Mode: Table vs Luxury Medical Card Grid
-  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
+  const [viewMode, setViewMode] = useState<"table" | "grid">(initialViewMode);
 
-  // Search & Filtering
-  const [search, setSearch] = useState("");
-  const [activeChip, setActiveChip] = useState<"ALL" | "ACTIVE" | "TODAY" | "CRITICAL" | "PENDING" | "SENIOR">("ALL");
-  const [genderFilter, setGenderFilter] = useState("All");
-  const [bloodGroupFilter, setBloodGroupFilter] = useState("All");
-  const [sortBy, setSortBy] = useState<"recent" | "name" | "age" | "uhid">("recent");
+  // Search & Filtering State
+  const [search, setSearch] = useState(initialSearch);
+  const [activeChip, setActiveChip] = useState<"ALL" | "ACTIVE" | "TODAY" | "CRITICAL" | "PENDING" | "SENIOR">(
+    ["ALL", "ACTIVE", "TODAY", "CRITICAL", "PENDING", "SENIOR"].includes(initialChip) ? initialChip : "ALL"
+  );
+  const [genderFilter, setGenderFilter] = useState(initialGender);
+  const [bloodGroupFilter, setBloodGroupFilter] = useState(initialBloodGroup);
+  const [sortBy, setSortBy] = useState<"recent" | "name" | "age" | "uhid">(
+    ["recent", "name", "age", "uhid"].includes(initialSortBy) ? initialSortBy : "recent"
+  );
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
 
   // Selection & Bulk Actions
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   // Pagination
-  const [currentPage, setCurrentPage] = useState(1);
-  const [itemsPerPage, setItemsPerPage] = useState(10);
+  const [currentPage, setCurrentPage] = useState(initialPage);
+  const [itemsPerPage, setItemsPerPage] = useState(initialLimit);
 
   // Modals & Real-world Workflows
   const [isQuickRegisterOpen, setIsQuickRegisterOpen] = useState(false);
@@ -265,11 +320,150 @@ export default function PixelPerfectPatientsPage() {
   // Copy Feedback indicator
   const [copiedUhid, setCopiedUhid] = useState<string | null>(null);
 
+  // DPDP Act 2023 PII Privacy Masking Toggle
+  const [maskPii, setMaskPii] = useState(false);
+
+  const maskPhone = (phoneStr?: string | null) => {
+    if (!phoneStr) return "Not recorded";
+    const cleaned = formatIndianPhone(phoneStr);
+    if (!cleaned.isValid) return phoneStr;
+    return `+91 ${cleaned.rawDigits.slice(0, 5)} •••••`;
+  };
+
+  const maskEmail = (emailStr?: string | null) => {
+    if (!emailStr || !emailStr.includes("@")) return "Not recorded";
+    const [user, domain] = emailStr.split("@");
+    if (user.length <= 2) return `${user[0]}*@${domain}`;
+    return `${user.slice(0, 2)}•••••@${domain}`;
+  };
+
+  // Escape key listener to close drawer
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isDrawerOpen) {
+        handleCloseDrawer();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [isDrawerOpen]);
+
+  // Document Title
+  useEffect(() => {
+    document.title = "Patients Medical Dossier | LabCore ELIS";
+  }, []);
+
+  // Sync state with URL search params changes (e.g. Back/Forward button)
+  useEffect(() => {
+    const qParam = searchParams.get("q") || searchParams.get("search") || "";
+    if (qParam !== search) setSearch(qParam);
+
+    const cParam = (searchParams.get("chip") as any) || "ALL";
+    if (["ALL", "ACTIVE", "TODAY", "CRITICAL", "PENDING", "SENIOR"].includes(cParam) && cParam !== activeChip) {
+      setActiveChip(cParam);
+    }
+
+    const gParam = searchParams.get("gender") || "All";
+    if (gParam !== genderFilter) setGenderFilter(gParam);
+
+    const bgParam = searchParams.get("bloodGroup") || "All";
+    if (bgParam !== bloodGroupFilter) setBloodGroupFilter(bgParam);
+
+    const sParam = (searchParams.get("sortBy") as any) || "recent";
+    if (["recent", "name", "age", "uhid"].includes(sParam) && sParam !== sortBy) setSortBy(sParam);
+
+    const pParam = Number(searchParams.get("page")) || 1;
+    if (pParam !== currentPage) setCurrentPage(pParam);
+
+    const lParam = Number(searchParams.get("limit")) || 10;
+    if (lParam !== itemsPerPage) setItemsPerPage(lParam);
+
+    const vmParam = (searchParams.get("viewMode") as any) || "table";
+    if (["table", "grid"].includes(vmParam) && vmParam !== viewMode) setViewMode(vmParam);
+  }, [searchParams]);
+
+  // Deep-link Drawer handler from URL `?view=:uhid` or `?view=:id`
+  useEffect(() => {
+    const viewParam = searchParams.get("view");
+    const tabParam = (searchParams.get("tab") as any) || "overview";
+    if (viewParam) {
+      const match = patients.find(p => p.uhid === viewParam || p.id === viewParam);
+      if (match) {
+        setSelectedPatient(match);
+        setIsDrawerOpen(true);
+        if (["overview", "orders", "vitals", "documents"].includes(tabParam)) {
+          setDrawerTab(tabParam);
+        }
+        fetchOrdersForDrawer(match.id);
+        fetchPatientDetailForDrawer(match.id);
+      } else if (!loading && patients.length > 0) {
+        // Deep-fetch if patient not in current page slice
+        patientApi.getById(viewParam).then(res => {
+          if (res && (res.data || res)) {
+            const p = res.data?.patient || res.data || res;
+            const mappedP: Patient = {
+              id: p.id,
+              uhid: p.uhid || "N/A",
+              firstName: p.firstName || "",
+              middleName: p.middleName || "",
+              lastName: p.lastName || "",
+              gender: (p.gender || "OTHER").toUpperCase() as any,
+              age: p.age !== null && p.age !== undefined ? p.age : (p.dateOfBirth ? calculateClinicalAge(p.dateOfBirth, p.age).years : null),
+              dateOfBirth: p.dateOfBirth || null,
+              phone: p.phone || null,
+              email: p.email || null,
+              address: p.address || null,
+              city: p.city || null,
+              state: p.state || null,
+              postalCode: p.postalCode || p.pincode || null,
+              bloodGroup: p.bloodGroup || null,
+              emergencyContactName: p.emergencyContactName || null,
+              emergencyContactPhone: p.emergencyContactPhone || p.emergencyContact || null,
+              insuranceProvider: p.insuranceProvider || null,
+              policyNumber: p.insuranceNumber || p.policyNumber || null,
+              createdAt: p.createdAt || new Date().toISOString(),
+              status: p.isActive === false ? "Inactive" : (p.isCritical ? "Critical" : "Active"),
+              isActive: p.isActive !== false,
+              isVip: Boolean(p.isVip || p.patientType === "VIP"),
+              isCritical: Boolean(p.isCritical),
+              totalOrders: p.totalOrders ?? 0,
+            };
+            setSelectedPatient(mappedP);
+            setDrawerFullPatient(p);
+            setIsDrawerOpen(true);
+            if (["overview", "orders", "vitals", "documents"].includes(tabParam)) {
+              setDrawerTab(tabParam);
+            }
+            fetchOrdersForDrawer(p.id);
+          }
+        }).catch(err => console.warn("Could not deep-load patient for drawer view:", err));
+      }
+    } else if (!viewParam && isDrawerOpen) {
+      setIsDrawerOpen(false);
+      setSelectedPatient(null);
+      setDrawerFullPatient(null);
+    }
+  }, [searchParams, patients, loading]);
+
   // Load Patients on Mount or Page / Filter change
-  // Load Patients on Mount or Page / Limit / Filter change
   useEffect(() => {
     fetchPatients(currentPage);
   }, [currentPage, itemsPerPage, genderFilter, activeChip]);
+
+  // 400ms Debounced search on typing
+  const isSearchMount = React.useRef(true);
+  useEffect(() => {
+    if (isSearchMount.current) {
+      isSearchMount.current = false;
+      return;
+    }
+    const timer = setTimeout(() => {
+      updateUrlParams({ q: search.trim() || null, page: 1 });
+      setCurrentPage(1);
+      fetchPatients(1, false, search.trim());
+    }, 400);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // Fetch Patients from API with Real Server-Side Pagination
   const fetchPatients = async (pageNumber = 1, isManualRefresh = false, searchQueryOverride?: string) => {
@@ -314,7 +508,7 @@ export default function PixelPerfectPatientsPage() {
 
         const mappedPatients: Patient[] = rawData.map((p: any) => {
           const rawCreated = p.createdAt || new Date().toISOString();
-          const pAge = p.age !== null && p.age !== undefined ? p.age : (p.dateOfBirth ? calculateAge(p.dateOfBirth) : null);
+          const pAge = p.age !== null && p.age !== undefined ? p.age : (p.dateOfBirth ? calculateClinicalAge(p.dateOfBirth, p.age).years : null);
           const lastOrderDate = p.lastVisitDate || p.orders?.[0]?.createdAt || null;
 
           return {
@@ -367,6 +561,8 @@ export default function PixelPerfectPatientsPage() {
           activeCount: kpis.activeCount ?? mappedPatients.filter((p) => p.status === "Active").length,
           todayCount: kpis.todayCount ?? 0,
           criticalCount: kpis.criticalCount ?? mappedPatients.filter((p) => p.isCritical).length,
+          pendingCount: kpis.pendingCount ?? mappedPatients.filter((p) => (p.pendingOrders ?? 0) > 0).length,
+          seniorCount: kpis.seniorCount ?? mappedPatients.filter((p) => (p.age ?? 0) >= 60).length,
         });
 
         if (isManualRefresh) showSuccess("Patient records synchronized successfully");
@@ -422,29 +618,6 @@ export default function PixelPerfectPatientsPage() {
     }
   };
 
-  // Helper to compute age from DOB
-  function calculateAge(dobString: string): number | null {
-    try {
-      const birthDate = new Date(dobString);
-      if (isNaN(birthDate.getTime())) return null;
-      const today = new Date();
-      let age = today.getFullYear() - birthDate.getFullYear();
-      const m = today.getMonth() - birthDate.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
-        age--;
-      }
-      return age >= 0 ? age : null;
-    } catch {
-      return null;
-    }
-  }
-
-  // Format blood group cleanly
-  const formatBloodGroup = (bg: string | null) => {
-    if (!bg) return "N/A";
-    return bg.replace("_", "+").replace("POSITIVE", "+").replace("NEGATIVE", "-");
-  };
-
   // Fetch test orders for the active drawer patient
   const fetchOrdersForDrawer = useCallback(async (patientId: string) => {
     try {
@@ -463,28 +636,42 @@ export default function PixelPerfectPatientsPage() {
     }
   }, []);
 
-  // Open the Clinical Slide-over Drawer & Deep-Fetch Patient Record
-  const handleOpenDrawer = async (patient: Patient) => {
-    setSelectedPatient(patient);
-    setDrawerFullPatient(null);
-    setIsDrawerOpen(true);
-    setDrawerTab("overview");
-    fetchOrdersForDrawer(patient.id);
-
+  // Deep-Fetch Patient Record for Drawer
+  const fetchPatientDetailForDrawer = useCallback(async (patientId: string) => {
     try {
-      const detailRes = await patientApi.getById(patient.id);
-      if (detailRes && detailRes.data) {
-        const pDetail = detailRes.data.patient || detailRes.data;
+      const detailRes = await patientApi.getById(patientId);
+      if (detailRes && (detailRes.data || detailRes)) {
+        const pDetail = detailRes.data?.patient || detailRes.data || detailRes;
         setDrawerFullPatient(pDetail);
       }
     } catch (err) {
       console.error("Error fetching patient details for drawer:", err);
     }
+  }, []);
+
+  // Open the Clinical Slide-over Drawer & Deep-Fetch Patient Record
+  const handleOpenDrawer = async (patient: Patient, tab: "overview" | "orders" | "vitals" | "documents" = "overview") => {
+    setSelectedPatient(patient);
+    setDrawerFullPatient(null);
+    setIsDrawerOpen(true);
+    setDrawerTab(tab);
+    updateUrlParams({ view: patient.uhid || patient.id, tab: tab !== "overview" ? tab : null });
+    fetchOrdersForDrawer(patient.id);
+    fetchPatientDetailForDrawer(patient.id);
+  };
+
+  // Switch drawer tabs with URL syncing
+  const handleDrawerTabChange = (newTab: "overview" | "orders" | "vitals" | "documents") => {
+    setDrawerTab(newTab);
+    updateUrlParams({ tab: newTab !== "overview" ? newTab : null });
   };
 
   // Close the slide-over drawer
   const handleCloseDrawer = () => {
     setIsDrawerOpen(false);
+    setSelectedPatient(null);
+    setDrawerFullPatient(null);
+    updateUrlParams({ view: null, tab: null });
   };
 
   // 1-Click Copy UHID with feedback
@@ -503,7 +690,7 @@ export default function PixelPerfectPatientsPage() {
     e.stopPropagation();
     const ageStr = patient.age !== null && patient.age !== undefined ? (patient.age === 0 ? "Newborn" : `${patient.age}Y`) : "";
     const genChar = patient.gender === "MALE" ? "M" : patient.gender === "FEMALE" ? "F" : "O";
-    const patientName = `${patient.firstName} ${patient.lastName}`.trim();
+    const patientName = formatPatientFullName(patient);
     const dateStr = new Date().toLocaleDateString("en-IN", {
       day: "2-digit",
       month: "short",
@@ -526,6 +713,51 @@ export default function PixelPerfectPatientsPage() {
         date: dateStr,
         priority: patient.isCritical ? "STAT (CRITICAL)" : "ROUTINE",
       },
+      {
+        id: `bc-edta-${patient.id}`,
+        barcode: `${patient.uhid}-EDTA`,
+        patientName,
+        uhid: patient.uhid,
+        testName: "Hematology / Whole Blood (CBC, ESR, HbA1c)",
+        specimenType: "EDTA Whole Blood",
+        tubeType: "Lavender Top (EDTA K2/K3)",
+        tubeColor: "Lavender",
+        tubeColorHex: "#9333EA",
+        gender: genChar,
+        age: ageStr,
+        date: dateStr,
+        priority: patient.isCritical ? "STAT" : "ROUTINE",
+      },
+      {
+        id: `bc-serum-${patient.id}`,
+        barcode: `${patient.uhid}-SERUM`,
+        patientName,
+        uhid: patient.uhid,
+        testName: "Biochemistry / Serology (LFT, KFT, Lipids)",
+        specimenType: "Serum (Clotted)",
+        tubeType: "Gold / Red Top (SST Gel Clot Activator)",
+        tubeColor: "Gold / Red",
+        tubeColorHex: "#DC2626",
+        gender: genChar,
+        age: ageStr,
+        date: dateStr,
+        priority: patient.isCritical ? "STAT" : "ROUTINE",
+      },
+      {
+        id: `bc-fluoride-${patient.id}`,
+        barcode: `${patient.uhid}-FLUO`,
+        patientName,
+        uhid: patient.uhid,
+        testName: "Glycolysis / Blood Glucose (FBS / PPBS)",
+        specimenType: "Fluoride Plasma",
+        tubeType: "Grey Top (Sodium Fluoride)",
+        tubeColor: "Grey",
+        tubeColorHex: "#64748B",
+        gender: genChar,
+        age: ageStr,
+        date: dateStr,
+        priority: patient.isCritical ? "STAT" : "ROUTINE",
+      },
     ];
 
     setBarcodeItems(items);
@@ -542,9 +774,10 @@ export default function PixelPerfectPatientsPage() {
 
     const hasOrders = (patient.totalOrders ?? 0) > 0;
 
+    const fullName = formatPatientFullName(patient);
     const msg = hasOrders
-      ? `Dear ${patient.firstName} ${patient.lastName},\n\nGreetings from LabCore Diagnostics.\nYour registered Patient ID (UHID) is *${patient.uhid}*.\nYour diagnostic order is logged in our system, and your verified reports will be accessible online.\n\nHelpline: +91 9106161228 | LabCore Diagnostics Portal`
-      : `Dear ${patient.firstName} ${patient.lastName},\n\nWelcome to LabCore Diagnostics.\nYour registered Patient ID (UHID) is *${patient.uhid}*.\n\nHelpline: +91 9106161228 | LabCore Diagnostics Portal`;
+      ? `Dear ${fullName},\n\nGreetings from LabCore Diagnostics.\nYour registered Patient ID (UHID) is *${patient.uhid}*.\nYour diagnostic order is logged in our system, and your verified reports will be accessible online.\n\nHelpline: +91 9106161228 | LabCore Diagnostics Portal`
+      : `Dear ${fullName},\n\nWelcome to LabCore Diagnostics.\nYour registered Patient ID (UHID) is *${patient.uhid}*.\n\nHelpline: +91 9106161228 | LabCore Diagnostics Portal`;
 
     setWhatsappModalPatient(patient);
     setWhatsappMessage(msg);
@@ -668,7 +901,7 @@ export default function PixelPerfectPatientsPage() {
   // Sorted Patients for Current Page (Server handles search, filter & pagination)
   const filteredPatients = useMemo(() => {
     return [...patients].sort((a, b) => {
-      if (sortBy === "name") return `${a.firstName} ${a.lastName}`.localeCompare(`${b.firstName} ${b.lastName}`);
+      if (sortBy === "name") return formatPatientFullName(a).localeCompare(formatPatientFullName(b));
       if (sortBy === "age") return (b.age ?? 0) - (a.age ?? 0);
       if (sortBy === "uhid") return a.uhid.localeCompare(b.uhid);
       // recent
@@ -694,6 +927,17 @@ export default function PixelPerfectPatientsPage() {
     return pages;
   }, [currentPage, paginationInfo.totalPages]);
 
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+    updateUrlParams({ page: newPage });
+  };
+
+  const handleLimitChange = (newLimit: number) => {
+    setItemsPerPage(newLimit);
+    setCurrentPage(1);
+    updateUrlParams({ limit: newLimit, page: 1 });
+  };
+
   // Global Server KPI Stats
   const totalPatientsCount = kpiStats.totalRoster;
   const activePatientsCount = kpiStats.activeCount;
@@ -714,7 +958,7 @@ export default function PixelPerfectPatientsPage() {
       return {
         id: `bulk-badge-${p.id}-${idx}`,
         barcode: p.uhid,
-        patientName: `${p.firstName} ${p.lastName}`.trim(),
+        patientName: formatPatientFullName(p),
         uhid: p.uhid,
         testName: "Patient Identification / Accession Badge",
         specimenType: "Patient Badge",
@@ -830,8 +1074,8 @@ export default function PixelPerfectPatientsPage() {
                 <span className="text-2xl font-black text-white group-hover:text-blue-200 transition-colors">
                   {loading ? "..." : totalPatientsCount.toLocaleString()}
                 </span>
-                <span className="inline-flex items-center text-xs font-semibold text-emerald-400">
-                  +12% MoM
+                <span className="inline-flex items-center text-xs font-semibold text-blue-300">
+                  Total Registered
                 </span>
               </div>
               <p className="mt-1 text-xs text-slate-400">All registered diagnostic subjects</p>
@@ -914,25 +1158,33 @@ export default function PixelPerfectPatientsPage() {
           {/* Top Line: Search Bar & View Mode Toggle */}
           <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
             {/* Search Input & Tactile Action Button */}
-            <form onSubmit={handleSearchSubmit} className="flex items-center gap-2 flex-1">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                setCurrentPage(1);
+                updateUrlParams({ q: search.trim() || null, page: 1 });
+                fetchPatients(1, false, search);
+              }}
+              className="flex items-center gap-2 flex-1"
+            >
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                 <input
                   type="text"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearchSubmit(e);
-                    }
-                  }}
-                  placeholder="Search by Patient Name, UHID (e.g. LC-00001), Phone, Email, Aadhaar, PAN..."
+                  placeholder="Search by Patient Name, UHID (e.g. LC-000001), Phone, Email, City..."
                   className="w-full rounded-xl border border-slate-200 bg-slate-50/70 py-2.5 pl-10 pr-10 text-sm font-medium text-slate-900 placeholder:text-slate-400 focus:border-indigo-500 focus:bg-white focus:outline-none focus:ring-4 focus:ring-indigo-500/10 transition-all"
                 />
                 {search && (
                   <button
                     type="button"
-                    onClick={handleClearSearch}
+                    onClick={() => {
+                      setSearch("");
+                      setCurrentPage(1);
+                      updateUrlParams({ q: null, page: 1 });
+                      fetchPatients(1, false, "");
+                    }}
                     className="absolute right-3 top-1/2 -translate-y-1/2 rounded-md p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 cursor-pointer"
                     title="Clear search"
                   >
@@ -955,7 +1207,10 @@ export default function PixelPerfectPatientsPage() {
               {/* Table / Grid Toggle */}
               <div className="flex items-center rounded-xl bg-slate-100 p-1 border border-slate-200">
                 <button
-                  onClick={() => setViewMode("table")}
+                  onClick={() => {
+                    setViewMode("table");
+                    updateUrlParams({ viewMode: null });
+                  }}
                   className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${viewMode === "table"
                       ? "bg-white text-indigo-700 shadow-sm"
                       : "text-slate-600 hover:text-slate-900"
@@ -967,7 +1222,10 @@ export default function PixelPerfectPatientsPage() {
                 </button>
 
                 <button
-                  onClick={() => setViewMode("grid")}
+                  onClick={() => {
+                    setViewMode("grid");
+                    updateUrlParams({ viewMode: "grid" });
+                  }}
                   className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${viewMode === "grid"
                       ? "bg-white text-indigo-700 shadow-sm"
                       : "text-slate-600 hover:text-slate-900"
@@ -998,7 +1256,11 @@ export default function PixelPerfectPatientsPage() {
               <div className="relative">
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
+                  onChange={(e) => {
+                    const newSort = e.target.value as any;
+                    setSortBy(newSort);
+                    updateUrlParams({ sortBy: newSort !== "recent" ? newSort : null });
+                  }}
                   className="rounded-xl border border-slate-200 bg-white py-2 pl-3 pr-8 text-xs font-semibold text-slate-700 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/10 cursor-pointer"
                 >
                   <option value="recent">Sort: Newest First</option>
@@ -1017,20 +1279,12 @@ export default function PixelPerfectPatientsPage() {
             </span>
 
             {[
-              { id: "ALL", label: "All Patients", count: patients.length },
-              { id: "ACTIVE", label: "Active", count: activePatientsCount },
-              { id: "TODAY", label: "Today's OPD", count: todayWalkinCount },
-              { id: "CRITICAL", label: "Critical Priority", count: criticalCount },
-              {
-                id: "PENDING",
-                label: "Pending Lab Reports",
-                count: patients.filter((p) => (p.pendingOrders ?? 0) > 0).length,
-              },
-              {
-                id: "SENIOR",
-                label: "Senior Citizens (60+)",
-                count: patients.filter((p) => (p.age ?? 0) >= 60).length,
-              },
+              { id: "ALL", label: "All Patients", count: kpiStats.totalRoster },
+              { id: "ACTIVE", label: "Active", count: kpiStats.activeCount },
+              { id: "TODAY", label: "Today's OPD", count: kpiStats.todayCount },
+              { id: "CRITICAL", label: "Critical Priority", count: kpiStats.criticalCount },
+              { id: "PENDING", label: "Pending Lab Reports", count: kpiStats.pendingCount },
+              { id: "SENIOR", label: "Senior Citizens (60+)", count: kpiStats.seniorCount },
             ].map((chip) => {
               const isActive = activeChip === chip.id;
               return (
@@ -1039,6 +1293,7 @@ export default function PixelPerfectPatientsPage() {
                   onClick={() => {
                     setActiveChip(chip.id as any);
                     setCurrentPage(1);
+                    updateUrlParams({ chip: chip.id !== "ALL" ? chip.id : null, page: 1 });
                   }}
                   className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition-all ${isActive
                       ? "bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-600"
@@ -1066,8 +1321,10 @@ export default function PixelPerfectPatientsPage() {
                 <select
                   value={genderFilter}
                   onChange={(e) => {
-                    setGenderFilter(e.target.value);
+                    const newG = e.target.value;
+                    setGenderFilter(newG);
                     setCurrentPage(1);
+                    updateUrlParams({ gender: newG !== "All" ? newG : null, page: 1 });
                   }}
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-500"
                 >
@@ -1084,8 +1341,10 @@ export default function PixelPerfectPatientsPage() {
                 <select
                   value={bloodGroupFilter}
                   onChange={(e) => {
-                    setBloodGroupFilter(e.target.value);
+                    const newBg = e.target.value;
+                    setBloodGroupFilter(newBg);
                     setCurrentPage(1);
+                    updateUrlParams({ bloodGroup: newBg !== "All" ? newBg : null, page: 1 });
                   }}
                   className="w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-700 outline-none focus:border-indigo-500"
                 >
@@ -1111,6 +1370,8 @@ export default function PixelPerfectPatientsPage() {
                     setBloodGroupFilter("All");
                     setSortBy("recent");
                     setCurrentPage(1);
+                    updateUrlParams({ q: null, chip: null, gender: null, bloodGroup: null, sortBy: null, page: 1 });
+                    fetchPatients(1, false, "");
                   }}
                   className="w-full rounded-lg border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-semibold text-slate-600 hover:bg-slate-100 hover:text-slate-900 transition-all flex items-center justify-center gap-1"
                 >
@@ -1151,6 +1412,9 @@ export default function PixelPerfectPatientsPage() {
                   setActiveChip("ALL");
                   setGenderFilter("All");
                   setBloodGroupFilter("All");
+                  setCurrentPage(1);
+                  updateUrlParams({ q: null, chip: null, gender: null, bloodGroup: null, sortBy: null, page: 1 });
+                  fetchPatients(1, false, "");
                 }}
                 className="rounded-xl border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
               >
@@ -1194,7 +1458,10 @@ export default function PixelPerfectPatientsPage() {
                 <tbody className="divide-y divide-slate-100">
                   {currentPatients.map((patient) => {
                     const isSelected = selectedIds.has(patient.id);
-                    const fullName = `${patient.firstName} ${patient.middleName ? patient.middleName + " " : ""}${patient.lastName}`.trim();
+                    const fullName = formatPatientFullName(patient);
+                    const clinicalAge = calculateClinicalAge(patient.dateOfBirth, patient.age);
+                    const phoneFormatted = formatIndianPhone(patient.phone);
+                    const sanitizedChronic = sanitizeMedicalConditions(patient.chronicConditions);
 
                     return (
                       <tr
@@ -1225,9 +1492,19 @@ export default function PixelPerfectPatientsPage() {
 
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors">
+                                <Link
+                                  href={`/patients/${patient.uhid || patient.id}`}
+                                  onClick={(e) => {
+                                    if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                                      e.preventDefault();
+                                      handleOpenDrawer(patient);
+                                    }
+                                  }}
+                                  className="font-bold text-slate-900 group-hover:text-indigo-600 transition-colors hover:underline cursor-pointer"
+                                  title="Click to view dossier (Ctrl+Click to open full page)"
+                                >
                                   {fullName}
-                                </span>
+                                </Link>
                                 {patient.isVip && (
                                   <span className="rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-extrabold text-amber-800 uppercase tracking-wider">
                                     VIP
@@ -1257,10 +1534,7 @@ export default function PixelPerfectPatientsPage() {
 
                                 {/* Age & Gender */}
                                 <span className="rounded-md bg-slate-100/70 px-2 py-0.5 text-xs font-medium text-slate-600">
-                                  {patient.age !== null && patient.age !== undefined
-                                    ? (patient.age === 0 ? "Newborn (0 yrs)" : `${patient.age} yrs`)
-                                    : "Age N/A"}{" "}
-                                  •{" "}
+                                  {clinicalAge.formatted} •{" "}
                                   {patient.gender === "MALE"
                                     ? "Male"
                                     : patient.gender === "FEMALE"
@@ -1283,12 +1557,12 @@ export default function PixelPerfectPatientsPage() {
                               </span>
 
                               {/* Chronic tags */}
-                              {patient.chronicConditions && patient.chronicConditions.length > 0 ? (
+                              {sanitizedChronic.length > 0 ? (
                                 <span className="rounded-md bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-700 ring-1 ring-amber-200">
-                                  {patient.chronicConditions[0]}
+                                  {sanitizedChronic[0]}
                                 </span>
                               ) : (
-                                <span className="text-xs text-slate-400">Normal Profile</span>
+                                <span className="text-xs text-slate-400">None reported</span>
                               )}
                             </div>
 
@@ -1303,7 +1577,7 @@ export default function PixelPerfectPatientsPage() {
                           <div className="space-y-1 text-xs">
                             {patient.phone ? (
                               <div className="flex items-center gap-2">
-                                <span className="font-semibold text-slate-800">{patient.phone}</span>
+                                <span className="font-semibold text-slate-800">{phoneFormatted.display}</span>
                                 {/* Quick WhatsApp Dispatch Trigger */}
                                 <button
                                   onClick={(e) => handleOpenWhatsApp(e, patient)}
@@ -1381,15 +1655,21 @@ export default function PixelPerfectPatientsPage() {
                         {/* 7. Clinical Actions Suite (Fixes view opens new page) */}
                         <td className="px-4 py-4 text-right" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-end gap-1">
-                            {/* View Button -> Opens Slide-Over Drawer in-page */}
-                            <button
-                              onClick={() => handleOpenDrawer(patient)}
-                              className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-2.5 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors"
-                              title="Inspect Clinical Dossier"
+                            {/* View Button -> Opens Slide-Over Drawer in-page or Full Page on Ctrl/Cmd+Click */}
+                            <Link
+                              href={`/patients/${patient.uhid || patient.id}`}
+                              onClick={(e) => {
+                                if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                                  e.preventDefault();
+                                  handleOpenDrawer(patient);
+                                }
+                              }}
+                              className="inline-flex items-center gap-1 rounded-lg bg-indigo-50 px-2.5 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors cursor-pointer"
+                              title="Inspect Clinical Dossier (Ctrl+Click for Full Page)"
                             >
                               <Eye className="h-3.5 w-3.5" />
                               <span className="hidden sm:inline">View</span>
-                            </button>
+                            </Link>
 
                             {/* New Lab Order */}
                             <Link
@@ -1448,10 +1728,7 @@ export default function PixelPerfectPatientsPage() {
                   <span className="text-xs text-slate-500">Rows per page:</span>
                   <select
                     value={itemsPerPage}
-                    onChange={(e) => {
-                      setItemsPerPage(Number(e.target.value));
-                      setCurrentPage(1);
-                    }}
+                    onChange={(e) => handleLimitChange(Number(e.target.value))}
                     className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 outline-none cursor-pointer"
                   >
                     <option value={10}>10</option>
@@ -1463,7 +1740,7 @@ export default function PixelPerfectPatientsPage() {
 
                 <div className="flex items-center gap-1">
                   <button
-                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
                     className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                     title="Previous Page"
@@ -1474,7 +1751,7 @@ export default function PixelPerfectPatientsPage() {
                   {visiblePages.map((pNum) => (
                     <button
                       key={pNum}
-                      onClick={() => setCurrentPage(pNum)}
+                      onClick={() => handlePageChange(pNum)}
                       className={`h-8 w-8 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         currentPage === pNum
                           ? "bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-600"
@@ -1486,7 +1763,7 @@ export default function PixelPerfectPatientsPage() {
                   ))}
 
                   <button
-                    onClick={() => setCurrentPage(Math.min(paginationInfo.totalPages, currentPage + 1))}
+                    onClick={() => handlePageChange(Math.min(paginationInfo.totalPages, currentPage + 1))}
                     disabled={currentPage >= paginationInfo.totalPages}
                     className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-all cursor-pointer"
                     title="Next Page"
@@ -1503,7 +1780,9 @@ export default function PixelPerfectPatientsPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
               {currentPatients.map((patient) => {
                 const isSelected = selectedIds.has(patient.id);
-                const fullName = `${patient.firstName} ${patient.lastName}`.trim();
+                const fullName = formatPatientFullName(patient);
+                const clinicalAge = calculateClinicalAge(patient.dateOfBirth, patient.age);
+                const phoneFormatted = formatIndianPhone(patient.phone);
 
                 return (
                   <div
@@ -1566,9 +1845,19 @@ export default function PixelPerfectPatientsPage() {
 
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5">
-                          <h3 className="font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors">
+                          <Link
+                            href={`/patients/${patient.uhid || patient.id}`}
+                            onClick={(e) => {
+                              if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                                e.preventDefault();
+                                handleOpenDrawer(patient);
+                              }
+                            }}
+                            className="font-bold text-slate-900 truncate group-hover:text-indigo-600 transition-colors hover:underline cursor-pointer"
+                            title="Click to view dossier (Ctrl+Click to open full page)"
+                          >
                             {fullName}
-                          </h3>
+                          </Link>
                           {patient.isVip && (
                             <span className="rounded bg-amber-100 px-1 py-0.2 text-[9px] font-black text-amber-800 uppercase">
                               VIP
@@ -1585,9 +1874,7 @@ export default function PixelPerfectPatientsPage() {
                           </button>
                           <span className="text-slate-300">•</span>
                           <span className="text-slate-500">
-                            {patient.age !== null && patient.age !== undefined
-                              ? (patient.age === 0 ? "0y" : `${patient.age}y`)
-                              : "Age N/A"}{" "}
+                            {clinicalAge.formatted}{" "}
                             •{" "}
                             {patient.gender === "MALE"
                               ? "M"
@@ -1629,14 +1916,20 @@ export default function PixelPerfectPatientsPage() {
                       className="mt-4 grid grid-cols-4 gap-1.5 border-t border-slate-100 pt-3"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      <button
-                        onClick={() => handleOpenDrawer(patient)}
-                        className="rounded-lg bg-indigo-50 p-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1 col-span-2"
-                        title="View Patient Drawer"
+                      <Link
+                        href={`/patients/${patient.uhid || patient.id}`}
+                        onClick={(e) => {
+                          if (!e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+                            e.preventDefault();
+                            handleOpenDrawer(patient);
+                          }
+                        }}
+                        className="rounded-lg bg-indigo-50 p-2 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition-colors flex items-center justify-center gap-1 col-span-2 cursor-pointer"
+                        title="View Patient Drawer (Ctrl+Click for Full Page)"
                       >
                         <Eye className="h-3.5 w-3.5" />
                         <span>Inspect</span>
-                      </button>
+                      </Link>
 
                       <Link
                         href={`/orders/new?patientId=${patient.id}`}
@@ -1667,7 +1960,7 @@ export default function PixelPerfectPatientsPage() {
               </p>
               <div className="flex items-center gap-2">
                 <button
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
                   disabled={currentPage === 1}
                   className="rounded-xl border border-slate-200 px-3.5 py-1.5 text-xs font-bold disabled:opacity-40 hover:bg-slate-50 cursor-pointer"
                 >
@@ -1677,7 +1970,7 @@ export default function PixelPerfectPatientsPage() {
                   {visiblePages.map((pNum) => (
                     <button
                       key={pNum}
-                      onClick={() => setCurrentPage(pNum)}
+                      onClick={() => handlePageChange(pNum)}
                       className={`h-7 w-7 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                         currentPage === pNum
                           ? "bg-indigo-600 text-white shadow-sm ring-1 ring-indigo-600"
@@ -1689,7 +1982,7 @@ export default function PixelPerfectPatientsPage() {
                   ))}
                 </div>
                 <button
-                  onClick={() => setCurrentPage(Math.min(paginationInfo.totalPages, currentPage + 1))}
+                  onClick={() => handlePageChange(Math.min(paginationInfo.totalPages, currentPage + 1))}
                   disabled={currentPage >= paginationInfo.totalPages}
                   className="rounded-xl border border-slate-200 px-3.5 py-1.5 text-xs font-bold disabled:opacity-40 hover:bg-slate-50 cursor-pointer"
                 >
@@ -1806,19 +2099,34 @@ export default function PixelPerfectPatientsPage() {
                       </div>
 
                       <div className="flex items-center gap-2">
-                        {/* Seamless internal route if user wants full page */}
+                        {/* DPDP PII Privacy Masking Toggle */}
                         <button
-                          onClick={() => router.push(`/patients/${activePatient.id}`)}
+                          onClick={() => setMaskPii(!maskPii)}
+                          className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors ${
+                            maskPii
+                              ? "bg-amber-400/20 text-amber-300 ring-1 ring-amber-400/40"
+                              : "bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white"
+                          }`}
+                          title="Toggle DPDP Act 2023 PII Masking"
+                        >
+                          <ShieldCheck className="h-3.5 w-3.5" />
+                          <span>{maskPii ? "PII Masked" : "Mask PII"}</span>
+                        </button>
+
+                        {/* Seamless internal route if user wants full page */}
+                        <Link
+                          href={`/patients/${activePatient.uhid || activePatient.id}`}
                           className="inline-flex items-center gap-1 rounded-lg bg-white/10 px-2.5 py-1 text-xs font-medium text-slate-300 hover:bg-white/20 hover:text-white transition-colors"
-                          title="Open Full Page View"
+                          title="Open Full Clinical Dossier"
                         >
                           <ExternalLink className="h-3.5 w-3.5" />
                           <span>Full Page</span>
-                        </button>
+                        </Link>
 
                         <button
                           onClick={handleCloseDrawer}
-                          className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors"
+                          className="rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-white transition-colors cursor-pointer"
+                          title="Close (Esc)"
                         >
                           <X className="h-5 w-5" />
                         </button>
@@ -1837,8 +2145,7 @@ export default function PixelPerfectPatientsPage() {
 
                       <div className="min-w-0 flex-1">
                         <h2 className="text-xl font-extrabold text-white truncate">
-                          {activePatient.firstName} {activePatient.middleName || ""}{" "}
-                          {activePatient.lastName}
+                          {formatPatientFullName(activePatient)}
                         </h2>
 
                         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
@@ -1852,10 +2159,7 @@ export default function PixelPerfectPatientsPage() {
                           </button>
                           <span className="text-slate-500">•</span>
                           <span className="text-slate-300">
-                            {activePatient.age !== null && activePatient.age !== undefined
-                              ? (activePatient.age === 0 ? "0 yrs (Newborn)" : `${activePatient.age} yrs`)
-                              : "Age N/A"}{" "}
-                            •{" "}
+                            {calculateClinicalAge(activePatient.dateOfBirth, activePatient.age).formatted} •{" "}
                             {activePatient.gender === "MALE"
                               ? "Male"
                               : activePatient.gender === "FEMALE"
@@ -1873,7 +2177,7 @@ export default function PixelPerfectPatientsPage() {
                     {/* Drawer Fast Action Bar */}
                     <div className="mt-5 grid grid-cols-4 gap-2">
                       <Link
-                        href={`/orders/new?patientId=${activePatient.id}`}
+                        href={`/orders/new?patientId=${activePatient.id}&uhid=${encodeURIComponent(activePatient.uhid)}`}
                         className="rounded-xl bg-indigo-600 px-3 py-2 text-center text-xs font-bold text-white shadow-md hover:bg-indigo-700 transition-all flex flex-col items-center gap-1"
                       >
                         <Plus className="h-4 w-4" />
@@ -1882,7 +2186,7 @@ export default function PixelPerfectPatientsPage() {
 
                       <button
                         onClick={(e) => handlePrintBarcode(e, activePatient)}
-                        className="rounded-xl bg-white/10 px-3 py-2 text-center text-xs font-bold text-white hover:bg-white/20 transition-all flex flex-col items-center gap-1"
+                        className="rounded-xl bg-white/10 px-3 py-2 text-center text-xs font-bold text-white hover:bg-white/20 transition-all flex flex-col items-center gap-1 cursor-pointer"
                       >
                         <Printer className="h-4 w-4" />
                         <span>Barcodes</span>
@@ -1890,18 +2194,18 @@ export default function PixelPerfectPatientsPage() {
 
                       <button
                         onClick={(e) => handleOpenWhatsApp(e, activePatient)}
-                        className="rounded-xl bg-emerald-600/80 px-3 py-2 text-center text-xs font-bold text-white hover:bg-emerald-600 transition-all flex flex-col items-center gap-1"
+                        className="rounded-xl bg-emerald-600/80 px-3 py-2 text-center text-xs font-bold text-white hover:bg-emerald-600 transition-all flex flex-col items-center gap-1 cursor-pointer"
                       >
                         <MessageCircle className="h-4 w-4" />
                         <span>WhatsApp</span>
                       </button>
 
                       <Link
-                        href={`/patients/${activePatient.id}/edit`}
+                        href={`/patients/${activePatient.uhid || activePatient.id}`}
                         className="rounded-xl bg-white/10 px-3 py-2 text-center text-xs font-bold text-white hover:bg-white/20 transition-all flex flex-col items-center gap-1"
                       >
-                        <Edit className="h-4 w-4" />
-                        <span>Edit</span>
+                        <FileText className="h-4 w-4" />
+                        <span>Dossier</span>
                       </Link>
                     </div>
                   </div>
@@ -1919,7 +2223,7 @@ export default function PixelPerfectPatientsPage() {
                       return (
                         <button
                           key={tab.id}
-                          onClick={() => setDrawerTab(tab.id as any)}
+                          onClick={() => handleDrawerTabChange(tab.id as any)}
                           className={`flex items-center gap-1.5 border-b-2 py-3 px-3 text-xs font-bold transition-all ${isActive
                               ? "border-indigo-600 text-indigo-600"
                               : "border-transparent text-slate-500 hover:text-slate-800"
@@ -1980,14 +2284,14 @@ export default function PixelPerfectPatientsPage() {
                           <div className="rounded-2xl border border-slate-200 bg-white divide-y divide-slate-100 text-xs">
                             <div className="flex justify-between p-3.5">
                               <span className="text-slate-500">Phone Number</span>
-                              <span className="font-bold text-slate-900">
-                                {activePatient.phone || "Not recorded"}
+                              <span className="font-bold text-slate-900 font-mono">
+                                {maskPii ? maskPhone(activePatient.phone) : formatIndianPhone(activePatient.phone).display}
                               </span>
                             </div>
                             <div className="flex justify-between p-3.5">
                               <span className="text-slate-500">Email Address</span>
                               <span className="font-semibold text-slate-800">
-                                {activePatient.email || "Not recorded"}
+                                {maskPii ? maskEmail(activePatient.email) : (activePatient.email || "Not recorded")}
                               </span>
                             </div>
                             <div className="flex justify-between p-3.5">
@@ -2003,6 +2307,17 @@ export default function PixelPerfectPatientsPage() {
                                 {activePatient.postalCode ? `- ${activePatient.postalCode}` : ""}
                               </span>
                             </div>
+                            {(activePatient.nationalId || activePatient.aadhaarNumber) && (
+                              <div className="flex justify-between p-3.5 bg-indigo-50/40">
+                                <span className="text-indigo-900 font-semibold flex items-center gap-1">
+                                  <ShieldCheck className="h-3.5 w-3.5 text-indigo-600" />
+                                  <span>ABDM / National ID</span>
+                                </span>
+                                <span className="font-mono font-bold text-indigo-900">
+                                  {activePatient.nationalId ? formatAbhaNumber(activePatient.nationalId) : (maskPii ? "•••• •••• " + String(activePatient.aadhaarNumber).slice(-4) : activePatient.aadhaarNumber)}
+                                </span>
+                              </div>
+                            )}
                             <div className="flex justify-between p-3.5">
                               <span className="text-slate-500">Date of Registration</span>
                               <span className="font-medium text-slate-800">
@@ -2125,8 +2440,8 @@ export default function PixelPerfectPatientsPage() {
                         <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-4">
                           <h4 className="font-bold text-slate-900 text-sm">Chronic Conditions & Risk Flags</h4>
                           <div className="flex flex-wrap gap-2">
-                            {activePatient.chronicConditions && activePatient.chronicConditions.length > 0 ? (
-                              activePatient.chronicConditions.map((c: string, i: number) => (
+                            {sanitizeMedicalConditions(activePatient.chronicConditions).length > 0 ? (
+                              sanitizeMedicalConditions(activePatient.chronicConditions).map((c: string, i: number) => (
                                 <span
                                   key={i}
                                   className="rounded-lg bg-amber-50 px-2.5 py-1 font-bold text-amber-800 ring-1 ring-amber-200"
@@ -2140,19 +2455,19 @@ export default function PixelPerfectPatientsPage() {
                           </div>
                         </div>
 
-                        {/* Dynamic Allergies Tab (Fixes Item 24) */}
+                        {/* Dynamic Allergies Tab */}
                         <div className="rounded-2xl border border-slate-200 bg-white p-5 space-y-3">
                           <h4 className="font-bold text-slate-900 text-sm flex items-center justify-between">
                             <span>Allergies & Drug Sensitivities</span>
-                            {activePatient.allergies && activePatient.allergies.length > 0 && (
+                            {sanitizeMedicalConditions(activePatient.allergies).length > 0 && (
                               <span className="rounded-md bg-rose-100 px-2 py-0.5 text-xs font-bold text-rose-700">
-                                {activePatient.allergies.length} Recorded
+                                {sanitizeMedicalConditions(activePatient.allergies).length} Recorded
                               </span>
                             )}
                           </h4>
-                          {activePatient.allergies && activePatient.allergies.length > 0 ? (
+                          {sanitizeMedicalConditions(activePatient.allergies).length > 0 ? (
                             <div className="flex flex-wrap gap-2">
-                              {activePatient.allergies.map((allergy: string, idx: number) => (
+                              {sanitizeMedicalConditions(activePatient.allergies).map((allergy: string, idx: number) => (
                                 <span
                                   key={idx}
                                   className="inline-flex items-center gap-1 rounded-lg bg-rose-50 px-2.5 py-1 text-xs font-bold text-rose-700 ring-1 ring-rose-200"
@@ -2276,7 +2591,7 @@ export default function PixelPerfectPatientsPage() {
                         Close
                       </button>
                       <button
-                        onClick={() => router.push(`/patients/${activePatient.id}`)}
+                        onClick={() => router.push(`/patients/${activePatient.uhid || activePatient.id}`)}
                         className="rounded-xl bg-indigo-600 px-4 py-2 text-xs font-bold text-white hover:bg-indigo-700 shadow-sm flex items-center gap-1.5"
                       >
                         <span>Open Full Dossier</span>
@@ -2329,12 +2644,63 @@ export default function PixelPerfectPatientsPage() {
               </div>
 
               <div className="mt-4 space-y-3">
-                <div>
-                  <label className="text-xs font-semibold text-slate-600">Recipient</label>
+                <div className="flex items-center justify-between">
                   <p className="text-sm font-bold text-slate-900">
-                    {whatsappModalPatient.firstName} {whatsappModalPatient.lastName} (
-                    {whatsappModalPatient.phone})
+                    {formatPatientFullName(whatsappModalPatient)} ({whatsappModalPatient.phone})
                   </p>
+                  <span className="font-mono text-xs font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                    {whatsappModalPatient.uhid}
+                  </span>
+                </div>
+
+                <div>
+                  <label className="text-xs font-semibold text-slate-600 mb-1.5 block">Quick Templates</label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setWhatsappMessage(
+                          `Dear ${formatPatientFullName(whatsappModalPatient)},\n\nWelcome to LabCore Diagnostics.\nYour registered Patient ID (UHID) is *${whatsappModalPatient.uhid}*.\nYour diagnostic medical profile is registered under NABL & ABDM standards.\n\nHelpline: +91 9106161228 | LabCore Diagnostics Portal`
+                        )
+                      }
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 transition-all text-center"
+                    >
+                      UHID Welcome
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setWhatsappMessage(
+                          `Dear ${formatPatientFullName(whatsappModalPatient)},\n\nYour specimen has been collected & accessioned at LabCore Central Laboratory.\nUHID: *${whatsappModalPatient.uhid}*\nStatus: Processing in Analyzer Queue.\n\nVerified reports will be dispatched upon pathologist review.`
+                        )
+                      }
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 transition-all text-center"
+                    >
+                      Sample Drawn
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setWhatsappMessage(
+                          `Dear ${formatPatientFullName(whatsappModalPatient)},\n\nYour diagnostic laboratory test reports are now ready and authorized.\nUHID: *${whatsappModalPatient.uhid}*\n\nView & download your verified PDF report at:\nhttps://labcore.health/reports?search=${encodeURIComponent(whatsappModalPatient.uhid)}\n\nThank you for choosing LabCore!`
+                        )
+                      }
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 transition-all text-center"
+                    >
+                      Report Ready
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setWhatsappMessage(
+                          `Dear ${formatPatientFullName(whatsappModalPatient)},\n\nThank you for your payment at LabCore Diagnostic Center.\nUHID: *${whatsappModalPatient.uhid}*\nYour billing ledger is updated.\n\nFor queries: +91 9106161228 | accounts@labcore.health`
+                        )
+                      }
+                      className="rounded-lg border border-slate-200 bg-slate-50 px-2 py-1.5 text-[11px] font-bold text-slate-700 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-800 transition-all text-center"
+                    >
+                      Payment Receipt
+                    </button>
+                  </div>
                 </div>
 
                 <div>

@@ -9,25 +9,37 @@ interface AuthProviderProps {
 }
 
 // Routes reachable without a completed sign-in.
-const PUBLIC_ROUTES = ["/login", "/register", "/unauthorized", "/mfa-setup"];
+const PUBLIC_ROUTES = [
+  "/login",
+  "/forgot-password",
+  "/register",
+  "/unauthorized",
+  "/mfa-setup",
+];
 
 export function AuthProvider({ children }: AuthProviderProps) {
   const { isLoggedIn, loading } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
-  const isPublicRoute = PUBLIC_ROUTES.some(route => pathname.startsWith(route));
+  const isPublicRoute = PUBLIC_ROUTES.some((route) =>
+    pathname.startsWith(route)
+  );
 
   useEffect(() => {
-    if (isPublicRoute) {
+    if (loading) return;
+
+    // Unauthenticated user attempting to access protected route -> redirect to login
+    if (!isLoggedIn && !isPublicRoute) {
+      router.replace("/login");
       return;
     }
 
-    // Only redirect once the initial check has settled.
-    if (!loading && !isLoggedIn) {
-      router.replace("/login");
+    // Already logged in user attempting to access login/forgot-password -> redirect to dashboard
+    if (isLoggedIn && (pathname === "/login" || pathname === "/forgot-password")) {
+      router.replace("/dashboard");
     }
-  }, [isPublicRoute, isLoggedIn, loading, router]);
+  }, [isPublicRoute, isLoggedIn, loading, pathname, router]);
 
   // Show loading state during auth check
   if (loading && !isPublicRoute) {

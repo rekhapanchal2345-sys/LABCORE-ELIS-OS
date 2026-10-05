@@ -101,24 +101,20 @@ export default function ReportAnalyticsCards() {
 
   const colorClasses = {
     blue: {
-      bg: "bg-blue-50",
-      icon: "text-blue-600",
-      border: "border-blue-200",
+      border: "border-l-cyan-500",
+      iconBg: "border-cyan-500/30 bg-cyan-950/60 text-cyan-400",
     },
     green: {
-      bg: "bg-green-50",
-      icon: "text-green-600",
-      border: "border-green-200",
+      border: "border-l-emerald-500",
+      iconBg: "border-emerald-500/30 bg-emerald-950/60 text-emerald-400",
     },
     amber: {
-      bg: "bg-amber-50",
-      icon: "text-amber-600",
-      border: "border-amber-200",
+      border: "border-l-amber-500",
+      iconBg: "border-amber-500/30 bg-amber-950/60 text-amber-400",
     },
     red: {
-      bg: "bg-red-50",
-      icon: "text-red-600",
-      border: "border-red-200",
+      border: "border-l-rose-500",
+      iconBg: "border-rose-500/30 bg-rose-950/60 text-rose-400",
     },
   };
 
@@ -131,29 +127,33 @@ export default function ReportAnalyticsCards() {
         return (
           <div
             key={card.title}
-            className={`card ${colors.bg} ${colors.border} border-2`}
+            className={`relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-950 p-5 shadow-xl transition-all hover:bg-slate-900/60 border-l-4 ${colors.border}`}
           >
             <div className="flex items-start justify-between">
               <div className="flex-1">
-                <p className="text-sm font-medium text-gray-600">
+                <p className="text-xs font-bold uppercase tracking-wider text-slate-400">
                   {card.title}
                 </p>
-                <p className="mt-2 text-3xl font-bold text-gray-900">
+                <p className="mt-2 text-2xl font-black text-white font-mono">
                   {card.value}
                 </p>
-                <p className="mt-1 text-xs text-gray-500">
+                <p className="mt-1 text-xs text-slate-400">
                   {card.subtitle}
                 </p>
               </div>
-              <div className={`p-3 rounded-lg ${colors.bg}`}>
-                <Icon className={`h-6 w-6 ${colors.icon}`} />
+              <div className={`p-2.5 rounded-xl border shadow-sm ${colors.iconBg}`}>
+                <Icon className="h-5 w-5" />
               </div>
             </div>
-            <div className="mt-4 flex items-center gap-2">
-              <span className="text-xs font-medium text-green-600">
+            <div className="mt-3 flex items-center gap-2 border-t border-slate-800/80 pt-2.5">
+              <span className={`rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                card.trend.startsWith("+")
+                  ? "border border-emerald-500/30 bg-emerald-950/60 text-emerald-300"
+                  : "border border-rose-500/30 bg-rose-950/60 text-rose-300"
+              }`}>
                 {card.trend}
               </span>
-              <span className="text-xs text-gray-500">vs last period</span>
+              <span className="text-[11px] text-slate-400">vs last period</span>
             </div>
           </div>
         );

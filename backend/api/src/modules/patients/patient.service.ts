@@ -347,25 +347,6 @@ export const getPatients = async (options: {
     ],
   };
 
-  const pendingWhere: Prisma.PatientWhereInput = {
-    orders: { some: { orderStatus: { notIn: ["COMPLETED", "CANCELLED"] } } },
-  };
-
-  const chip = options.activeChip?.trim().toUpperCase();
-  if (chip === "ACTIVE") filters.push({ isActive: true });
-  else if (chip === "INACTIVE") filters.push({ isActive: false });
-  else if (chip === "CRITICAL") filters.push(criticalWhere);
-  else if (chip === "PENDING") filters.push(pendingWhere);
-  else if (chip && chip !== "ALL") {
-    throw new HttpError(
-      "Invalid activeChip filter. Use ACTIVE, INACTIVE, CRITICAL or PENDING.",
-      400,
-      "INVALID_CHIP_FILTER"
-    );
-  }
-
-  const where: Prisma.PatientWhereInput = filters.length > 0 ? { AND: filters } : {};
-
   // Roster KPIs are computed on the IST calendar day, not UTC.
   const istOffsetMs = 5.5 * 60 * 60 * 1000;
   const istNow = new Date(Date.now() + istOffsetMs);
@@ -373,9 +354,43 @@ export const getPatients = async (options: {
     Date.UTC(istNow.getUTCFullYear(), istNow.getUTCMonth(), istNow.getUTCDate()) - istOffsetMs
   );
 
+  const sixtyYearsAgoIst = new Date(startOfTodayIst);
+  sixtyYearsAgoIst.setFullYear(sixtyYearsAgoIst.getFullYear() - 60);
+
+  const seniorWhere: Prisma.PatientWhereInput = {
+    OR: [
+      { age: { gte: 60 } },
+      { dateOfBirth: { lte: sixtyYearsAgoIst } },
+    ],
+  };
+
+  const pendingWhere: Prisma.PatientWhereInput = {
+    orders: { some: { orderStatus: { notIn: ["COMPLETED", "CANCELLED"] } } },
+  };
+
+  const todayWhere: Prisma.PatientWhereInput = {
+    createdAt: { gte: startOfTodayIst },
+  };
+
+  const chip = options.activeChip?.trim().toUpperCase();
+  if (chip === "ACTIVE") filters.push({ isActive: true });
+  else if (chip === "INACTIVE") filters.push({ isActive: false });
+  else if (chip === "CRITICAL") filters.push(criticalWhere);
+  else if (chip === "PENDING") filters.push(pendingWhere);
+  else if (chip === "TODAY") filters.push(todayWhere);
+  else if (chip === "SENIOR") filters.push(seniorWhere);
+  else if (chip && chip !== "ALL") {
+    throw new HttpError(
+      "Invalid activeChip filter. Use ALL, ACTIVE, INACTIVE, CRITICAL, PENDING, TODAY or SENIOR.",
+      400,
+      "INVALID_CHIP_FILTER"
+    );
+  }
+
+  const where: Prisma.PatientWhereInput = filters.length > 0 ? { AND: filters } : {};
   const rosterWhere: Prisma.PatientWhereInput = { isDraft: false };
 
-  const [patients, total, totalRoster, activeCount, todayCount, criticalCount] =
+  const [patients, total, totalRoster, activeCount, todayCount, criticalCount, pendingCount, seniorCount] =
     await Promise.all([
       prisma.patient.findMany({
         where,
@@ -396,6 +411,8 @@ export const getPatients = async (options: {
       prisma.patient.count({ where: { ...rosterWhere, isActive: true } }),
       prisma.patient.count({ where: { ...rosterWhere, createdAt: { gte: startOfTodayIst } } }),
       prisma.patient.count({ where: { AND: [rosterWhere, criticalWhere] } }),
+      prisma.patient.count({ where: { AND: [rosterWhere, pendingWhere] } }),
+      prisma.patient.count({ where: { AND: [rosterWhere, seniorWhere] } }),
     ]);
 
   return {
@@ -408,7 +425,14 @@ export const getPatients = async (options: {
       hasNextPage: page * limit < total,
       hasPreviousPage: page > 1,
     },
-    kpis: { totalRoster, activeCount, todayCount, criticalCount },
+    kpis: {
+      totalRoster,
+      activeCount,
+      todayCount,
+      criticalCount,
+      pendingCount,
+      seniorCount,
+    },
   };
 };
 
@@ -432,8 +456,13 @@ export const countPatients = async (search?: string) => {
 };
 
 export const getPatientById = async (id: string) => {
-  const patient = await prisma.patient.findUnique({
-    where: { id },
+  const patient = await prisma.patient.findFirst({
+    where: {
+      OR: [
+        { id },
+        { uhid: id },
+      ],
+    },
     include: {
       referredBy: true,
       createdBy: { select: { id: true, fullName: true, employeeCode: true } },

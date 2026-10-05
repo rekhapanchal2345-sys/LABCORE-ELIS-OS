@@ -1,0 +1,626 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LabCore ELIS - Doctors & Referral Management</title>
+  
+  <!-- Tailwind CSS & FontAwesome -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="bg-[#090D16] text-slate-100 flex min-h-screen overflow-x-hidden">
+
+  <!-- ==================== LEFT SIDEBAR ==================== -->
+  <aside class="w-64 bg-[#0C1222] border-r border-slate-800/80 flex flex-col justify-between shrink-0 hidden md:flex">
+    
+    <div>
+      <!-- Brand / Logo -->
+      <div class="px-5 py-4 border-b border-slate-800/60 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-8 h-8 rounded-lg bg-sky-500 flex items-center justify-center text-white font-bold text-lg shadow-lg shadow-sky-500/30">
+            <i class="fa-solid fa-plus text-sm"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-bold text-sm text-white tracking-tight">LabCore</span>
+              <span class="text-[9px] bg-sky-500/20 text-sky-400 border border-sky-500/40 px-1 py-0.2 rounded font-bold uppercase">ELIS</span>
+            </div>
+            <div class="text-[10px] text-slate-400">Enterprise LIS</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Logged-in User Card -->
+      <div class="mx-3 my-3 p-2.5 bg-slate-900/90 border border-slate-800 rounded-xl flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-xs">
+            DR
+          </div>
+          <div>
+            <div class="text-xs font-bold text-slate-200">DR.amit shah <i class="fa-solid fa-circle-check text-sky-400 text-[10px]"></i></div>
+            <div class="flex items-center gap-1 mt-0.5">
+              <span class="text-[9px] px-1 py-0.2 bg-purple-500/20 text-purple-300 rounded font-semibold uppercase">ADMIN</span>
+              <span class="text-[9px] px-1 py-0.2 bg-teal-500/20 text-teal-300 rounded font-semibold uppercase">NABL</span>
+            </div>
+          </div>
+        </div>
+        <span class="text-[10px] text-slate-500 font-mono">10:45</span>
+      </div>
+
+      <!-- Quick Jump Search -->
+      <div class="px-3 mb-2">
+        <div class="relative">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-500"></i>
+          <input type="text" placeholder="Quick jump to menu..." class="w-full bg-slate-900/60 border border-slate-800 text-[11px] rounded-lg pl-8 pr-7 py-1.5 text-slate-300 focus:outline-none focus:border-sky-500">
+          <span class="absolute right-2.5 top-2 text-[10px] text-slate-500 font-mono">⌘K</span>
+        </div>
+      </div>
+
+      <!-- Navigation Tree -->
+      <div class="px-3 space-y-4 overflow-y-auto max-h-[calc(100vh-230px)] text-xs">
+        
+        <!-- Operations & Patients -->
+        <div>
+          <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 mb-1 flex items-center justify-between">
+            <span>OPERATIONS & PATIENTS</span>
+            <span class="text-[9px] bg-slate-800 px-1 rounded text-slate-400">CORE</span>
+          </div>
+          <div class="space-y-0.5">
+            <div onclick="switchMainView('dashboard')" class="nav-item">
+              <i class="fa-solid fa-chart-pie text-xs w-4"></i>
+              <span>Dashboard</span>
+            </div>
+            <div onclick="switchMainView('patients')" class="nav-item">
+              <i class="fa-solid fa-users text-xs w-4"></i>
+              <span>Patients</span>
+            </div>
+            <div class="nav-item active">
+              <i class="fa-solid fa-user-doctor text-xs w-4"></i>
+              <span>Doctors</span>
+            </div>
+            <div class="pl-6 space-y-1">
+              <div onclick="switchTabFilter('ALL')" class="text-[11px] text-sky-400 font-medium py-1 px-2 rounded hover:bg-white/5 cursor-pointer flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span> All Doctors
+              </div>
+              <div onclick="openAddDoctorModal()" class="text-[11px] text-slate-400 py-1 px-2 rounded hover:bg-white/5 cursor-pointer flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span> + Add Doctor
+              </div>
+            </div>
+            <div onclick="switchMainView('abha')" class="nav-item">
+              <i class="fa-solid fa-id-card-clip text-xs w-4"></i>
+              <span>ABHA / ABDM</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Diagnostic Pipeline -->
+        <div>
+          <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 mb-1 flex items-center justify-between">
+            <span>DIAGNOSTIC PIPELINE</span>
+            <span class="text-[9px] bg-slate-800 px-1 rounded text-slate-400">LIS</span>
+          </div>
+          <div class="space-y-0.5">
+            <div onclick="switchMainView('tests')" class="nav-item">
+              <i class="fa-solid fa-vials text-xs w-4"></i>
+              <span>Tests</span>
+            </div>
+            <div onclick="switchMainView('orders')" class="nav-item">
+              <i class="fa-solid fa-file-invoice text-xs w-4"></i>
+              <span>Orders</span>
+            </div>
+            <div onclick="switchMainView('samples')" class="nav-item">
+              <i class="fa-solid fa-box-archive text-xs w-4"></i>
+              <span>Samples</span>
+            </div>
+            <div onclick="switchMainView('analyzers')" class="nav-item">
+              <i class="fa-solid fa-microchip text-xs w-4"></i>
+              <span>Analyzers</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Clinical Validation -->
+        <div>
+          <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 mb-1 flex items-center justify-between">
+            <span>CLINICAL VALIDATION</span>
+            <span class="text-[9px] bg-teal-500/20 text-teal-400 px-1 rounded">QUALITY</span>
+          </div>
+          <div class="space-y-0.5">
+            <div onclick="switchMainView('results')" class="nav-item">
+              <i class="fa-solid fa-square-poll-vertical text-xs w-4"></i>
+              <span>Results</span>
+            </div>
+            <div onclick="openApprovalsStation()" class="nav-item">
+              <i class="fa-solid fa-clipboard-check text-xs w-4 text-rose-400"></i>
+              <span>Approvals</span>
+              <span class="ml-auto w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+            </div>
+            <div onclick="switchMainView('reports')" class="nav-item">
+              <i class="fa-solid fa-file-waveform text-xs w-4"></i>
+              <span>Reports</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Finance & Admin -->
+        <div>
+          <div class="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2 mb-1 flex items-center justify-between">
+            <span>FINANCE & ADMIN</span>
+            <span class="text-[9px] bg-slate-800 px-1 rounded text-slate-400">B2B</span>
+          </div>
+          <div class="space-y-0.5">
+            <div onclick="switchTabFilter('PAYOUTS')" class="nav-item">
+              <i class="fa-solid fa-file-invoice-dollar text-xs w-4 text-emerald-400"></i>
+              <span>Invoices & Payouts</span>
+            </div>
+            <div onclick="switchMainView('payments')" class="nav-item">
+              <i class="fa-solid fa-credit-card text-xs w-4"></i>
+              <span>Payments</span>
+            </div>
+            <div onclick="switchMainView('settings')" class="nav-item">
+              <i class="fa-solid fa-gear text-xs w-4"></i>
+              <span>Settings</span>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- Sidebar Footer -->
+    <div class="p-3 border-t border-slate-800/80 bg-slate-950/60 flex items-center justify-between text-[11px] text-slate-400">
+      <div class="flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span>LIS Core Online</span>
+      </div>
+      <span class="font-mono text-[9px] text-slate-500">v2.5.0</span>
+    </div>
+
+  </aside>
+
+  <!-- ==================== MAIN CONTENT AREA ==================== -->
+  <div class="flex-1 flex flex-col min-w-0">
+    
+    <!-- Top Header Navigation Bar -->
+    <header class="bg-[#0C1222]/90 backdrop-blur border-b border-slate-800/80 px-6 py-3 flex items-center justify-between">
+      <div class="flex items-center gap-3">
+        <button class="text-slate-400 hover:text-white md:hidden text-lg">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <div class="flex items-center gap-2">
+          <h1 class="text-sm font-bold text-slate-100">Doctors & Referral Management</h1>
+          <span class="text-[10px] bg-sky-500/20 text-sky-400 border border-sky-500/30 px-2 py-0.5 rounded font-bold">Enterprise LIS</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <div class="relative hidden sm:block w-72">
+          <i class="fa-solid fa-magnifying-glass absolute left-3 top-2.5 text-xs text-slate-500"></i>
+          <input type="text" placeholder="Search records, tests, UHID..." class="w-full bg-slate-900 border border-slate-700/60 text-xs rounded-lg pl-8 pr-7 py-1.5 text-slate-300 focus:outline-none focus:border-sky-500">
+          <span class="absolute right-2.5 top-2 text-[10px] text-slate-500 font-mono">⌘K</span>
+        </div>
+        <button class="w-8 h-8 rounded-lg bg-slate-900 border border-slate-800 flex items-center justify-center text-slate-400 hover:text-white relative">
+          <i class="fa-regular fa-bell text-xs"></i>
+          <span class="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-rose-500"></span>
+        </button>
+        <div class="flex items-center gap-2 pl-2 border-l border-slate-800">
+          <div class="w-7 h-7 rounded-full bg-teal-500/20 text-teal-400 flex items-center justify-center font-bold text-xs">
+            US
+          </div>
+          <div class="text-left hidden lg:block">
+            <div class="text-xs font-bold text-slate-200">DR.amit shah</div>
+            <div class="text-[10px] text-emerald-400 flex items-center gap-1">
+              <i class="fa-solid fa-shield-check text-[9px]"></i> Verified
+            </div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Scrollable Body -->
+    <main class="flex-1 p-6 space-y-5 overflow-y-auto">
+
+      <!-- Purple Gradient Hero Banner (Exact match to screenshot) -->
+      <div class="hero-gradient-header rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-start gap-4">
+          <div class="w-12 h-12 rounded-xl bg-white/10 backdrop-blur flex items-center justify-center text-white text-2xl shadow-inner shrink-0">
+            <i class="fa-solid fa-user-group"></i>
+          </div>
+          <div>
+            <div class="flex items-center gap-2.5">
+              <h2 class="text-2xl font-extrabold text-white tracking-tight">Doctors & Referral Management</h2>
+              <span class="text-[10px] uppercase font-bold px-2.5 py-0.5 rounded-full bg-white/20 text-white border border-white/30 backdrop-blur">
+                LIS B2B Portal
+              </span>
+            </div>
+            <p class="text-xs text-purple-100/90 mt-1 font-medium">
+              Clinical practitioners, referring physician commissions, and pathologist digital authorizations
+            </p>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2.5 shrink-0">
+          <button onclick="exportDoctorsCSV()" class="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold border border-white/20 transition flex items-center gap-2 backdrop-blur">
+            <i class="fa-solid fa-download"></i> Export CSV
+          </button>
+          <button onclick="openAddDoctorModal()" class="px-4 py-2 bg-white hover:bg-purple-50 text-purple-900 rounded-xl text-xs font-bold shadow-lg transition flex items-center gap-2">
+            <i class="fa-solid fa-plus"></i> Add New Doctor
+          </button>
+        </div>
+      </div>
+
+      <!-- 4 Top KPI Cards (Exact match to screenshot) -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        
+        <!-- Card 1: Active Doctors -->
+        <div class="lis-stat-card p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <div class="w-8 h-8 rounded-lg bg-sky-500/15 text-sky-400 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-user-doctor"></i>
+            </div>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-sky-500/10 text-sky-400 font-bold border border-sky-500/20" id="badgeActiveCount">2 Active</span>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl font-extrabold text-white font-mono" id="statTotalDocCount">2</div>
+            <div class="text-[11px] text-slate-400 mt-0.5 flex items-center gap-2">
+              <span>Referring: <strong class="text-slate-200" id="statRefDocCount">2</strong></span>
+              <span>•</span>
+              <span>Pathologists: <strong class="text-slate-200" id="statPathDocCount">1</strong></span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 2: Patients Referred This Month -->
+        <div class="lis-stat-card p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <div class="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-arrow-trend-up"></i>
+            </div>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-bold border border-emerald-500/20">This Month</span>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl font-extrabold text-white font-mono" id="statMonthPatients">2</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">
+              Patients referred this month (Total: <span id="statTotalPatients">2</span>)
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 3: Paid Revenue -->
+        <div class="lis-stat-card p-4 flex flex-col justify-between">
+          <div class="flex items-center justify-between">
+            <div class="w-8 h-8 rounded-lg bg-indigo-500/15 text-indigo-400 flex items-center justify-center text-sm font-bold">
+              $
+            </div>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-bold border border-indigo-500/20">Paid Revenue</span>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl font-extrabold text-white font-mono" id="statPaidRevenue">₹672.6</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">
+              Actual billing from paid orders
+            </div>
+          </div>
+        </div>
+
+        <!-- Card 4: Unsettled Referral Incentives -->
+        <div class="lis-stat-card p-4 flex flex-col justify-between cursor-pointer hover:border-purple-500/40" onclick="switchTabFilter('PAYOUTS')">
+          <div class="flex items-center justify-between">
+            <div class="w-8 h-8 rounded-lg bg-purple-500/15 text-purple-400 flex items-center justify-center text-sm">
+              <i class="fa-solid fa-wallet"></i>
+            </div>
+            <span class="text-[11px] px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-400 font-bold border border-purple-500/20 hover:bg-purple-500/20">View Payouts</span>
+          </div>
+          <div class="mt-3">
+            <div class="text-2xl font-extrabold text-purple-400 font-mono" id="statUnsettledIncentives">₹101</div>
+            <div class="text-[11px] text-slate-400 mt-0.5">
+              Unsettled referral incentives
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Quick Action Navigation Toolbar -->
+      <div class="flex flex-wrap items-center gap-2 pt-2 border-b border-slate-800 pb-3">
+        <button id="tab-btn-ALL" onclick="switchTabFilter('ALL')" class="px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow transition flex items-center gap-2">
+          <i class="fa-solid fa-users"></i> All Practitioners (<span id="countAll">3</span>)
+        </button>
+        <button id="tab-btn-REFERRING" onclick="switchTabFilter('REFERRING')" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/5 transition flex items-center gap-2">
+          <i class="fa-solid fa-stethoscope"></i> Referring Physicians (<span id="countRef">2</span>)
+        </button>
+        <button id="tab-btn-PATHOLOGIST" onclick="switchTabFilter('PATHOLOGIST')" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/5 transition flex items-center gap-2">
+          <i class="fa-solid fa-microscope"></i> In-House Pathologists (<span id="countPath">1</span>)
+        </button>
+        <button id="tab-btn-PAYOUTS" onclick="switchTabFilter('PAYOUTS')" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold text-slate-400 hover:text-white hover:bg-white/5 transition flex items-center gap-2">
+          <i class="fa-solid fa-credit-card"></i> Pending Commission Payouts (<span id="countPayouts">₹101</span>)
+        </button>
+        <button onclick="openApprovalsStation()" class="ml-auto px-3.5 py-1.5 rounded-xl text-xs font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40 hover:bg-rose-500 hover:text-white transition flex items-center gap-2">
+          <i class="fa-solid fa-triangle-exclamation animate-pulse"></i> Pathologist Review Queue (1 Critical)
+        </button>
+      </div>
+
+      <!-- Search & Filters Row -->
+      <div class="flex flex-col md:flex-row items-center justify-between gap-3">
+        <div class="relative w-full md:w-1/2">
+          <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-xs text-slate-500"></i>
+          <input
+            type="text"
+            id="doctorSearchInput"
+            oninput="handleDoctorSearch(this.value)"
+            placeholder="Search doctor across entire database by name, clinic, specialization, phone, code or MCI reg..."
+            class="w-full bg-[#111A2E] border border-slate-700/60 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 focus:outline-none focus:border-indigo-500"
+          >
+        </div>
+        <div class="flex items-center gap-2.5 w-full md:w-auto">
+          <select id="specFilter" onchange="handleFilterChange()" class="bg-[#111A2E] border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none">
+            <option value="ALL">All Specializations</option>
+            <option value="Nephrology">Nephrology</option>
+            <option value="Diabetology">Diabetology</option>
+            <option value="Pathology">Pathology & Lab</option>
+            <option value="Cardiology">Cardiology</option>
+          </select>
+          <select id="statusFilter" onchange="handleFilterChange()" class="bg-[#111A2E] border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none">
+            <option value="ALL">All Status</option>
+            <option value="Active">Active</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+          <select id="sortFilter" onchange="handleFilterChange()" class="bg-[#111A2E] border border-slate-700/60 rounded-xl px-3 py-2 text-xs text-slate-300 focus:outline-none">
+            <option value="AZ">Name (A-Z)</option>
+            <option value="ZA">Name (Z-A)</option>
+            <option value="COMMISSION">Highest Commission</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Main Data Table Container (Matching screenshot layout) -->
+      <div class="bg-[#111A2E] border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="px-4 py-2.5 border-b border-slate-800/80 flex items-center justify-between text-[11px] text-slate-400 font-medium">
+          <div>Showing <span id="tableShowingCount" class="font-bold text-slate-200">2</span> doctors on Page 1 of 1 (Total: <span id="tableTotalCount" class="font-bold text-slate-200">2</span>)</div>
+          <div class="text-slate-500">Real server-side database pagination & search active</div>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="lis-table text-xs">
+            <thead>
+              <tr>
+                <th style="width: 40px;">#</th>
+                <th>DOCTOR DETAILS</th>
+                <th>TYPE & CREDENTIALS</th>
+                <th>SPECIALIZATION & CLINIC</th>
+                <th>REFERRALS & BUSINESS</th>
+                <th>COMMISSION LEDGER</th>
+                <th>STATUS</th>
+                <th class="text-right">ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody id="doctorsTableBody">
+              <!-- Dynamically rendered via app.js matching the screenshot exactly -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- ==================== MODAL 1: ADD NEW DOCTOR ==================== -->
+  <div id="addDoctorModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+    <div class="bg-[#111A2E] border border-indigo-500/30 rounded-2xl max-w-3xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-user-plus"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-slate-100">Register New Practitioner / Referring Doctor</h3>
+            <div class="text-xs text-slate-400">Configure medical council credentials, commission rates, and digital signature</div>
+          </div>
+        </div>
+        <button onclick="closeAddDoctorModal()" class="text-slate-400 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form onsubmit="handleSaveNewDoctor(event)" class="p-6 overflow-y-auto space-y-4 text-xs">
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Doctor Title</label>
+            <select id="newDocTitle" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-200">
+              <option>Dr.</option>
+              <option>Prof. Dr.</option>
+            </select>
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-slate-400 mb-1">Full Name *</label>
+            <input type="text" id="newDocName" required placeholder="e.g. NIKILKUMAR" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Doctor Type</label>
+            <select id="newDocType" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-200">
+              <option value="Referring Doctor">Referring Doctor</option>
+              <option value="In-House Pathologist">In-House Pathologist</option>
+              <option value="Consultant Specialist">Consultant Specialist</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Qualifications</label>
+            <input type="text" id="newDocQual" placeholder="MBBS, MD" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-200">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Medical Council Reg No *</label>
+            <input type="text" id="newDocReg" required placeholder="e.g. MMC72342" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Specialization</label>
+            <input type="text" id="newDocSpec" placeholder="e.g. Nephrology" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-200">
+          </div>
+          <div class="sm:col-span-2">
+            <label class="block text-slate-400 mb-1">Clinic / Hospital Name</label>
+            <input type="text" id="newDocClinic" placeholder="e.g. APEX HOSPITAL" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-200">
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1">Phone Number *</label>
+            <input type="text" id="newDocPhone" required placeholder="+91 98920 00000" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-200">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">Default Commission %</label>
+            <input type="number" id="newDocComm" value="15" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono">
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1">PAN Number (For TDS)</label>
+            <input type="text" id="newDocPan" placeholder="ABCDE1234F" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono">
+          </div>
+        </div>
+
+        <div class="pt-4 border-t border-slate-800 flex items-center justify-end gap-3">
+          <button type="button" onclick="closeAddDoctorModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl font-semibold">
+            Cancel
+          </button>
+          <button type="submit" class="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-bold shadow-lg shadow-indigo-500/30">
+            Save Practitioner
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 2: COMMISSION PAYOUT SETTLEMENT ==================== -->
+  <div id="payoutModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md hidden">
+    <div class="bg-[#111A2E] border border-emerald-500/30 rounded-2xl max-w-lg w-full overflow-hidden shadow-2xl text-xs">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+        <div class="flex items-center gap-2">
+          <i class="fa-solid fa-money-bill-transfer text-emerald-400 text-base"></i>
+          <h3 class="font-bold text-sm text-slate-100">Disburse & Settle Referral Commission</h3>
+        </div>
+        <button onclick="closePayoutModal()" class="text-slate-400 hover:text-white">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-6 space-y-4">
+        <div class="p-3 bg-slate-950 rounded-xl border border-slate-800">
+          <div class="text-slate-400">Practitioner: <strong class="text-slate-200" id="payoutDocName">DR. SUMANBEN</strong></div>
+          <div class="text-slate-400 mt-1">Total Unsettled Payout: <strong class="text-emerald-400 text-base font-mono" id="payoutAmount">₹101</strong></div>
+          <div class="text-[11px] text-slate-500 mt-1">Calculated at 15% on bill volume of ₹672.6 (TDS 10% auto-deducted)</div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Bank Reference / UTR Number *</label>
+          <input type="text" id="payoutUtrInput" value="UTR-HDFC9821034" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-200 font-mono focus:outline-none focus:border-emerald-500">
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1">Payment Mode</label>
+          <select id="payoutModeSelect" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-3 py-2 text-slate-200">
+            <option>NEFT / IMPS / RTGS Direct Bank Transfer</option>
+            <option>UPI / QR Instant Transfer</option>
+            <option>Cheque Disbursement</option>
+            <option>Cash Voucher</option>
+          </select>
+        </div>
+
+        <div class="pt-3 flex items-center justify-end gap-3">
+          <button type="button" onclick="closePayoutModal()" class="px-4 py-2 bg-slate-800 text-slate-300 rounded-xl">Cancel</button>
+          <button type="button" onclick="confirmPayoutSettlement()" class="px-5 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl font-bold shadow-lg shadow-emerald-600/30">
+            Confirm & Mark as Paid
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== MODAL 3: PATHOLOGIST REVIEW & APPROVALS QUEUE ==================== -->
+  <div id="approvalsModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md hidden">
+    <div class="bg-[#111A2E] border border-rose-500/40 rounded-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden shadow-2xl text-xs">
+      <div class="px-6 py-4 border-b border-slate-800 flex items-center justify-between bg-slate-950/80">
+        <div class="flex items-center gap-3">
+          <div class="w-9 h-9 rounded-lg bg-rose-500/20 text-rose-400 flex items-center justify-center font-bold">
+            <i class="fa-solid fa-microscope"></i>
+          </div>
+          <div>
+            <h3 class="font-bold text-base text-slate-100">Pathologist Diagnostic Approvals & Delta Review</h3>
+            <div class="text-xs text-rose-300">1 Critical Panic Value flagged for urgent authorization</div>
+          </div>
+        </div>
+        <button onclick="closeApprovalsModal()" class="text-slate-400 hover:text-white text-lg">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <div class="p-6 overflow-y-auto space-y-4 flex-1">
+        <div class="p-3 bg-rose-950/30 border border-rose-500/30 rounded-xl flex items-center justify-between">
+          <div>
+            <div class="font-bold text-rose-200">Patient: Vikram Malhotra (58y / Male) • UHID: UHID-10892</div>
+            <div class="text-slate-300 mt-0.5">Emergency Cardiac & Renal Risk Panel • Ref: Dr. NIKILKUMAR</div>
+          </div>
+          <span class="px-2.5 py-1 rounded bg-rose-500 text-white font-bold text-[11px] animate-pulse">PANIC VALUE</span>
+        </div>
+
+        <table class="lis-table border border-slate-800 rounded-xl overflow-hidden">
+          <thead>
+            <tr>
+              <th>Test Parameter</th>
+              <th>Observed Result</th>
+              <th>Reference Range</th>
+              <th>Delta vs Baseline</th>
+              <th>Evaluation</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Troponin I (High Sensitivity)</strong><br><span class="text-slate-500 font-mono text-[10px]">CMIA</span></td>
+              <td class="text-rose-400 font-bold font-mono text-sm">1.84 ng/mL</td>
+              <td class="text-slate-400 font-mono">0.00 - 0.04 ng/mL</td>
+              <td class="text-rose-400 font-bold font-mono">+9100% (Prev: 0.02)</td>
+              <td><span class="badge-panic px-2 py-0.5 rounded font-bold">CRITICAL HIGH</span></td>
+            </tr>
+            <tr>
+              <td><strong>Serum Potassium (K+)</strong><br><span class="text-slate-500 font-mono text-[10px]">ISE</span></td>
+              <td class="text-rose-400 font-bold font-mono text-sm">6.4 mEq/L</td>
+              <td class="text-slate-400 font-mono">3.5 - 5.1 mEq/L</td>
+              <td class="text-rose-400 font-bold font-mono">+33.3% (Prev: 4.8)</td>
+              <td><span class="badge-panic px-2 py-0.5 rounded font-bold">CRITICAL HIGH</span></td>
+            </tr>
+            <tr>
+              <td><strong>Serum Creatinine</strong><br><span class="text-slate-500 font-mono text-[10px]">Kinetic Jaffé</span></td>
+              <td class="text-amber-400 font-bold font-mono text-sm">2.3 mg/dL</td>
+              <td class="text-slate-400 font-mono">0.7 - 1.3 mg/dL</td>
+              <td class="text-amber-400 font-mono">+64.2% (Prev: 1.4)</td>
+              <td><span class="px-2 py-0.5 rounded bg-amber-500/20 text-amber-300 font-semibold">HIGH</span></td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div>
+          <label class="block font-semibold text-slate-300 mb-1">Pathologist Impression & Clinical Remarks:</label>
+          <textarea id="apprRemarks" rows="2" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-3 text-slate-200 focus:outline-none focus:border-rose-500">Severe acute elevation in Troponin-I and Hyperkalemia confirmed on repeat run. Attending physician alerted immediately.</textarea>
+        </div>
+      </div>
+
+      <div class="px-6 py-4 border-t border-slate-800 bg-slate-950/80 flex items-center justify-between">
+        <button onclick="orderReTest()" class="px-4 py-2 bg-rose-500/20 text-rose-300 hover:bg-rose-500 hover:text-white rounded-xl font-bold">
+          <i class="fa-solid fa-rotate-right"></i> Order Re-Draw
+        </button>
+        <button onclick="signOffPanicReport()" class="px-5 py-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-xl font-bold shadow-lg">
+          <i class="fa-solid fa-signature mr-1"></i> Authorize & Release with Digital Signature
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Application Logic -->
+  <script src="app.js"></script>
+</body>
+</html>

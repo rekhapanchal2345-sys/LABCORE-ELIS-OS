@@ -47,7 +47,7 @@ export const updateTemplateSchema = z.object({
 
 export const applyTemplateSchema = z.object({
   templateId: z.string().uuid("Invalid template ID"),
-  variables: z.record(z.string()),
+  variables: z.record(z.string(), z.string()),
 });
 
 export const templateIdSchema = z.object({

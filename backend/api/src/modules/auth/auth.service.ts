@@ -6,10 +6,12 @@ import {
   accessTokenTtl,
   generateAccessToken,
   generateChallengeToken,
+  generateOwnerToken,
   hashOpaqueToken,
   randomRefreshToken,
   sessionTtlMs,
   verifyAccessToken,
+  verifyOwnerToken,
   type AuthUser,
   type JwtPayload,
   type UserRole,
@@ -20,8 +22,11 @@ import {
   mfaRequiredForRole,
 } from "../../lib/permissions";
 import { HttpError } from "../../utils/http-error";
+import { createAuditLog } from "../audit/audit.service";
 import {
   assertStrongPassword,
+  assertNotCommonPassword,
+  assertNoPersonalInfo,
   isPasswordExpired,
   passwordPolicy,
 } from "../../utils/password-policy";
@@ -32,6 +37,8 @@ import {
   verifyTotp,
 } from "../../utils/totp";
 import { getClientIp, getDeviceFingerprint } from "../../utils/request-meta";
+import { emailBlindIndex, normaliseEmail } from "../../utils/gmail";
+import { recordLoginAlert } from "./login-alert.service";
 
 const LOCKOUT_ATTEMPTS = Number(process.env.LOGIN_LOCKOUT_ATTEMPTS || 5);
 const LOCKOUT_MINUTES = Number(process.env.LOGIN_LOCKOUT_MINUTES || 15);
@@ -43,6 +50,13 @@ const INVALID_CREDENTIALS = "Invalid email, employee code or password";
 let dummyHashPromise: Promise<string> | null = null;
 const getDummyHash = (): Promise<string> =>
   (dummyHashPromise ??= hashPassword(crypto.randomBytes(32).toString("hex")));
+
+type AuditPayload = Omit<Parameters<typeof createAuditLog>[0], "module">;
+
+const logAudit = (payload: AuditPayload) =>
+  createAuditLog({ ...payload, module: "AUTH" }).catch((error) =>
+    console.error("Audit log failed for auth module:", error)
+  );
 
 type PublicUser = {
   id: string;
@@ -109,10 +123,16 @@ export const registerUser = async (data: {
   role: UserRole;
 }) => {
   assertStrongPassword(data.password);
+  assertNotCommonPassword(data.password);
+  assertNoPersonalInfo(data.password, data.email, data.fullName);
+
+  // Gmail variants of one mailbox collapse to a single stored address, so a
+  // person cannot hold two staff accounts for the same inbox.
+  const canonicalEmail = normaliseEmail(data.email);
 
   const existingUser = await prisma.user.findFirst({
     where: {
-      OR: [{ email: data.email }, { employeeCode: data.employeeCode }],
+      OR: [{ email: canonicalEmail }, { employeeCode: data.employeeCode }],
     },
   });
 
@@ -129,16 +149,23 @@ export const registerUser = async (data: {
     data: {
       employeeCode: data.employeeCode,
       fullName: data.fullName,
-      email: data.email,
+      email: canonicalEmail,
       phone: data.phone,
       passwordHash,
       role: data.role,
       passwordChangedAt: new Date(),
+      emailBlindIndex: emailBlindIndex(canonicalEmail),
     },
   });
 
   await prisma.passwordHistory.create({
     data: { userId: user.id, passwordHash },
+  });
+
+  await logAudit({
+    action: "USER_REGISTERED",
+    recordId: user.id,
+    newData: { email: user.email, role: user.role },
   });
 
   return {
@@ -150,12 +177,35 @@ export const registerUser = async (data: {
   };
 };
 
-async function registerFailedLogin(userId: string): Promise<never> {
+async function registerFailedLogin(
+  userId: string,
+  req: Request
+): Promise<never> {
   const user = await prisma.user.update({
     where: { id: userId },
     data: { failedLoginCount: { increment: 1 } },
     select: { failedLoginCount: true },
   });
+
+  await logAudit({
+    action: "LOGIN_FAILED",
+    recordId: userId,
+    newData: { attempt: user.failedLoginCount, limit: LOCKOUT_ATTEMPTS },
+  });
+
+  // Halfway to the lockout threshold, tell the owner someone is guessing.
+  // recordLoginAlert suppresses the email once this device is already known.
+  if (
+    user.failedLoginCount === Math.max(2, Math.ceil(LOCKOUT_ATTEMPTS / 2))
+  ) {
+    await recordLoginAlert({
+      userId,
+      type: "REPEATED_FAILED_SIGNIN",
+      req,
+    }).catch((error) =>
+      console.error("Failed-login alert could not be recorded:", error)
+    );
+  }
 
   if (user.failedLoginCount >= LOCKOUT_ATTEMPTS) {
     await prisma.user.update({
@@ -165,6 +215,12 @@ async function registerFailedLogin(userId: string): Promise<never> {
         lockedUntil: new Date(Date.now() + LOCKOUT_MINUTES * 60 * 1000),
         failedLoginCount: 0,
       },
+    });
+
+    await logAudit({
+      action: "ACCOUNT_LOCKED",
+      recordId: userId,
+      newData: { lockMinutes: LOCKOUT_MINUTES },
     });
 
     throw new HttpError(
@@ -233,6 +289,24 @@ async function issueSession(
     expiresIn: accessTokenTtl(),
   });
 
+  await logAudit({
+    userId: user.id,
+    action: "LOGIN_SUCCESS",
+    recordId: session.id,
+    newData: { amr, role: user.role },
+  });
+
+  // The account owner is emailed when this device and network have not been
+  // seen before. Recording the new values so the next sign-in stays quiet is
+  // handled inside recordLoginAlert; a failure here must not deny the sign-in.
+  await recordLoginAlert({
+    userId: user.id,
+    type: "NEW_DEVICE_SIGNIN",
+    req,
+  }).catch((error) =>
+    console.error("Login alert could not be recorded:", error)
+  );
+
   return {
     user: toPublicUser(user),
     token,
@@ -260,12 +334,21 @@ export const loginUser = async (
   }
 
   // Login accepts an email address or an employee code, in any letter case.
+  // For Gmail the address is canonicalised first, so j.o.h.n+elis@gmail.com and
+  // john@gmail.com both reach the same account.
+  const canonicalEmail = normaliseEmail(identifier);
+  const looksLikeEmail = canonicalEmail.includes("@");
+
   const user = await prisma.user.findFirst({
     where: {
-      OR: [
-        { email: { equals: identifier, mode: "insensitive" } },
-        { employeeCode: { equals: identifier, mode: "insensitive" } },
-      ],
+      OR: looksLikeEmail
+        ? [
+            { email: canonicalEmail },
+            // Fall back to a case-insensitive match so addresses stored before
+            // normalisation (mixed case) are still reachable.
+            { email: { equals: identifier, mode: "insensitive" } },
+          ]
+        : [{ employeeCode: { equals: identifier, mode: "insensitive" } }],
     },
   });
 
@@ -304,7 +387,7 @@ export const loginUser = async (
   const passwordValid = await comparePassword(password, user.passwordHash);
 
   if (!passwordValid) {
-    await registerFailedLogin(user.id);
+    await registerFailedLogin(user.id, req);
   }
 
   if (user.failedLoginCount > 0 || user.lockedUntil) {
@@ -504,6 +587,12 @@ export const logoutSession = async (sessionId: string, userId: string) => {
     data: { revokedAt: new Date(), revokeReason: "logout" },
   });
 
+  await logAudit({
+    userId,
+    action: "LOGOUT",
+    recordId: sessionId,
+  });
+
   return { ok: true };
 };
 
@@ -552,13 +641,17 @@ export const unlockUser = async (userId: string) => {
 export const changePassword = async (
   userId: string,
   currentPassword: string,
-  nextPassword: string
+  nextPassword: string,
+  currentSessionId?: string
 ) => {
   assertStrongPassword(nextPassword);
+  // Resolve user first so we can check contextual password rules.
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) {
     throw new HttpError("User not found", 404);
   }
+  assertNotCommonPassword(nextPassword);
+  assertNoPersonalInfo(nextPassword, user.email, user.fullName);
   const ok = await comparePassword(currentPassword, user.passwordHash);
   if (!ok) {
     throw new HttpError("Current password is incorrect", 401);
@@ -588,9 +681,24 @@ export const changePassword = async (
     prisma.passwordHistory.create({
       data: { userId, passwordHash },
     }),
+    // The current session stays signed in; every other device is signed out.
+    prisma.userSession.updateMany({
+      where: {
+        userId,
+        revokedAt: null,
+        ...(currentSessionId ? { id: { not: currentSessionId } } : {}),
+      },
+      data: { revokedAt: new Date(), revokeReason: "password_changed" },
+    }),
   ]);
 
-  return { ok: true };
+  await logAudit({
+    userId,
+    action: "PASSWORD_CHANGED",
+    recordId: userId,
+  });
+
+  return { ok: true, otherSessionsRevoked: true };
 };
 
 export const getProfile = async (userId: string) => {
@@ -622,4 +730,87 @@ export const getProfile = async (userId: string) => {
     passwordExpired: user.passwordChangedAt ? isPasswordExpired(user.passwordChangedAt) : false,
     mfaRequired: mfaRequiredForRole(user.role),
   };
+};
+
+/**
+ * OWNER RE-AUTHENTICATION
+ *
+ * Replaces the client-side "master key" that previously guarded the staff
+ * registration panel. That key was hardcoded in the JavaScript bundle, so
+ * anyone who loaded the page possessed it. Here the operator's own password is
+ * verified against the database and exchanged for a short-lived token that only
+ * the server can mint.
+ */
+export const verifyOwnerIdentity = async (
+  userId: string,
+  password: string,
+  sessionId: string | undefined,
+  req: Request
+) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      employeeCode: true,
+      email: true,
+      fullName: true,
+      role: true,
+      status: true,
+      passwordHash: true,
+      mfaEnabled: true,
+    },
+  });
+
+  if (!user || user.status !== "ACTIVE") {
+    // Spend a bcrypt comparison so a missing account costs the same as a wrong
+    // password and cannot be distinguished by timing.
+    await comparePassword(password, await getDummyHash());
+    throw new HttpError("Owner confirmation failed", 401, "OWNER_VERIFY_FAILED");
+  }
+
+  const valid = await comparePassword(password, user.passwordHash);
+
+  if (!valid) {
+    await logAudit({
+      userId,
+      action: "OWNER_VERIFY_FAILED",
+      recordId: sessionId,
+      ipAddress: getClientIp(req),
+    });
+
+    throw new HttpError(
+      "Owner confirmation failed. Please check your password.",
+      401,
+      "OWNER_VERIFY_FAILED"
+    );
+  }
+
+  const token = generateOwnerToken(toAuthUser(user), sessionId);
+
+  await logAudit({
+    userId,
+    action: "OWNER_VERIFIED",
+    recordId: sessionId,
+    ipAddress: getClientIp(req),
+  });
+
+  return { ownerToken: token, verified: true };
+};
+
+/** Guards a privileged operation: the caller must hold a live owner token. */
+export const assertOwnerToken = (
+  ownerToken: string | undefined,
+  userId: string,
+  sessionId: string | undefined
+) => {
+  if (!ownerToken) {
+    throw new HttpError(
+      "Owner confirmation is required for this action.",
+      401,
+      "OWNER_TOKEN_REQUIRED"
+    );
+  }
+
+  verifyOwnerToken(ownerToken, userId, sessionId);
+  return true;
 };

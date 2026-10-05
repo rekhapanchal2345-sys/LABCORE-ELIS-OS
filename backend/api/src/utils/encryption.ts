@@ -102,5 +102,5 @@ export const generateSecureToken = (length: number = 32): string => {
  * Validate encryption secret is properly configured
  */
 export const validateEncryptionSecret = (secret: string): boolean => {
-  return secret && secret.length >= 32;
+  return Boolean(secret) && secret.length >= 32;
 };

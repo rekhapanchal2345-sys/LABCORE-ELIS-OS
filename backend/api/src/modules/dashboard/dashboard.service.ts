@@ -325,6 +325,7 @@ export const getResultsRequiringAttention = async (limit = 10) => {
             select: {
               id: true,
               firstName: true,
+              middleName: true,
               lastName: true,
               uhid: true,
             },
@@ -356,6 +357,7 @@ export const getResultsRequiringAttention = async (limit = 10) => {
             select: {
               id: true,
               firstName: true,
+              middleName: true,
               lastName: true,
               uhid: true,
             },
@@ -399,6 +401,7 @@ export const getApprovalQueue = async (limit = 10) => {
                 select: {
                   id: true,
                   firstName: true,
+                  middleName: true,
                   lastName: true,
                   uhid: true,
                 },

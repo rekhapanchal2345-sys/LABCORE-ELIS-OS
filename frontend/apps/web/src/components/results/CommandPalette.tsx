@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import { Search, Command, ArrowRight, CheckCircle, FileText, Users, Settings, Download, RefreshCw, RotateCcw, Sparkles, AlertTriangle, ExternalLink, Clock3 } from "lucide-react";
+import { formatPatientFullName } from "@/lib/patient-utils";
 
 interface CommandItem {
   id: string;
@@ -261,7 +262,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
       items.push({
         id: `result-${result.id}`,
         type: "result",
-        label: `${result.order?.patient?.firstName} ${result.order?.patient?.lastName}`,
+        label: formatPatientFullName(result.order?.patient),
         description: `${result.test?.testName} - ${result.order?.orderNumber}`,
         icon: <Users className="w-4 h-4" />,
         result,
@@ -401,7 +402,7 @@ export const CommandPalette: React.FC<CommandPaletteProps> = ({
                           <div>
                             <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-cyan-700">Selected result preview</p>
                             <h3 className="mt-1 text-base font-semibold text-slate-900">
-                              {selectedResult.order?.patient?.firstName} {selectedResult.order?.patient?.lastName}
+                              {formatPatientFullName(selectedResult.order?.patient)}
                             </h3>
                             <p className="mt-0.5 text-xs text-slate-500">
                               {selectedResult.test?.testName} · {selectedResult.order?.orderNumber}

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { getAccessToken } from "@/lib/auth-storage";
+import { formatAbhaNumber } from "@/lib/patient-utils";
 import {
   X, Shield, Smartphone, CreditCard, CheckCircle, Loader2, AlertCircle,
   ArrowRight, ArrowLeft, Copy, Download, UserPlus, User, Sparkles, Phone,
@@ -95,7 +96,7 @@ function AbhaDigitalCard({ abha }: { abha: { abhaNumber: string; abhaAddress: st
           title="Click to copy ABHA Number"
           onClick={() => copy("num", abha.abhaNumber)}
         >
-          {abha.abhaNumber}
+          {formatAbhaNumber(abha.abhaNumber)}
           {copiedField === "num" ? <span style={{ fontSize: "9px", marginLeft: "6px", color: "#6ee7b7" }}>✓ COPIED</span> : null}
         </div>
         <div
@@ -376,9 +377,9 @@ export default function AbhaLinkModal({
           </div>
           {mode !== "menu" && step !== "success" && (
             <div className="mt-3 flex items-center gap-1.5">
-              <div className={`flex-1 h-1 rounded-full ${step === "input" || step === "otp" || step === "success" ? "bg-white/70" : "bg-white/20"}`} />
-              <div className={`flex-1 h-1 rounded-full ${step === "otp" || step === "success" ? "bg-white/70" : "bg-white/20"}`} />
-              <div className={`flex-1 h-1 rounded-full ${step === "success" ? "bg-white" : "bg-white/20"}`} />
+              <div className="flex-1 h-1 rounded-full bg-white/70" />
+              <div className={`flex-1 h-1 rounded-full ${step === "otp" ? "bg-white/70" : "bg-white/20"}`} />
+              <div className="flex-1 h-1 rounded-full bg-white/20" />
             </div>
           )}
         </div>

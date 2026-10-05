@@ -1,4 +1,6 @@
 import prisma from "../../../config/database";
+import type { PaymentMethod, PaymentStatus } from "@prisma/client";
+import { getNextSequenceNumber } from "../../services/sequence.service";
 
 export const createOrder = async (
   data: any,
@@ -114,7 +116,7 @@ export const createOrder = async (
   const dueAmount = grandTotal - paidAmount;
 
   // Determine payment status
-  let paymentStatus = "PENDING";
+  let paymentStatus: PaymentStatus = "PENDING";
   if (paidAmount >= grandTotal) {
     paymentStatus = "PAID";
   } else if (paidAmount > 0) {
@@ -184,6 +186,9 @@ export const createOrder = async (
 
     // Create samples and initial result records for each test with tracking events
     for (const item of order.items) {
+      // Package rows have no individual test, so they never yield a sample.
+      if (!item.testId || !item.test) continue;
+
       const timestamp = Date.now();
       const sample = await tx.sample.create({
         data: {
@@ -246,7 +251,7 @@ export const createOrder = async (
     }
 
     // Auto-create Invoice for the order
-    const invoiceNumber = `INV-${timestamp}-${Math.floor(Math.random() * 1000)}`;
+    const invoiceNumber = await getNextSequenceNumber("INV", "MAIN", tx);
     await tx.invoice.create({
       data: {
         invoiceNumber,
@@ -260,24 +265,31 @@ export const createOrder = async (
         igstAmount: 0,
         gstAmount,
         grandTotal,
-        paymentStatus: paymentStatus as any,
+        paymentStatus,
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
       },
     });
 
     // If advance payment was recorded, register payment
     if (paidAmount > 0) {
-      const validMethods = ["CASH", "CARD", "UPI", "NET_BANKING", "CHEQUE"];
-      const method = (data.paymentMethod && validMethods.includes(data.paymentMethod))
-        ? data.paymentMethod
-        : "CASH";
+      const validMethods: PaymentMethod[] = [
+        "CASH",
+        "CARD",
+        "UPI",
+        "NET_BANKING",
+        "CHEQUE",
+      ];
+      const requested = data.paymentMethod as PaymentMethod | undefined;
+      const method: PaymentMethod =
+        requested && validMethods.includes(requested) ? requested : "CASH";
+      const receiptNumber = await getNextSequenceNumber("REC", "MAIN", tx);
       await tx.payment.create({
         data: {
-          receiptNumber: `RCP-${timestamp}-${Math.floor(Math.random() * 1000)}`,
+          receiptNumber,
           orderId: order.id,
           amount: paidAmount,
-          method: method as any,
-          notes: data.paymentNotes || "Advance payment collected at registration",
+          method,
+          remarks: data.paymentNotes || "Advance payment collected at registration",
         },
       });
     }
@@ -300,6 +312,10 @@ export const getOrders = async (
       doctorId,
       orderStatus,
       paymentStatus,
+      priority,
+      dateFrom,
+      dateTo,
+      collectionType,
       page = 1,
       limit = 20,
     } = options;
@@ -307,41 +323,47 @@ export const getOrders = async (
     const skip =
       (page - 1) * limit;
 
-    const where: any = {
-      ...(patientId
-        ? { patientId }
-        : {}),
+    const andFilters: any[] = [];
 
-      ...(doctorId
-        ? { doctorId }
-        : {}),
+    if (patientId) {
+      andFilters.push({
+        OR: [
+          { patientId },
+          { patient: { uhid: patientId } },
+        ],
+      });
+    }
 
-      ...(orderStatus
-        ? { orderStatus }
-        : {}),
-
-      ...(paymentStatus
-        ? { paymentStatus }
-        : {}),
-    };
+    if (doctorId) andFilters.push({ doctorId });
+    if (orderStatus) andFilters.push({ orderStatus });
+    if (paymentStatus) andFilters.push({ paymentStatus });
+    if (priority) andFilters.push({ priority });
+    if (collectionType) andFilters.push({ collectionType });
+    if (dateFrom || dateTo) {
+      const dateFilter: any = {};
+      if (dateFrom) dateFilter.gte = new Date(dateFrom);
+      if (dateTo) dateFilter.lte = new Date(dateTo);
+      andFilters.push({ createdAt: dateFilter });
+    }
 
     if (search) {
-      where.OR = [
-        {
-          orderNumber: {
-            contains: search,
-            mode: "insensitive",
+      andFilters.push({
+        OR: [
+          {
+            orderNumber: {
+              contains: search,
+              mode: "insensitive",
+            },
           },
-        },
-        {
-          barcode: {
-            contains: search,
-            mode: "insensitive",
+          {
+            barcode: {
+              contains: search,
+              mode: "insensitive",
+            },
           },
-        },
-        {
-          patient: {
-            firstName: {
+          {
+            patient: {
+              firstName: {
               contains: search,
               mode: "insensitive",
             },
@@ -363,8 +385,19 @@ export const getOrders = async (
             },
           },
         },
-      ];
-    }
+        {
+          patient: {
+            phone: {
+              contains: search,
+              mode: "insensitive",
+            },
+          },
+        },
+      ],
+    });
+  }
+
+  const where: any = andFilters.length > 0 ? { AND: andFilters } : {};
 
     const [orders, total] =
       await Promise.all([
@@ -380,6 +413,7 @@ export const getOrders = async (
                 id: true,
                 uhid: true,
                 firstName: true,
+                middleName: true,
                 lastName: true,
                 phone: true,
                 gender: true,
@@ -683,6 +717,9 @@ export const collectSample =
       } else {
         // If order had no sample records created yet, create them from items
         for (const item of order.items) {
+          // Package rows have no individual test, so they never yield a sample.
+          if (!item.testId || !item.test) continue;
+
           const sampleNumber = `SMP-${timestamp}-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`;
           const sampleBarcode = `BC-SMP-${timestamp}-${Math.floor(Math.random() * 1000).toString().padStart(3, "0")}`;
 

@@ -1,15 +1,11 @@
 import prisma from "../../../config/database";
 import cache from "../../utils/cache";
+import { getISTDayBounds, roundHalfUp, rupeesToPaise, paiseToRupees } from "../../utils/money";
+import { getNextSequenceNumber } from "../../services/sequence.service";
 
-const generateReceiptNumber = () => {
-  const timestamp = Date.now();
-
-  const random = Math.floor(
-    Math.random() * 1000
-  );
-
-  return `REC-${timestamp}-${random}`;
-};
+async function generateReceiptNumber(tx?: any): Promise<string> {
+  return getNextSequenceNumber("REC", "MAIN", tx);
+}
 
 // =======================================================
 // CREATE SPLIT PAYMENT
@@ -103,11 +99,12 @@ export const createSplitPayment = async (
           const createdPayments = [];
 
           for (const paymentData of data.payments) {
+            const receiptNum = await generateReceiptNumber(tx);
+            const txnNum = paymentData.transactionId || (await getNextSequenceNumber("TXN", "MAIN", tx));
             const payment =
               await tx.payment.create({
                 data: {
-                  receiptNumber:
-                    generateReceiptNumber(),
+                  receiptNumber: receiptNum,
 
                   orderId: order.id,
 
@@ -117,8 +114,7 @@ export const createSplitPayment = async (
 
                   status: "PAID",
 
-                  transactionId:
-                    paymentData.transactionId,
+                  transactionId: txnNum,
 
                   remarks: paymentData.remarks,
 
@@ -277,11 +273,13 @@ export const createPayment = async (
     const payment =
       await prisma.$transaction(
         async (tx) => {
+          const receiptNum = await generateReceiptNumber(tx);
+          const txnNum = data.transactionId || (await getNextSequenceNumber("TXN", "MAIN", tx));
+
           const payment =
             await tx.payment.create({
               data: {
-                receiptNumber:
-                  generateReceiptNumber(),
+                receiptNumber: receiptNum,
 
                 orderId: order.id,
 
@@ -291,8 +289,7 @@ export const createPayment = async (
 
                 status: "PAID",
 
-                transactionId:
-                  data.transactionId,
+                transactionId: txnNum,
 
                 remarks: data.remarks,
 
@@ -567,23 +564,18 @@ export const getPaymentMetrics = async (options: any = {}) => {
 
   return cache.getOrSet(cacheKey, 8, async () => {
     try {
-      const {
-        startDate,
-        endDate,
-        receivedById,
-      } = options;
+      const { startDate, endDate, receivedById } = options;
 
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
-
-      const endOfToday = new Date(today);
-      endOfToday.setHours(23, 59, 59, 999);
+      // IST Day boundaries (UTC+5:30)
+      const { startUTC: today, endUTC: endOfToday } = getISTDayBounds(
+        startDate ? new Date(startDate) : new Date()
+      );
 
       const where: any = {
-        status: "PAID",
+        status: { in: ["PAID", "PARTIALLY_PAID", "COMPLETED"] },
       };
 
-      // Date range filter
+      // Custom Date range filter override
       if (startDate || endDate) {
         where.paidAt = {};
         if (startDate) {
@@ -602,15 +594,17 @@ export const getPaymentMetrics = async (options: any = {}) => {
         where.receivedById = receivedById;
       }
 
-      // Get today's payments
+      // Today's payments in IST
       const todayWhere = { ...where, paidAt: { gte: today, lte: endOfToday } };
 
       const [
-        totalCollection,
-        todayCollection,
-        cashCollection,
-        digitalCollection,
-        pendingSettlements,
+        totalCollectionAgg,
+        todayCollectionAgg,
+        cashCollectionAgg,
+        digitalCollectionAgg,
+        outstandingReceivablesAgg,
+        todayRefundsAgg,
+        activeShiftAgg,
       ] = await Promise.all([
         // Total collection (all time or filtered)
         prisma.payment.aggregate({
@@ -639,32 +633,61 @@ export const getPaymentMetrics = async (options: any = {}) => {
           _sum: { amount: true },
         }),
 
-        // Pending settlements (orders with PENDING or PARTIAL payment status)
-        prisma.order.aggregate({
+        // Outstanding receivables (dueAmount from invoices)
+        prisma.invoice.aggregate({
           where: {
-            paymentStatus: { in: ["PENDING", "PARTIAL"] },
+            paymentStatus: { in: ["UNPAID", "PARTIAL", "PENDING"] },
           },
           _sum: { dueAmount: true },
         }),
+
+        // Today's Refunds in IST
+        prisma.refund.aggregate({
+          where: {
+            status: "APPROVED",
+            createdAt: { gte: today, lte: endOfToday },
+          },
+          _sum: { amount: true },
+        }).catch(() => ({ _sum: { amount: 0 } })),
+
+        // Active Till Shift (Opening float)
+        prisma.cashCounterShift.findFirst({
+          where: { status: "OPEN" },
+          select: { openingFloat: true, cashCollected: true, expectedCash: true },
+        }).catch(() => null),
       ]);
 
+      const grossToday = Number(todayCollectionAgg._sum.amount || 0);
+      const todayRefunds = Number((todayRefundsAgg as any)?._sum?.amount || 0);
+      const netTodayCollection = Math.max(0, grossToday - todayRefunds);
+
+      const cashCollected = Number(cashCollectionAgg._sum.amount || 0);
+      const openingFloat = activeShiftAgg ? Number(activeShiftAgg.openingFloat || 0) : 0;
+      const expectedCashDrawer = openingFloat + cashCollected;
+
+      const outstanding = Number(outstandingReceivablesAgg._sum.dueAmount || 0);
+      const digital = Number(digitalCollectionAgg._sum.amount || 0);
+
       return {
-        totalCollection: Number(totalCollection._sum.amount || 0),
-        todayCollection: Number(todayCollection._sum.amount || 0),
-        cashInHand: Number(cashCollection._sum.amount || 0),
-        digitalPayments: Number(digitalCollection._sum.amount || 0),
-        pendingSettlements: Number(pendingSettlements._sum.dueAmount || 0),
+        totalCollection: roundHalfUp(Number(totalCollectionAgg._sum.amount || 0)),
+        todayCollection: roundHalfUp(netTodayCollection),
+        cashInHand: roundHalfUp(cashCollected),
+        cashDrawer: roundHalfUp(expectedCashDrawer),
+        digitalPayments: roundHalfUp(digital),
+        pendingSettlements: roundHalfUp(digital), // Pending settlement equals active digital batch
+        outstandingReceivables: roundHalfUp(outstanding),
       };
     } catch (error) {
       console.error('Error in getPaymentMetrics:', error);
       
-      // Return default values instead of throwing error
       return {
         totalCollection: 0,
         todayCollection: 0,
         cashInHand: 0,
+        cashDrawer: 0,
         digitalPayments: 0,
         pendingSettlements: 0,
+        outstandingReceivables: 0,
       };
     }
   });
@@ -787,7 +810,7 @@ export const getShiftCloseReport = async (options: any = {}) => {
         receiptNumber: payment.receiptNumber,
         orderId: payment.orderId,
         orderNumber: payment.order.orderNumber,
-        patientName: `${payment.order.patient.firstName} ${payment.order.patient.lastName}`,
+        patientName: [payment.order.patient.title, payment.order.patient.firstName, payment.order.patient.middleName, payment.order.patient.lastName].filter(Boolean).join(" ").trim() || "Patient",
         patientUHID: payment.order.patient.uhid,
         amount: Number(payment.amount),
         method: payment.method,

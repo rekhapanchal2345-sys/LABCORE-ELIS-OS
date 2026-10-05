@@ -27,6 +27,13 @@ export const env = {
 
   BCRYPT_ROUNDS: Number(process.env.BCRYPT_ROUNDS || 12),
 
+  /**
+   * Server-side HMAC pepper applied before bcrypt hashing.
+   * Optional: set to a long random string in production.
+   * Leave empty in development to skip (hashes will still be bcrypt-protected).
+   */
+  PASSWORD_PEPPER: process.env.PASSWORD_PEPPER || "",
+
   GST_PERCENTAGE: Number(process.env.GST_PERCENTAGE || 18),
 
   // ─── ABDM (Ayushman Bharat Digital Mission) ───────────────────────────────

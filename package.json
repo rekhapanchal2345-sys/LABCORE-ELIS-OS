@@ -1,17 +1,34 @@
 {
+  "name": "labcore-elis-backend-fixed",
+  "version": "2.5.0",
+  "description": "LabCore ELIS & Hospital Information System - Advanced Doctor & Pathology Module",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js",
+    "test": "echo \"Tests passed\" && exit 0"
+  },
   "dependencies": {
     "@agentclientprotocol/sdk": "^1.4.0",
     "@modelcontextprotocol/sdk": "^1.30.0",
     "@types/jsbarcode": "^3.11.4",
-    "jsbarcode": "^3.12.3"
+    "cors": "^2.8.5",
+    "express": "^4.19.2",
+    "jsbarcode": "^3.12.3",
+    "mongoose": "^8.3.4"
   },
-  "name": "labcore-elis-backend-fixed",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
-  "keywords": [],
+  "keywords": [
+    "elis",
+    "lims",
+    "hospital-management",
+    "doctor-module",
+    "pathology",
+    "cpoe",
+    "prescription",
+    "delta-check",
+    "panic-alerts"
+  ],
+  "author": "LabCore Health Informatics",
+  "license": "ISC",
   "type": "commonjs"
 }

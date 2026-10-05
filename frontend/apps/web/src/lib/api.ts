@@ -1,5 +1,16 @@
-// API Base Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || '';
+const getApiBaseUrl = (): string => {
+  if (typeof window !== 'undefined') {
+    const customUrl = process.env.NEXT_PUBLIC_API_URL || '';
+    // Leverage Next.js rewrite proxy for local requests in browser to eliminate CORS and localhost binding issues
+    if (!customUrl || customUrl.includes('localhost') || customUrl.includes('127.0.0.1')) {
+      return '';
+    }
+    return customUrl;
+  }
+  return process.env.NEXT_PUBLIC_API_URL || '';
+};
+
+const API_BASE_URL = getApiBaseUrl();
 
 import {
   ACCESS_TOKEN_KEY,
@@ -3088,292 +3099,19 @@ const getFallbackData = (endpoint: string) => {
     };
   }
 
-  if (endpoint.includes('/api/doctors')) {
-    // Check if it's a single doctor request
-    if (endpoint.match(/\/api\/doctors\/[^/]+$/) && !endpoint.includes('/statistics') && !endpoint.includes('/commission')) {
-      return {
-        success: true,
-        data: {
-          id: 'doc-1',
-          doctorCode: 'DOC-001',
-          doctorId: 'DOC-001',
-          firstName: 'John',
-          lastName: 'Smith',
-          middleName: 'A',
-          fullName: 'Dr. John A Smith',
-          qualification: 'MBBS, MD',
-          specialization: 'Pathology',
-          email: 'dr.smith@hospital.com',
-          phone: '+91-9876543210',
-          registrationNumber: 'MC-12345',
-          address: '123 Medical Center, Healthcare City',
-          city: 'Mumbai',
-          state: 'Maharashtra',
-          postalCode: '400001',
-          department: 'Pathology Department',
-          designation: 'Senior Pathologist',
-          licenseNumber: 'LIC-98765',
-          licenseExpiry: '2027-12-31',
-          experience: 15,
-          consultationFee: 500,
-          photoUrl: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop',
-          signatureUrl: 'https://via.placeholder.com/200x80?text=Dr.+Smith+Signature',
-          commissionPercentage: 10,
-          status: 'ACTIVE',
-          isActive: true,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString()
-        },
-        message: 'Using fallback data (backend unavailable)'
-      };
-    }
-
-    // Check if it's statistics request
-    if (endpoint.includes('/statistics')) {
-      return {
-        success: true,
-        data: {
-          statistics: {
-            totalPatients: 245,
-            totalOrders: 890,
-            completedOrders: 845,
-            pendingOrders: 45,
-            totalRevenue: 445000,
-            completionRate: 94.9,
-            averageOrderValue: 500
-          },
-          recentOrders: [
-            {
-              id: 'ord-1',
-              orderNumber: 'ORD-2026-001',
-              patient: { firstName: 'Rajesh', lastName: 'Kumar' },
-              orderStatus: 'COMPLETED',
-              createdAt: new Date().toISOString()
-            },
-            {
-              id: 'ord-2',
-              orderNumber: 'ORD-2026-002',
-              patient: { firstName: 'Priya', lastName: 'Sharma' },
-              orderStatus: 'PROCESSING',
-              createdAt: new Date(Date.now() - 86400000).toISOString()
-            },
-            {
-              id: 'ord-3',
-              orderNumber: 'ORD-2026-003',
-              patient: { firstName: 'Amit', lastName: 'Patel' },
-              orderStatus: 'COMPLETED',
-              createdAt: new Date(Date.now() - 172800000).toISOString()
-            }
-          ]
-        },
-        message: 'Using fallback data (backend unavailable)'
-      };
-    }
-
-    // Default doctors list
-    return {
-      success: true,
-      data: {
-        doctors: [
-          {
-            id: 'doc-1',
-            doctorCode: 'DOC-001',
-            doctorId: 'DOC-001',
-            firstName: 'John',
-            lastName: 'Smith',
-            middleName: 'A',
-            fullName: 'Dr. John A Smith',
-            qualification: 'MBBS, MD',
-            specialization: 'Pathology',
-            email: 'dr.smith@hospital.com',
-            phone: '+91-9876543210',
-            registrationNumber: 'MC-12345',
-            address: '123 Medical Center, Healthcare City',
-            city: 'Mumbai',
-            state: 'Maharashtra',
-            postalCode: '400001',
-            department: 'Pathology Department',
-            designation: 'Senior Pathologist',
-            licenseNumber: 'LIC-98765',
-            licenseExpiry: '2027-12-31',
-            experience: 15,
-            consultationFee: 500,
-            photoUrl: 'https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=400&h=400&fit=crop',
-            signatureUrl: 'https://via.placeholder.com/200x80?text=Dr.+Smith+Signature',
-            commissionPercentage: 10,
-            status: 'ACTIVE',
-            isActive: true,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          },
-          {
-            id: 'doc-2',
-            doctorCode: 'DOC-002',
-            doctorId: 'DOC-002',
-            firstName: 'Sarah',
-            lastName: 'Johnson',
-            middleName: 'M',
-            fullName: 'Dr. Sarah M Johnson',
-            qualification: 'MBBS, MD (Cardiology)',
-            specialization: 'Cardiology',
-            email: 'dr.johnson@hospital.com',
-            phone: '+91-9876543211',
-            registrationNumber: 'MC-23456',
-            address: '456 Heart Institute, Medical District',
-            city: 'Delhi',
-            state: 'Delhi',
-            postalCode: '110001',
-            department: 'Cardiology Department',
-            designation: 'Head of Cardiology',
-            licenseNumber: 'LIC-87654',
-            licenseExpiry: '2026-06-30',
-            experience: 20,
-            consultationFee: 800,
-            photoUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop',
-            signatureUrl: 'https://via.placeholder.com/200x80?text=Dr.+Johnson+Signature',
-            commissionPercentage: 12,
-            status: 'ACTIVE',
-            isActive: true,
-            createdAt: new Date(Date.now() - 86400000).toISOString(),
-            updatedAt: new Date(Date.now() - 86400000).toISOString()
-          },
-          {
-            id: 'doc-3',
-            doctorCode: 'DOC-003',
-            doctorId: 'DOC-003',
-            firstName: 'Michael',
-            lastName: 'Williams',
-            middleName: 'R',
-            fullName: 'Dr. Michael R Williams',
-            qualification: 'MBBS, MD (Nephrology)',
-            specialization: 'Nephrology',
-            email: 'dr.williams@hospital.com',
-            phone: '+91-9876543212',
-            registrationNumber: 'MC-34567',
-            address: '789 Kidney Care Center, Health Zone',
-            city: 'Bangalore',
-            state: 'Karnataka',
-            postalCode: '560001',
-            department: 'Nephrology Department',
-            designation: 'Consultant Nephrologist',
-            licenseNumber: 'LIC-76543',
-            licenseExpiry: '2028-03-15',
-            experience: 12,
-            consultationFee: 600,
-            photoUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=400&h=400&fit=crop',
-            signatureUrl: 'https://via.placeholder.com/200x80?text=Dr.+Williams+Signature',
-            commissionPercentage: 15,
-            status: 'ACTIVE',
-            isActive: true,
-            createdAt: new Date(Date.now() - 172800000).toISOString(),
-            updatedAt: new Date(Date.now() - 172800000).toISOString()
-          },
-          {
-            id: 'doc-4',
-            doctorCode: 'DOC-004',
-            doctorId: 'DOC-004',
-            firstName: 'Emily',
-            lastName: 'Brown',
-            middleName: 'K',
-            fullName: 'Dr. Emily K Brown',
-            qualification: 'MBBS, MD (Hematology)',
-            specialization: 'Hematology',
-            email: 'dr.brown@hospital.com',
-            phone: '+91-9876543213',
-            registrationNumber: 'MC-45678',
-            address: '321 Blood Center, Medical Park',
-            city: 'Chennai',
-            state: 'Tamil Nadu',
-            postalCode: '600001',
-            department: 'Hematology Department',
-            designation: 'Senior Hematologist',
-            licenseNumber: 'LIC-65432',
-            licenseExpiry: '2025-09-20',
-            experience: 8,
-            consultationFee: 450,
-            photoUrl: 'https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=400&h=400&fit=crop',
-            signatureUrl: 'https://via.placeholder.com/200x80?text=Dr.+Brown+Signature',
-            commissionPercentage: 10,
-            status: 'ACTIVE',
-            isActive: true,
-            createdAt: new Date(Date.now() - 259200000).toISOString(),
-            updatedAt: new Date(Date.now() - 259200000).toISOString()
-          },
-          {
-            id: 'doc-5',
-            doctorCode: 'DOC-005',
-            doctorId: 'DOC-005',
-            firstName: 'David',
-            lastName: 'Lee',
-            middleName: 'C',
-            fullName: 'Dr. David C Lee',
-            qualification: 'MBBS, MD (Radiology)',
-            specialization: 'Radiology',
-            email: 'dr.lee@hospital.com',
-            phone: '+91-9876543214',
-            registrationNumber: 'MC-56789',
-            address: '654 Imaging Center, Diagnostic Hub',
-            city: 'Hyderabad',
-            state: 'Telangana',
-            postalCode: '500001',
-            department: 'Radiology Department',
-            designation: 'Chief Radiologist',
-            licenseNumber: 'LIC-54321',
-            licenseExpiry: '2026-11-10',
-            experience: 18,
-            consultationFee: 700,
-            photoUrl: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=400&h=400&fit=crop',
-            signatureUrl: 'https://via.placeholder.com/200x80?text=Dr.+Lee+Signature',
-            commissionPercentage: 11,
-            status: 'ACTIVE',
-            isActive: true,
-            createdAt: new Date(Date.now() - 345600000).toISOString(),
-            updatedAt: new Date(Date.now() - 345600000).toISOString()
-          },
-          {
-            id: 'doc-6',
-            doctorCode: 'DOC-006',
-            doctorId: 'DOC-006',
-            firstName: 'Rachel',
-            lastName: 'Green',
-            middleName: 'S',
-            fullName: 'Dr. Rachel S Green',
-            qualification: 'MBBS, MD (Dermatology)',
-            specialization: 'Dermatology',
-            email: 'dr.green@hospital.com',
-            phone: '+91-9876543215',
-            registrationNumber: 'MC-67890',
-            address: '987 Skin Care Clinic, Wellness Zone',
-            city: 'Pune',
-            state: 'Maharashtra',
-            postalCode: '411001',
-            department: 'Dermatology Department',
-            designation: 'Dermatologist',
-            licenseNumber: 'LIC-43210',
-            licenseExpiry: '2027-01-25',
-            experience: 6,
-            consultationFee: 400,
-            photoUrl: 'https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=400&h=400&fit=crop',
-            signatureUrl: 'https://via.placeholder.com/200x80?text=Dr.+Green+Signature',
-            commissionPercentage: 8,
-            status: 'INACTIVE',
-            isActive: false,
-            createdAt: new Date(Date.now() - 432000000).toISOString(),
-            updatedAt: new Date(Date.now() - 432000000).toISOString()
-          }
-        ],
-        pagination: {
-          page: 1,
-          limit: 20,
-          total: 6,
-          totalPages: 1,
-          hasNextPage: false,
-          hasPreviousPage: false
-        }
-      },
-      message: 'Using fallback data (backend unavailable)'
-    };
-  }
+  // ------------------------------------------------------------------
+// Doctors are real clinical + financial records.
+// A fabricated fallback here is what made a doctor with zero orders
+// display 245 referrals and Rs 4,45,000 revenue, so we surface the
+// failure instead of inventing data.
+// ------------------------------------------------------------------
+if (endpoint.includes('/api/doctors')) {
+  throw new ApiError(
+    'Could not load doctor records. The server is unavailable or returned an error, so figures are shown as unavailable rather than estimated.',
+    0,
+    'DOCTORS_UNAVAILABLE'
+  );
+}
   
   // Generic fallback for any other endpoint
   console.warn(`No specific fallback for ${endpoint}, using generic fallback`);
@@ -3515,6 +3253,48 @@ export const communicationApi = {
   getById: async (id: string) => {
     return apiCall(`/api/communications/${id}`);
   },
+
+  // Get all communication logs (admin)
+  getLogs: (params = '') =>
+    apiCall(`/api/communication/logs${formatQuery(params)}`),
+
+  // Get communication stats
+  getStats: () =>
+    apiCall('/api/communication/stats'),
+
+  // Get SMS templates
+  getSmsTemplates: () =>
+    apiCall('/api/communication/sms/templates'),
+
+  // Get Email templates
+  getEmailTemplates: () =>
+    apiCall('/api/communication/email/templates'),
+
+  // Send bulk SMS (e.g., result dispatch to multiple patients)
+  sendBulkSMS: (data: { recipients: Array<{ patientId: string; phone: string; message: string }> }) =>
+    apiCall('/api/communication/sms/bulk', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Retry a failed communication
+  retry: (communicationId: string) =>
+    apiCall(`/api/communication/${communicationId}/retry`, { method: 'POST' }),
+
+  // Mark a communication as read
+  markRead: (communicationId: string) =>
+    apiCall(`/api/communication/${communicationId}/read`, { method: 'PATCH' }),
+
+  // Get DPDP consent for patient
+  getConsent: (patientId: string) =>
+    apiCall(`/api/communication/consent/${patientId}`),
+
+  // Update DPDP consent
+  updateConsent: (patientId: string, data: { sms: boolean; email: boolean; whatsapp: boolean; call: boolean }) =>
+    apiCall(`/api/communication/consent/${patientId}`, {
+      method: 'PUT',
+      body: JSON.stringify(data),
+    }),
 };
 
 // WhatsApp API
@@ -3712,21 +3492,75 @@ export const whatsappApi = {
 
   getPersonalizedContent: async (patientId: string, messageType: string) => {
     return apiCall(`/api/whatsapp/patients/${patientId}/personalized-content?messageType=${messageType}`);
-  }
+  },
+
+  // Send a WhatsApp message (text or template)
+  sendMessage: (data: {
+    to: string;
+    patientId?: string;
+    type: 'text' | 'template' | 'document';
+    message?: string;
+    templateName?: string;
+    templateParams?: string[];
+    documentUrl?: string;
+    caption?: string;
+  }) =>
+    apiCall('/api/whatsapp/messages/send', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Get all messages / conversations
+  getMessages: (params = '') =>
+    apiCall(`/api/whatsapp/messages${formatQuery(params)}`),
+
+  // Send a report PDF via WhatsApp (document message)
+  sendReport: (data: { patientId: string; phone: string; reportUrl: string; caption?: string }) =>
+    apiCall('/api/whatsapp/messages/send-report', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Send payment receipt WhatsApp message
+  sendReceipt: (data: { patientId: string; phone: string; receiptData: Record<string, unknown> }) =>
+    apiCall('/api/whatsapp/messages/send-receipt', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  // Webhook verification endpoint helper
+  verifyWebhook: (mode: string, token: string, challenge: string) =>
+    apiCall(`/api/whatsapp/webhook/verify?hub.mode=${mode}&hub.verify_token=${token}&hub.challenge=${challenge}`),
 };
 
 // Laboratory Settings API
 export const laboratorySettingsApi = {
   // Get laboratory settings
   getSettings: async () => {
-    return apiCall('/api/laboratory-settings');
+    return apiCall('/api/settings/laboratory');
   },
 
   // Update laboratory settings
   updateSettings: async (data: any) => {
-    return apiCall('/api/laboratory-settings', {
+    return apiCall('/api/settings/laboratory', {
       method: 'PUT',
       body: JSON.stringify(data),
+    });
+  },
+
+  // Test SMTP connection
+  testSmtp: async (data?: any) => {
+    return apiCall('/api/communications/test-smtp', {
+      method: 'POST',
+      body: JSON.stringify(data || {}),
+    });
+  },
+
+  // Test WhatsApp connection
+  testWhatsApp: async (data?: any) => {
+    return apiCall('/api/communications/test-whatsapp', {
+      method: 'POST',
+      body: JSON.stringify(data || {}),
     });
   },
 };
@@ -3800,6 +3634,55 @@ export const authApi = {
 
   revokeSession: async (id: string) => {
     return apiCall(`/api/auth/sessions/${id}`, { method: 'DELETE' });
+  },
+
+  /**
+   * Re-confirm the signed-in operator before a privileged action.
+   * The password is checked by the server against the stored hash; the browser
+   * only learns whether the confirmation succeeded.
+   */
+  verifyOwner: async (password: string) => {
+    return apiCall('/api/auth/owner/verify', {
+      method: 'POST',
+      body: JSON.stringify({ password }),
+    });
+  },
+
+  /**
+   * Request a Gmail password-reset link.
+   *
+   * The response is deliberately identical for known and unknown addresses, so
+   * this call cannot be used to discover which emails have accounts.
+   */
+  forgotPassword: async (email: string) => {
+    return apiCall('/api/auth/password/forgot', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  /** Complete the reset using the emailed OTP or token. */
+  resetPassword: async (data: { email: string; code: string; newPassword: string }) => {
+    return apiCall('/api/auth/password/reset', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  /** Send (or resend) the Gmail address-verification code. */
+  requestEmailVerification: async (email: string) => {
+    return apiCall('/api/auth/verify-email/request', {
+      method: 'POST',
+      body: JSON.stringify({ email }),
+    });
+  },
+
+  /** Confirm the Gmail address with the code that was emailed. */
+  confirmEmailVerification: async (email: string, code: string) => {
+    return apiCall('/api/auth/verify-email/confirm', {
+      method: 'POST',
+      body: JSON.stringify({ email, code }),
+    });
   },
 };
 
@@ -4148,8 +4031,12 @@ export const patientApi = {
 };
 
 // Doctors API
+//
+// Every call here hits the real backend. There is intentionally no
+// fallback dataset: clinical and commission figures must never be
+// invented, so a failure surfaces as an ApiError the UI can display.
 export const doctorApi = {
-  // Get all doctors
+  /** List + KPI totals + filter facets. */
   getAll: async (params?: string | Record<string, any>) => {
     let queryString = '';
     if (typeof params === 'string') {
@@ -4167,12 +4054,11 @@ export const doctorApi = {
     return apiCall(`/api/doctors${queryString}`);
   },
 
-  // Get single doctor
+  /** Single doctor with ledger-derived metrics. */
   getById: async (id: string) => {
     return apiCall(`/api/doctors/${id}`);
   },
 
-  // Create doctor
   create: async (data: any) => {
     return apiCall('/api/doctors', {
       method: 'POST',
@@ -4180,7 +4066,6 @@ export const doctorApi = {
     });
   },
 
-  // Update doctor
   update: async (id: string, data: any) => {
     return apiCall(`/api/doctors/${id}`, {
       method: 'PATCH',
@@ -4188,7 +4073,6 @@ export const doctorApi = {
     });
   },
 
-  // Update doctor status
   updateStatus: async (id: string, isActive: boolean) => {
     return apiCall(`/api/doctors/${id}/status`, {
       method: 'PATCH',
@@ -4196,34 +4080,100 @@ export const doctorApi = {
     });
   },
 
-  // Delete doctor
-  delete: async (id: string) => {
-    return apiCall(`/api/doctors/${id}`, {
-      method: 'DELETE',
+  /** Archive (soft delete). Referral history is retained. */
+  archive: async (id: string, reason?: string) => {
+    return apiCall(`/api/doctors/${id}/archive`, {
+      method: 'POST',
+      body: JSON.stringify({ reason }),
     });
   },
 
-  // Get doctor statistics
+  restore: async (id: string) => {
+    return apiCall(`/api/doctors/${id}/restore`, { method: 'POST' });
+  },
+
+  /** Legacy hard delete — the API refuses it when history exists. */
+  delete: async (id: string) => {
+    return apiCall(`/api/doctors/${id}`, { method: 'DELETE' });
+  },
+
   getStatistics: async (id: string) => {
     return apiCall(`/api/doctors/${id}/statistics`);
   },
 
-  // Get doctor commission
-  getCommission: async (id: string) => {
-    return apiCall(`/api/doctors/${id}/commission`);
+  getCommission: async (id: string, params?: Record<string, any>) => {
+    const qs = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+    return apiCall(`/api/doctors/${id}/commission${qs}`);
   },
 
-  // Get doctors by specialization
-  getBySpecialization: async (specialization: string) => {
-    return apiCall(`/api/doctors/specialization/${specialization}`);
+  // ---- 360 view sub-resources ----
+  getReferralHistory: async (id: string, params?: Record<string, any>) => {
+    const qs = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+    return apiCall(`/api/doctors/${id}/referrals${qs}`);
   },
 
-  // Settle doctor commission payout
+  getLedger: async (id: string, params?: Record<string, any>) => {
+    const qs = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+    return apiCall(`/api/doctors/${id}/ledger${qs}`);
+  },
+
+  getPayoutHistory: async (id: string) => {
+    return apiCall(`/api/doctors/${id}/payout-history`);
+  },
+
+  getTrend: async (id: string, months = 12) => {
+    return apiCall(`/api/doctors/${id}/trend?months=${months}`);
+  },
+
+  getDocuments: async (id: string) => {
+    return apiCall(`/api/doctors/${id}/documents`);
+  },
+
+  uploadDocument: async (id: string, data: any) => {
+    return apiCall(`/api/doctors/${id}/documents`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  getActivity: async (id: string) => {
+    return apiCall(`/api/doctors/${id}/activity`);
+  },
+
+  // ---- Payouts ----
   settlePayout: async (id: string, data: any) => {
     return apiCall(`/api/doctors/${id}/payout`, {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  },
+
+  getPendingPayouts: async (params?: Record<string, any>) => {
+    const qs = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+    return apiCall(`/api/doctors/payouts/pending${qs}`);
+  },
+
+  // ---- Organisations (hospital / clinic partners) ----
+  getOrganizations: async () => apiCall('/api/doctors/organizations'),
+
+  createOrganization: async (data: any) =>
+    apiCall('/api/doctors/organizations', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    }),
+
+  updateOrganization: async (id: string, data: any) =>
+    apiCall(`/api/doctors/organizations/${id}`, {
+      method: 'PATCH',
+      body: JSON.stringify(data),
+    }),
+
+  // ---- Dropdown source for "Referred By" ----
+  search: async (q?: string, limit = 20) =>
+    apiCall(`/api/doctors/search?q=${encodeURIComponent(q || '')}&limit=${limit}`),
+
+  getBySpecialization: async (specialization: string) => {
+    return apiCall(`/api/doctors/specialization/${encodeURIComponent(specialization)}`);
   },
 };
 
@@ -4584,6 +4534,80 @@ export const orderApi = {
       });
     } catch (error) {
       console.error('Order cancellation API error:', error);
+      throw error;
+    }
+  },
+
+  // ─── Analytics ───────────────────────────────────────────────
+  getAnalytics: async (params?: { from?: string; to?: string }) => {
+    try {
+      const qs = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+      return await apiCall(`/api/orders/analytics${qs}`);
+    } catch (error) {
+      console.error('Orders analytics API error:', error);
+      return null;
+    }
+  },
+
+  getTATAnalytics: async () => {
+    try {
+      return await apiCall('/api/orders/analytics/tat');
+    } catch (error) {
+      console.error('TAT analytics API error:', error);
+      return null;
+    }
+  },
+
+  getHourlyThroughput: async () => {
+    try {
+      return await apiCall('/api/orders/analytics/hourly');
+    } catch (error) {
+      console.error('Hourly throughput API error:', error);
+      return null;
+    }
+  },
+
+  getPipeline: async (dateFilter?: string) => {
+    try {
+      const qs = dateFilter ? `?dateFilter=${dateFilter}` : '';
+      return await apiCall(`/api/orders/analytics/pipeline${qs}`);
+    } catch (error) {
+      console.error('Pipeline API error:', error);
+      return null;
+    }
+  },
+
+  getRevenueByDoctor: async (params?: { from?: string; to?: string }) => {
+    try {
+      const qs = params ? `?${new URLSearchParams(params as any).toString()}` : '';
+      return await apiCall(`/api/orders/analytics/revenue-by-doctor${qs}`);
+    } catch (error) {
+      console.error('Revenue by doctor API error:', error);
+      return null;
+    }
+  },
+
+  // ─── Bulk Operations ─────────────────────────────────────────
+  bulkEscalatePriority: async (orderIds: string[], priority: string) => {
+    try {
+      return await apiCall('/api/orders/bulk/escalate-priority', {
+        method: 'POST',
+        body: JSON.stringify({ orderIds, priority }),
+      });
+    } catch (error) {
+      console.error('Bulk escalate API error:', error);
+      throw error;
+    }
+  },
+
+  bulkUpdateStatus: async (orderIds: string[], status: string) => {
+    try {
+      return await apiCall('/api/orders/bulk/update-status', {
+        method: 'POST',
+        body: JSON.stringify({ orderIds, status }),
+      });
+    } catch (error) {
+      console.error('Bulk status API error:', error);
       throw error;
     }
   },

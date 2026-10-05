@@ -4,6 +4,7 @@ import type {
   NextFunction,
   RequestHandler,
 } from "express";
+import type { ParamsDictionary } from "express-serve-static-core";
 
 import {
   extractBearerToken,
@@ -30,8 +31,9 @@ import { idleTimeoutMinutesForRole } from "../src/lib/permissions";
  * req.user
  * will contain the currently logged-in user.
  */
-export interface AuthenticatedRequest
-  extends Request {
+export interface AuthenticatedRequest<
+  P = ParamsDictionary,
+> extends Request<P> {
   user?: AuthUser;
   sid?: string;
 }
@@ -105,7 +107,7 @@ export const authenticate: RequestHandler =
       const token =
         extractBearerToken(
           authorization
-        );
+        ) || (req as any).cookies?.accessToken;
 
       if (!token) {
         unauthorized(
@@ -303,13 +305,65 @@ export const requireRoles = (
 
     /**
      * Check role.
+     *
+     * Membership of the allowed list is required. There is deliberately no
+     * "administrators may do anything" shortcut: a gate is a statement about
+     * who may perform an action, and a blanket override silently widens every
+     * narrowly-scoped route to "any admin", which is an access policy nobody
+     * chose. Roles that are meant to have access are named in the list, and the
+     * admin roles are named there explicitly.
      */
     const role = request.user.role;
-    const elevated =
-      role === "SUPER_ADMIN" || role === "ADMIN";
+
+    if (!allowedRoles.includes(role)) {
+      forbidden(res);
+
+      return;
+    }
+
+    next();
+  };
+};
+
+/**
+ * =========================================
+ * REQUIRE ANY ONE OF THE GIVEN ROLES
+ * =========================================
+ *
+ * User must hold at least ONE of the specified
+ * roles.
+ *
+ * Example:
+ *
+ *   router.post(
+ *     "/",
+ *     authenticate,
+ *     requireAnyRole(
+ *       "ADMIN",
+ *       "FRONT_DESK"
+ *     ),
+ *     controller
+ *   );
+ */
+export const requireAnyRole = (
+  ...allowedRoles: AuthUser["role"][]
+): RequestHandler => {
+  return (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ): void => {
+    const request =
+      req as AuthenticatedRequest;
+
+    if (!request.user) {
+      unauthorized(res);
+
+      return;
+    }
+
     if (
-      !elevated &&
-      !allowedRoles.includes(role)
+      !allowedRoles.includes(request.user.role)
     ) {
       forbidden(res);
 

@@ -13,6 +13,14 @@ import BarcodeLabelModal, { BarcodeLabelItem, getTubeDetailsForTest } from "@/co
 import AbhaLinkModal from "@/components/abdm/AbhaLinkModal";
 import AbhaCardModal from "@/components/abdm/AbhaCardModal";
 import {
+  formatPatientFullName,
+  calculateClinicalAge,
+  formatIndianPhone,
+  formatBloodGroup,
+  formatAbhaNumber,
+  sanitizeMedicalConditions,
+} from "@/lib/patient-utils";
+import {
   Phone,
   Mail,
   Printer,
@@ -65,8 +73,23 @@ type Patient = {
   bloodGroup?: string | null;
   emergencyContactName?: string | null;
   emergencyContactPhone?: string | null;
+  emergencyContactRelationship?: string | null;
+  emergencyContactAddress?: string | null;
   insuranceProvider?: string | null;
+  insuranceNumber?: string | null;
+  insuranceGroupNumber?: string | null;
+  insuranceExpiryDate?: string | null;
   policyNumber?: string | null;
+  pincode?: string | null;
+  allergies?: string[] | string | null;
+  chronicDiseases?: string[] | string | null;
+  medicalConditions?: string[] | string | null;
+  currentMedications?: unknown[] | string | null;
+  preferredLanguage?: string | null;
+  preferredCommunicationMethod?: string | null;
+  notificationPreferences?: string[];
+  consentForTreatment?: boolean;
+  consentForDataSharing?: boolean;
   // ABDM / ABHA Fields
   abhaNumber?: string | null;
   abhaAddress?: string | null;
@@ -245,11 +268,17 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
     fetchPatient();
   };
 
+  // Dynamic Document Title & Formatted Name (Unconditional Hook)
+  useEffect(() => {
+    if (patient) {
+      const fullName = formatPatientFullName(patient);
+      document.title = `${fullName} (${patient.uhid || id}) - Clinical Dossier | LabCore ELIS`;
+    }
+  }, [patient, id]);
+
   useEffect(() => {
     if (id) {
       fetchPatient();
-      fetchPatientOrders();
-      fetchSampleTrackingHistory();
     }
   }, [id]);
 
@@ -265,10 +294,18 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
       setLoading(true);
       const response = await patientApi.getById(patientId);
       
+      let patientRecord: Patient | null = null;
       if (response && response.data) {
-        setPatient(response.data as Patient);
+        patientRecord = response.data as Patient;
       } else if (response) {
-        setPatient(response as Patient);
+        patientRecord = response as Patient;
+      }
+
+      if (patientRecord) {
+        setPatient(patientRecord);
+        const resolvedDbId = patientRecord.id || patientId;
+        fetchPatientOrders(resolvedDbId);
+        fetchSampleTrackingHistory(resolvedDbId);
       } else {
         setError('No patient data received from server');
       }
@@ -280,13 +317,13 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  const fetchPatientOrders = async () => {
-    const patientId = id;
+  const fetchPatientOrders = async (targetId?: string) => {
+    const patientId = targetId || patient?.id || id;
     if (!patientId) return;
 
     try {
       setLoadingOrders(true);
-      const response = await orderApi.getAll(`patientId=${patientId}`);
+      const response = await orderApi.getAll(`patientId=${encodeURIComponent(patientId)}`);
       
       let ordersData: any[] = [];
       
@@ -324,7 +361,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
         
         setTestOrders(orders);
         
-        // Calculate metrics
+        // Calculate metrics from real database orders
         const activeOrders = orders.filter((o: TestOrder) => o.status !== 'CANCELLED').length;
         const pendingReports = orders.filter((o: TestOrder) => 
           o.status === 'PROCESSING' || o.status === 'REGISTERED' || o.status === 'SAMPLE_COLLECTED' || o.status === 'Pending'
@@ -333,26 +370,35 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
         setActiveOrdersCount(activeOrders);
         setPendingReportsCount(pendingReports);
         
-        // Balance due calculation from orders if available
+        // Balance due calculation from actual orders
         const totalDue = ordersData.reduce((acc, o) => acc + (Number(o.dueAmount) || 0), 0);
-        setBalanceDue(totalDue > 0 ? totalDue : 2500);
+        setBalanceDue(totalDue);
       } else {
-        setMockData();
+        setRawOrders([]);
+        setTestOrders([]);
+        setActiveOrdersCount(0);
+        setPendingReportsCount(0);
+        setBalanceDue(0);
       }
     } catch (err: any) {
       console.error('Error fetching orders:', err);
-      setMockData();
+      setRawOrders([]);
+      setTestOrders([]);
+      setActiveOrdersCount(0);
+      setPendingReportsCount(0);
+      setBalanceDue(0);
     } finally {
       setLoadingOrders(false);
     }
   };
 
-  const fetchSampleTrackingHistory = async () => {
-    if (!id) return;
+  const fetchSampleTrackingHistory = async (targetId?: string) => {
+    const patientId = targetId || patient?.id || id;
+    if (!patientId) return;
     try {
       setLoadingTracking(true);
       // Attempt to load comprehensive tracking from real backend endpoint
-      const compRes = await sampleApi.getComprehensiveTracking(id);
+      const compRes = await sampleApi.getComprehensiveTracking(patientId);
       
       if (compRes && compRes.data && compRes.data.timeline && compRes.data.timeline.length > 0) {
         const events: TrackingEvent[] = compRes.data.timeline.map((item: any) => ({
@@ -388,27 +434,6 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
       case 'REPORT_DISPATCHED': return 'DISPATCHED';
       default: return 'REGISTERED';
     }
-  };
-
-  const setMockData = () => {
-    const mockOrders: TestOrder[] = [
-      {
-        id: 'mock-1',
-        testName: 'COMPLETE BLOOD COUNT (CBC), Random Blood Sugar',
-        date: new Date().toISOString(),
-        status: 'REGISTERED',
-        invoice: 'INV-1002',
-        barcode: `ORD-BC-${Date.now().toString().slice(-6)}`,
-        items: [
-          { test: { testName: 'COMPLETE BLOOD COUNT (CBC)', sampleType: 'WHOLE_BLOOD' } },
-          { test: { testName: 'Random Blood Sugar', sampleType: 'FLUORIDE_PLASMA' } }
-        ]
-      }
-    ];
-    setTestOrders(mockOrders);
-    setActiveOrdersCount(1);
-    setPendingReportsCount(1);
-    setBalanceDue(2500);
   };
 
   // Build Comprehensive 7-Stage Clinical Audit Trail
@@ -520,7 +545,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
 
     const patientName = `${patient?.firstName || ''} ${patient?.lastName || ''}`.trim() || 'Patient';
     const patientUhid = patient?.uhid || 'LC-000000';
-    const age = patient?.age || calculateAge(patient?.dateOfBirth);
+    const age = patient?.age ?? (patient?.dateOfBirth ? calculateClinicalAge(patient.dateOfBirth).years : 'N/A');
     const gender = patient?.gender || 'N/A';
 
     // Parse items to generate individual labels for each test / tube
@@ -681,15 +706,21 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
 
   // Fast Actions
   const handleNewTestBooking = () => {
-    router.push(`/orders/new?patientId=${id}`);
+    const pId = patient?.id || id;
+    const uhid = patient?.uhid || '';
+    router.push(`/orders/new?patientId=${pId}&uhid=${encodeURIComponent(uhid)}`);
   };
 
   const handleBillingHistory = () => {
-    router.push(`/invoices?patientId=${id}`);
+    const pId = patient?.id || id;
+    const uhid = patient?.uhid || '';
+    router.push(`/invoices?patientId=${pId}&uhid=${encodeURIComponent(uhid)}`);
   };
 
   const handleCollectPayment = () => {
-    router.push(`/payments?patientId=${id}&amount=${balanceDue}`);
+    const pId = patient?.id || id;
+    const uhid = patient?.uhid || '';
+    router.push(`/payments?patientId=${pId}&uhid=${encodeURIComponent(uhid)}&amount=${balanceDue}`);
   };
 
   const handleSendWhatsAppNotification = () => {
@@ -721,38 +752,11 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
 
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return "N/A";
-    return new Date(dateString).toLocaleDateString("en-US", {
+    return new Date(dateString).toLocaleDateString("en-IN", {
       year: "numeric",
       month: "short",
       day: "numeric",
     });
-  };
-
-  const calculateAge = (dateOfBirth?: string | null) => {
-    if (!dateOfBirth) return "N/A";
-    const today = new Date();
-    const birthDate = new Date(dateOfBirth);
-    const age = today.getFullYear() - birthDate.getFullYear();
-    const monthDiff = today.getMonth() - birthDate.getMonth();
-    if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
-      return age - 1;
-    }
-    return age;
-  };
-
-  const formatBloodGroup = (bloodGroup?: string | null) => {
-    if (!bloodGroup) return "";
-    const bloodGroupMap: { [key: string]: string } = {
-      'A_POSITIVE': 'A+',
-      'A_NEGATIVE': 'A-',
-      'B_POSITIVE': 'B+',
-      'B_NEGATIVE': 'B-',
-      'AB_POSITIVE': 'AB+',
-      'AB_NEGATIVE': 'AB-',
-      'O_POSITIVE': 'O+',
-      'O_NEGATIVE': 'O-'
-    };
-    return bloodGroupMap[bloodGroup] || bloodGroup.replace("_", "+");
   };
 
   if (loading) {
@@ -788,10 +792,25 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
   }
 
   const enrichedTimeline = getEnrichedTimeline();
+  const fullNameDisplay = formatPatientFullName(patient);
+  const clinicalAge = calculateClinicalAge(patient?.dateOfBirth, patient?.age);
+  const phoneFormatted = formatIndianPhone(patient?.phone);
 
   return (
     <DashboardLayout title="Patient Details">
       <div className="space-y-6">
+        
+        {/* Navigation Breadcrumb Bar */}
+        <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
+          <Link href="/dashboard" className="hover:text-indigo-600 transition-colors">Dashboard</Link>
+          <span>/</span>
+          <Link href="/patients" className="hover:text-indigo-600 transition-colors">Patients</Link>
+          <span>/</span>
+          <span className="text-slate-900 font-bold font-mono">{patient?.uhid || id}</span>
+          {patient?.firstName && (
+            <span className="text-slate-500 font-medium">({fullNameDisplay})</span>
+          )}
+        </div>
         
         {/* Modern Hero Header */}
         <div className="bg-white rounded-2xl border-l-4 border-blue-600 shadow-sm overflow-hidden">
@@ -809,7 +828,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center gap-3 mb-2">
                     <h1 className="text-2xl font-black text-slate-900 tracking-tight">
-                      {patient?.firstName || ''} {patient?.lastName || ''}
+                      {fullNameDisplay}
                     </h1>
                     <span className="px-3 py-1 bg-blue-50 text-blue-800 rounded-full text-xs font-mono font-bold border border-blue-200">
                       {patient?.uhid || 'N/A'}
@@ -821,7 +840,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
                     {patient?.abhaNumber ? (
                       <span className="px-2.5 py-0.5 bg-indigo-50 text-indigo-800 rounded-full text-xs font-bold border border-indigo-200 flex items-center gap-1.5 shadow-sm">
                         <Shield className="w-3.5 h-3.5 text-indigo-600" />
-                        ABHA: {patient.abhaNumber.replace(/(\d{2})(\d{4})(\d{4})(\d{4})/, "$1-$2-$3-$4")}
+                        ABHA: {formatAbhaNumber(patient.abhaNumber)}
                       </span>
                     ) : (
                       <span className="px-2.5 py-0.5 bg-amber-50 text-amber-700 rounded-full text-xs font-bold border border-amber-200 flex items-center gap-1">
@@ -842,18 +861,18 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
                       </span>
                     )}
                     <span className="px-2.5 py-1 bg-slate-100 text-slate-700 rounded-md text-xs font-bold">
-                      {patient?.age ? `${patient.age} yrs` : calculateAge(patient?.dateOfBirth)}
+                      {clinicalAge.formatted}
                     </span>
                   </div>
                   
                   <div className="flex flex-wrap items-center gap-5 text-sm text-slate-600">
                     <span className="flex items-center gap-1.5 font-medium">
                       <Phone className="w-4 h-4 text-blue-600" />
-                      {patient?.phone || 'N/A'}
+                      {phoneFormatted.display}
                     </span>
                     <span className="flex items-center gap-1.5 font-medium">
                       <Mail className="w-4 h-4 text-blue-600" />
-                      {patient?.email || 'N/A'}
+                      {patient?.email || 'Not on file'}
                     </span>
                   </div>
                 </div>
@@ -861,6 +880,15 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
               
               {/* Right: Action Buttons */}
               <div className="flex flex-wrap gap-2 self-start sm:self-auto">
+                <Link
+                  href={`/orders/new?patientId=${patient?.id || id}&uhid=${encodeURIComponent(patient?.uhid || '')}`}
+                  className="flex items-center gap-2 px-3.5 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-xs transition-all shadow-sm active:scale-95"
+                  title="Create New Lab Order for this Patient"
+                >
+                  <Plus className="w-4 h-4" />
+                  New Order
+                </Link>
+
                 {patient?.abhaNumber ? (
                   <button
                     onClick={handleOpenAbhaCard}
@@ -898,6 +926,15 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
                   <Printer className="w-4 h-4" />
                   Print Details
                 </button>
+
+                <Link
+                  href={`/patients/${patient?.uhid || patient?.id || id}/edit`}
+                  className="flex items-center gap-2 px-3.5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-xs transition-all border border-slate-200 shadow-sm active:scale-95"
+                  title="Edit Patient Demographics & Profile"
+                >
+                  <Edit className="w-4 h-4 text-slate-600" />
+                  Edit
+                </Link>
               </div>
             </div>
           </div>
@@ -929,9 +966,9 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
                       <span className="text-xs font-bold text-slate-900">{formatDate(patient?.dateOfBirth)}</span>
                     </div>
                     <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
-                      <span className="text-xs text-slate-600">Age</span>
+                      <span className="text-xs text-slate-600">Clinical Age</span>
                       <span className="text-xs font-bold text-slate-900">
-                        {patient?.age ? `${patient.age} years` : calculateAge(patient?.dateOfBirth)}
+                        {clinicalAge.formatted}
                       </span>
                     </div>
                     <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
@@ -940,7 +977,7 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
                     </div>
                     <div className="flex justify-between items-center py-1.5">
                       <span className="text-xs text-slate-600">Blood Group</span>
-                      <span className="text-xs font-bold text-slate-900">{formatBloodGroup(patient?.bloodGroup) || 'N/A'}</span>
+                      <span className="text-xs font-bold text-slate-900">{formatBloodGroup(patient?.bloodGroup)}</span>
                     </div>
                   </div>
                 </div>
@@ -954,14 +991,14 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
                         <Phone className="w-3.5 h-3.5 text-slate-400" />
                         Phone
                       </span>
-                      <span className="text-xs font-bold text-slate-900">{patient?.phone || 'N/A'}</span>
+                      <span className="text-xs font-bold text-slate-900">{phoneFormatted.display}</span>
                     </div>
                     <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
                       <span className="text-xs text-slate-600 flex items-center gap-2">
                         <Mail className="w-3.5 h-3.5 text-slate-400" />
                         Email
                       </span>
-                      <span className="text-xs font-bold text-slate-900 truncate max-w-[170px]">{patient?.email || 'N/A'}</span>
+                      <span className="text-xs font-bold text-slate-900 truncate max-w-[170px]">{patient?.email || 'Not on file'}</span>
                     </div>
                     <div className="py-1.5">
                       <span className="text-xs text-slate-600 flex items-center gap-2 mb-1">
@@ -970,9 +1007,44 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
                       </span>
                       <span className="text-xs font-bold text-slate-900 block leading-relaxed">
                         {patient?.address 
-                          ? `${patient.address}, ${patient.city || ''}, ${patient.state || ''} ${patient.postalCode || ''}`
-                          : 'N/A'}
+                          ? `${patient.address}, ${patient.city || ''}, ${patient.state || ''} ${patient.postalCode || ''}`.trim()
+                          : 'Not recorded'}
                       </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Medical Profile & Allergies */}
+                <div>
+                  <h3 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">Medical Alerts & Allergies</h3>
+                  <div className="space-y-2.5">
+                    <div className="py-1.5 border-b border-slate-100">
+                      <span className="text-xs text-slate-600 block mb-1">Drug / Food Allergies</span>
+                      {sanitizeMedicalConditions(patient?.allergies).length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {sanitizeMedicalConditions(patient?.allergies).map((item, idx) => (
+                            <span key={idx} className="px-2 py-0.5 bg-rose-50 text-rose-700 border border-rose-200 rounded text-[11px] font-bold">
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs font-medium text-slate-500">No known allergies (NKDA)</span>
+                      )}
+                    </div>
+                    <div className="py-1.5">
+                      <span className="text-xs text-slate-600 block mb-1">Chronic Conditions</span>
+                      {sanitizeMedicalConditions(patient?.medicalConditions || patient?.chronicDiseases).length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5">
+                          {sanitizeMedicalConditions(patient?.medicalConditions || patient?.chronicDiseases).map((item, idx) => (
+                            <span key={idx} className="px-2 py-0.5 bg-amber-50 text-amber-800 border border-amber-200 rounded text-[11px] font-bold">
+                              {item}
+                            </span>
+                          ))}
+                        </div>
+                      ) : (
+                        <span className="text-xs font-medium text-slate-500">None reported</span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -983,11 +1055,13 @@ export default function PatientDetailPage({ params }: { params: Promise<{ id: st
                   <div className="space-y-2.5">
                     <div className="flex justify-between items-center py-1.5 border-b border-slate-100">
                       <span className="text-xs text-slate-600">Name</span>
-                      <span className="text-xs font-bold text-slate-900">{patient?.emergencyContactName || 'N/A'}</span>
+                      <span className="text-xs font-bold text-slate-900">{patient?.emergencyContactName || 'Self / Family'}</span>
                     </div>
                     <div className="flex justify-between items-center py-1.5">
                       <span className="text-xs text-slate-600">Phone</span>
-                      <span className="text-xs font-bold text-slate-900">{patient?.emergencyContactPhone || 'N/A'}</span>
+                      <span className="text-xs font-bold text-slate-900">
+                        {patient?.emergencyContactPhone ? formatIndianPhone(patient.emergencyContactPhone).display : 'Not recorded'}
+                      </span>
                     </div>
                   </div>
                 </div>

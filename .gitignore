@@ -5,3 +5,17 @@ node_modules/
 venv/
 __pycache__/
 *.pyc
+
+# ─── Data leak prevention ───────────────────────────────────────────────
+# Database dumps, backups and encrypted archives must never reach git.
+# These contain real patient PHI, credentials and clinical results.
+*.sql
+*.dump
+*.enc
+*.tar.gz
+backups/
+.backend-backups/
+.backups/
+
+# Prisma migration files are the one exception: they are schema, not data.
+!backend/prisma/migrations/**/*.sql

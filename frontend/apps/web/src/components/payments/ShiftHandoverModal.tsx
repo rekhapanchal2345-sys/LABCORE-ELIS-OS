@@ -11,13 +11,22 @@ import {
   AlertTriangle,
   FileText,
   UserCheck,
+  ShieldCheck,
+  RotateCcw,
+  Sparkles,
+  TrendingDown,
+  TrendingUp,
+  DollarSign,
+  Receipt
 } from "lucide-react";
 import { cashCounterApi } from "@/lib/api";
+import { formatIndianRupees } from "@/lib/money";
 
 interface ShiftHandoverModalProps {
   isOpen: boolean;
   onClose: () => void;
   expectedCash: number;
+  counterId?: string;
   cashierName?: string;
   counterName?: string;
   onShiftClosed: (closingData: any) => void;
@@ -28,11 +37,13 @@ export default function ShiftHandoverModal({
   isOpen,
   onClose,
   expectedCash,
+  counterId = "counter-01",
   cashierName = "Jaya Ashapurama",
   counterName = "Counter 01 (Main OPD)",
   onShiftClosed,
   showNotification,
 }: ShiftHandoverModalProps) {
+  const [activeCounterId, setActiveCounterId] = useState(counterId || "counter-01");
   const [denominations, setDenominations] = useState<{ [key: string]: number }>({
     "2000": 0,
     "500": 0,
@@ -61,11 +72,49 @@ export default function ShiftHandoverModal({
   const variance = physicalCash - expectedCash;
 
   const formatCurrency = (val: number) => {
-    return new Intl.NumberFormat("en-IN", {
-      style: "currency",
-      currency: "INR",
-      maximumFractionDigits: 2,
-    }).format(val);
+    return formatIndianRupees(val || 0);
+  };
+
+  // Quick Auto-fill Exact Cash
+  const handleAutoFillExact = () => {
+    let remaining = expectedCash;
+    const newDenoms: { [key: string]: number } = {
+      "2000": 0,
+      "500": 0,
+      "200": 0,
+      "100": 0,
+      "50": 0,
+      "20": 0,
+      "10": 0,
+      "coins": 0,
+    };
+
+    const notes = [500, 200, 100, 50, 20, 10];
+    for (const note of notes) {
+      if (remaining >= note) {
+        const count = Math.floor(remaining / note);
+        newDenoms[String(note)] = count;
+        remaining -= count * note;
+      }
+    }
+    if (remaining > 0) {
+      newDenoms["coins"] = remaining;
+    }
+
+    setDenominations(newDenoms);
+  };
+
+  const handleResetCount = () => {
+    setDenominations({
+      "2000": 0,
+      "500": 0,
+      "200": 0,
+      "100": 0,
+      "50": 0,
+      "20": 0,
+      "10": 0,
+      "coins": 0,
+    });
   };
 
   // Print 80mm Thermal Handover Till Slip
@@ -91,7 +140,7 @@ export default function ShiftHandoverModal({
           </style>
         </head>
         <body>
-          <div class="center bold" style="font-size: 13px;">LABCORE ELIS</div>
+          <div class="center bold" style="font-size: 13px;">LABCORE DIAGNOSTICS & HOSPITAL OS</div>
           <div class="center bold">CASH TILL SHIFT HANDOVER SLIP</div>
           <div class="center" style="font-size: 9px;">${counterName.toUpperCase()}</div>
           <div class="divider"></div>
@@ -121,7 +170,7 @@ export default function ShiftHandoverModal({
             <span>Cashier Sig: __________</span>
             <span>Supervisor: __________</span>
           </div>
-          <div class="center" style="margin-top: 10px; font-size: 8px;">THANK YOU • LABCORE FINANCE</div>
+          <div class="center" style="margin-top: 10px; font-size: 8px;">THANK YOU • LABCORE FINANCE DESK</div>
         </body>
       </html>
     `);
@@ -185,131 +234,175 @@ export default function ShiftHandoverModal({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm">
-      <div className="relative w-full max-w-xl max-h-[92vh] overflow-y-auto rounded-3xl bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 border border-slate-100">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md animate-in fade-in">
+      <div className="relative w-full max-w-2xl max-h-[92vh] overflow-y-auto rounded-3xl bg-slate-900 border border-slate-800 p-6 shadow-2xl space-y-5 animate-in zoom-in-95">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+        <div className="flex items-center justify-between border-b border-slate-800 pb-4">
           <div className="flex items-center gap-3">
-            <div className="h-10 w-10 rounded-2xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center text-white shadow-md shadow-amber-500/20">
+            <div className="h-11 w-11 rounded-2xl bg-gradient-to-tr from-amber-600 to-orange-500 flex items-center justify-center text-white shadow-lg shadow-amber-500/25 border border-amber-400/30">
               <Clock className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-slate-900 tracking-tight">
+              <h3 className="text-xl font-black text-white tracking-tight">
                 Close Counter & Shift Handover
               </h3>
-              <p className="text-xs text-slate-500">
-                Count currency till denominations and reconcile against expected float
+              <p className="text-xs font-medium text-slate-400 mt-0.5">
+                Reconcile physical cash drawer denominations against expected POS ledger
               </p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="rounded-full p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-600 transition"
+            className="rounded-xl p-2 text-slate-400 hover:bg-slate-800 hover:text-white transition"
           >
             <X className="h-5 w-5" />
           </button>
         </div>
 
-        <div className="mt-5 space-y-4">
-          {/* Active Session Info */}
-          <div className="flex items-center justify-between rounded-2xl bg-slate-50 p-3.5 text-xs border border-slate-200">
-            <div>
-              <span className="text-slate-500">Active Shift: </span>
-              <strong className="text-slate-900">{counterName}</strong>
+        <div className="space-y-4">
+          {/* Active Session Info Bar */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between rounded-2xl bg-slate-950/80 p-3.5 text-xs border border-slate-800 gap-2">
+            <div className="flex items-center gap-2">
+              <Building2 className="h-4 w-4 text-blue-400" />
+              <span className="text-slate-400">Active Shift: </span>
+              <strong className="text-white font-bold">{counterName}</strong>
             </div>
-            <div>
-              <span className="text-slate-500">Cashier: </span>
-              <strong className="text-blue-800">{cashierName}</strong>
+            <div className="flex items-center gap-2">
+              <UserCheck className="h-4 w-4 text-emerald-400" />
+              <span className="text-slate-400">Cashier: </span>
+              <strong className="text-emerald-300 font-bold">{cashierName}</strong>
             </div>
           </div>
 
-          {/* Expected Drawer Cash */}
-          <div className="rounded-2xl bg-blue-50/70 border border-blue-200 p-4 text-xs flex items-center justify-between">
+          {/* System Expected Drawer Cash Card */}
+          <div className="rounded-2xl bg-gradient-to-r from-blue-950/80 to-indigo-950/80 border border-blue-500/30 p-4.5 shadow-xl flex items-center justify-between">
             <div>
-              <div className="font-bold text-blue-950 uppercase tracking-wider text-[11px]">
-                System Expected Drawer Cash
+              <div className="flex items-center gap-1.5 text-xs font-black uppercase tracking-wider text-blue-300">
+                <Receipt className="h-4 w-4 text-blue-400" />
+                <span>System Expected Drawer Cash</span>
               </div>
-              <div className="text-[11px] text-blue-700 mt-0.5">
-                Opening Float + Cash Collections - Cash Refunds
+              <div className="text-[11px] font-semibold text-blue-300/80 mt-1">
+                Opening Float + Cash Collections − Cash Refunds
               </div>
             </div>
-            <strong className="font-mono text-xl font-extrabold text-blue-950">
-              {formatCurrency(expectedCash)}
-            </strong>
+            <div className="text-right">
+              <span className="font-mono text-2xl font-black text-white drop-shadow">
+                {formatCurrency(expectedCash)}
+              </span>
+            </div>
           </div>
 
-          {/* Currency Denominations Grid */}
+          {/* Currency Denominations Grid Header & Tools */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
-              Currency Denominations Count
-            </label>
-            <div className="grid grid-cols-2 gap-2 text-xs">
-              {[
-                { note: "₹2000 Note", key: "2000" },
-                { note: "₹500 Note", key: "500" },
-                { note: "₹200 Note", key: "200" },
-                { note: "₹100 Note", key: "100" },
-                { note: "₹50 Note", key: "50" },
-                { note: "₹20 Note", key: "20" },
-                { note: "₹10 Note", key: "10" },
-                { note: "Coins (₹)", key: "coins" },
-              ].map(({ note, key }) => (
-                <div
-                  key={key}
-                  className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-2.5 transition focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-50"
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-300 flex items-center gap-1.5">
+                <Coins className="h-4 w-4 text-amber-400" />
+                <span>Physical Currency Denominations Count</span>
+              </label>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleAutoFillExact}
+                  className="flex items-center gap-1 text-[11px] font-bold text-blue-400 hover:text-blue-300 bg-blue-950/60 hover:bg-blue-900/60 px-2.5 py-1 rounded-lg border border-blue-800/40 transition"
+                  title="Auto-fill exact expected cash into denominations"
                 >
-                  <span className="font-semibold text-slate-700">{note} ×</span>
-                  <input
-                    type="number"
-                    min="0"
-                    value={denominations[key] || ""}
-                    onChange={(e) =>
-                      setDenominations({
-                        ...denominations,
-                        [key]: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    placeholder="0"
-                    className="w-20 rounded-lg border border-slate-200 p-1 text-right font-mono font-bold text-slate-900 outline-none focus:border-blue-500"
-                  />
-                </div>
-              ))}
+                  <Sparkles className="h-3 w-3" />
+                  <span>Exact Fill</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleResetCount}
+                  className="flex items-center gap-1 text-[11px] font-bold text-slate-400 hover:text-white bg-slate-800 hover:bg-slate-700 px-2.5 py-1 rounded-lg border border-slate-700 transition"
+                  title="Reset all counts to 0"
+                >
+                  <RotateCcw className="h-3 w-3" />
+                  <span>Reset</span>
+                </button>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs">
+              {[
+                { note: "₹2000 Note", key: "2000", val: 2000, color: "text-purple-400" },
+                { note: "₹500 Note", key: "500", val: 500, color: "text-amber-400" },
+                { note: "₹200 Note", key: "200", val: 200, color: "text-orange-400" },
+                { note: "₹100 Note", key: "100", val: 100, color: "text-sky-400" },
+                { note: "₹50 Note", key: "50", val: 50, color: "text-cyan-400" },
+                { note: "₹20 Note", key: "20", val: 20, color: "text-red-400" },
+                { note: "₹10 Note", key: "10", val: 10, color: "text-emerald-400" },
+                { note: "Coins (₹)", key: "coins", val: 1, color: "text-yellow-400" },
+              ].map(({ note, key, val, color }) => {
+                const count = denominations[key] || 0;
+                const subTotal = count * val;
+
+                return (
+                  <div
+                    key={key}
+                    className="flex flex-col justify-between rounded-xl border border-slate-800 bg-slate-950/90 p-2.5 transition focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500/20"
+                  >
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className={`font-bold ${color}`}>{note}</span>
+                      <span className="text-[10px] font-mono text-slate-500">
+                        ₹{subTotal}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-1">
+                      <input
+                        type="number"
+                        min="0"
+                        value={count || ""}
+                        onChange={(e) =>
+                          setDenominations({
+                            ...denominations,
+                            [key]: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        placeholder="0"
+                        className="w-full rounded-lg border border-slate-700 bg-slate-900 px-2 py-1.5 text-right font-mono font-black text-white outline-none focus:border-blue-500 text-xs"
+                      />
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
-          {/* Variance Live Calculation Card */}
-          <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 text-xs space-y-2">
+          {/* Variance & Reconciliation Status Card */}
+          <div className="rounded-2xl border border-slate-800 bg-slate-950/90 p-4 text-xs space-y-2.5 shadow-xl">
             <div className="flex items-center justify-between">
-              <span className="text-slate-600">Physical Counted Cash:</span>
-              <strong className="font-mono text-base font-bold text-slate-900">
+              <span className="text-slate-400 font-semibold">Physical Counted Cash:</span>
+              <strong className="font-mono text-lg font-black text-white">
                 {formatCurrency(physicalCash)}
               </strong>
             </div>
-            <div className="flex items-center justify-between border-t border-slate-200 pt-2">
-              <span className="text-slate-700 font-semibold">Till Reconciliation Status:</span>
+
+            <div className="flex items-center justify-between border-t border-slate-800/80 pt-2.5">
+              <span className="text-slate-300 font-bold">Till Reconciliation Status:</span>
               <span
-                className={`font-bold font-mono text-sm inline-flex items-center gap-1.5 ${
+                className={`font-black font-mono text-xs inline-flex items-center gap-1.5 px-3 py-1 rounded-full border ${
                   variance === 0
-                    ? "text-emerald-600"
+                    ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
                     : variance > 0
-                    ? "text-amber-600"
-                    : "text-rose-600"
+                    ? "bg-amber-500/10 border-amber-500/30 text-amber-400"
+                    : "bg-rose-500/10 border-rose-500/30 text-rose-400"
                 }`}
               >
                 {variance === 0 ? (
                   <>
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    Balanced (₹0.00)
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
+                    <span>Balanced (₹0.00 Exact)</span>
                   </>
                 ) : variance > 0 ? (
                   <>
-                    <AlertTriangle className="h-4 w-4 text-amber-600" />
-                    +{formatCurrency(variance)} (Excess in Till)
+                    <TrendingUp className="h-3.5 w-3.5 text-amber-400" />
+                    <span>+{formatCurrency(variance)} (Excess in Till)</span>
                   </>
                 ) : (
                   <>
-                    <AlertTriangle className="h-4 w-4 text-rose-600" />
-                    {formatCurrency(variance)} (Shortage in Till)
+                    <AlertTriangle className="h-3.5 w-3.5 text-rose-400" />
+                    <span>{formatCurrency(variance)} (Shortage in Till)</span>
                   </>
                 )}
               </span>
@@ -318,7 +411,7 @@ export default function ShiftHandoverModal({
 
           {/* Handover remarks */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+            <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
               Handover Remarks / Supervisor Notes
             </label>
             <input
@@ -326,34 +419,44 @@ export default function ShiftHandoverModal({
               value={remarks}
               onChange={(e) => setRemarks(e.target.value)}
               placeholder="e.g. Physical till handed over to evening cashier (Riya Patel)"
-              className="w-full rounded-xl border border-slate-200 p-2.5 text-xs outline-none focus:border-blue-500"
+              className="w-full rounded-xl border border-slate-700 bg-slate-950 p-2.5 text-xs text-white placeholder-slate-500 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
             />
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+          <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
             <button
               type="button"
               onClick={onClose}
-              className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50 transition"
+              className="rounded-xl border border-slate-700 bg-slate-800 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-700 transition"
             >
               Cancel
             </button>
             <button
               type="button"
               onClick={handlePrintSlip}
-              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-300 bg-white px-4 py-2.5 text-sm font-semibold text-slate-800 shadow-sm hover:bg-slate-50 transition"
+              className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-800 px-4 py-2.5 text-xs font-bold text-white shadow-md hover:bg-slate-700 transition"
             >
-              <Printer className="h-4 w-4 text-blue-700" />
-              Print Till Slip
+              <Printer className="h-4 w-4 text-blue-400" />
+              <span>Print Till Slip</span>
             </button>
             <button
               type="button"
               onClick={handleSubmit}
               disabled={submitting}
-              className="rounded-xl bg-amber-600 px-6 py-2.5 text-sm font-bold text-white shadow-lg shadow-amber-600/20 hover:bg-amber-500 active:scale-95 disabled:opacity-50 transition"
+              className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 px-6 py-2.5 text-xs font-black text-white shadow-lg shadow-amber-600/25 hover:from-amber-500 hover:to-orange-500 active:scale-95 disabled:opacity-50 transition"
             >
-              {submitting ? "Closing Shift..." : "Submit Shift Handover"}
+              {submitting ? (
+                <>
+                  <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                  <span>Closing Shift...</span>
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="h-4 w-4" />
+                  <span>Submit Shift Handover</span>
+                </>
+              )}
             </button>
           </div>
         </div>

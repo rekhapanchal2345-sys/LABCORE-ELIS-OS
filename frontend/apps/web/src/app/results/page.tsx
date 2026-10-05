@@ -39,6 +39,7 @@ import { PremiumStatusBadge } from "@/components/results/PremiumStatusBadge";
 import { CommandPalette, useCommandPalette } from "@/components/results/CommandPalette";
 import { PremiumEmptyState } from "@/components/results/PremiumEmptyState";
 import { TableSkeleton } from "@/components/results/SkeletonLoader";
+import NotificationDispatchModal, { NotificationPayload } from "@/components/common/NotificationDispatchModal";
 
 // Advanced Real-World Clinical Modules
 import CriticalPanicEscalationHub from "@/components/results/CriticalPanicEscalationHub";
@@ -174,6 +175,10 @@ export default function ResultsPage() {
   // Result history modal
   const [showHistoryModal, setShowHistoryModal] = useState(false);
   const [selectedResultForHistory, setSelectedResultForHistory] = useState<ResultData | null>(null);
+
+  // Notification dispatch modal
+  const [showNotifyModal, setShowNotifyModal] = useState(false);
+  const [notifyPayload, setNotifyPayload] = useState<NotificationPayload | null>(null);
 
   // Debounced search
   useEffect(() => {
@@ -355,6 +360,25 @@ export default function ResultsPage() {
     } else {
       console.error("Result not found:", resultId);
       alert("Result not found. Please refresh the page and try again.");
+    }
+  };
+
+  const handleNotifyPatient = (resultId: string) => {
+    const result = results.find(r => r.id === resultId);
+    if (result) {
+      const p = result.order.patient;
+      const isCritical = result.values?.some(v => v.flag === "CRITICAL" || v.flag === "PANIC");
+      setNotifyPayload({
+        patientId: p.id,
+        patientName: `${p.firstName} ${p.lastName}`,
+        phone: p.phone,
+        uhid: p.uhid,
+        context: isCritical ? "CRITICAL" : "RESULT",
+        testName: result.test.testName,
+        orderNumber: result.order.orderNumber,
+        date: result.approvedAt || result.verifiedAt || result.enteredAt || result.createdAt,
+      });
+      setShowNotifyModal(true);
     }
   };
 
@@ -601,6 +625,19 @@ export default function ResultsPage() {
               <button onClick={handleExport} className="inline-flex items-center gap-2 rounded-lg bg-cyan-400 px-3 py-2 text-sm font-semibold text-slate-950 transition hover:bg-cyan-300">
                 <Download className="h-4 w-4" /> Export CSV
               </button>
+              {results.length > 0 && (
+                <button
+                  onClick={() => {
+                    // Notify for the most recent approved result if any
+                    const approved = results.find(r => r.status === "APPROVED" || r.status === "PUBLISHED");
+                    if (approved) handleNotifyPatient(approved.id);
+                    else handleNotifyPatient(results[0].id);
+                  }}
+                  className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-violet-600 to-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-lg shadow-violet-600/20 hover:from-violet-500 transition"
+                >
+                  <Zap className="h-4 w-4" /> Notify Patient
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -911,6 +948,7 @@ export default function ResultsPage() {
                         dataType: "NUMERIC",
                         referenceRanges: [
                           {
+                            id: `rr-${selectedResultForEntry.test.id || "1"}`,
                             normalLow: selectedResultForEntry.test.testName?.toLowerCase().includes("glucose") ? 70 : 0.35,
                             normalHigh: selectedResultForEntry.test.testName?.toLowerCase().includes("glucose") ? 99 : 4.94,
                             criticalLow: selectedResultForEntry.test.testName?.toLowerCase().includes("glucose") ? 45 : 0.05,
@@ -1065,6 +1103,15 @@ export default function ResultsPage() {
           setPage(1);
         }}
       />
+      {/* Notification Dispatch Modal */}
+      {showNotifyModal && notifyPayload && (
+        <NotificationDispatchModal
+          isOpen={showNotifyModal}
+          onClose={() => setShowNotifyModal(false)}
+          payload={notifyPayload}
+        />
+      )}
     </DashboardLayout>
+
   );
 }

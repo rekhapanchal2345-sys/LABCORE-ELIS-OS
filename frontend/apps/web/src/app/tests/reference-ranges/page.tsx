@@ -4,6 +4,27 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { testApi } from "@/lib/api";
+import {
+  Scale,
+  Plus,
+  Search,
+  FlaskConical,
+  CheckCircle2,
+  Trash2,
+  Edit,
+  Sparkles,
+  Filter,
+  ShieldCheck,
+  ChevronRight,
+  Layers,
+  Sliders,
+  X,
+  BellRing,
+  User,
+  Users,
+  Baby,
+  Activity
+} from "lucide-react";
 
 interface ReferenceRange {
   id: string;
@@ -120,7 +141,7 @@ export default function ReferenceRangesPage() {
         });
         setRanges(allRanges);
       } else {
-        setError(response.message || "Failed to fetch reference ranges");
+        setError(response.message || "Failed to fetch reference intervals");
       }
     } catch (err) {
       console.error("Error fetching reference ranges:", err);
@@ -135,18 +156,15 @@ export default function ReferenceRangesPage() {
     setTimeout(() => setSuccessMessage(null), 3500);
   };
 
-  // Available parameters based on selected test in modal
-  const selectedTestObj = tests.find((t) => t.id === formData.testId);
-  const availableParameters = selectedTestObj?.parameters || [];
-
-  const handleOpenAddModal = () => {
-    const firstTest = tests[0];
-    const firstParam = firstTest?.parameters?.[0];
-
+  const handleOpenAddModal = (testIdPrefill?: string, paramIdPrefill?: string) => {
     setEditingRange(null);
+    const defaultTest = testIdPrefill || (tests[0]?.id ? String(tests[0].id) : "");
+    const testObj = tests.find((t) => t.id === defaultTest);
+    const defaultParam = paramIdPrefill || (testObj?.parameters?.[0]?.id ? String(testObj.parameters[0].id) : "");
+
     setFormData({
-      testId: firstTest ? String(firstTest.id) : "",
-      parameterId: firstParam ? String(firstParam.id) : "",
+      testId: defaultTest,
+      parameterId: defaultParam,
       gender: "MALE",
       ageGroup: "ADULT",
       minAge: 18,
@@ -176,10 +194,10 @@ export default function ReferenceRangesPage() {
       maxAge: range.maxAge ?? 60,
       minAgeUnit: range.minAgeUnit || "YEARS",
       maxAgeUnit: range.maxAgeUnit || "YEARS",
-      criticalLow: range.criticalLow !== undefined && range.criticalLow !== null ? String(range.criticalLow) : "",
-      normalLow: range.normalLow !== undefined && range.normalLow !== null ? String(range.normalLow) : "",
-      normalHigh: range.normalHigh !== undefined && range.normalHigh !== null ? String(range.normalHigh) : "",
-      criticalHigh: range.criticalHigh !== undefined && range.criticalHigh !== null ? String(range.criticalHigh) : "",
+      criticalLow: range.criticalLow !== undefined ? String(range.criticalLow) : "",
+      normalLow: range.normalLow !== undefined ? String(range.normalLow) : "",
+      normalHigh: range.normalHigh !== undefined ? String(range.normalHigh) : "",
+      criticalHigh: range.criticalHigh !== undefined ? String(range.criticalHigh) : "",
       normalValueText: range.normalValueText || "",
       interpretation: range.interpretation || "",
       notes: range.notes || "",
@@ -189,11 +207,11 @@ export default function ReferenceRangesPage() {
   };
 
   const handleDeleteRange = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this reference range?")) return;
+    if (!confirm("Are you sure you want to delete this biological reference interval?")) return;
 
     try {
       await testApi.deleteReferenceRange(id);
-      showNotification("Reference range deleted successfully");
+      showNotification("Reference range interval deleted");
       setRanges(ranges.filter((r) => r.id !== id));
     } catch (err) {
       alert(err instanceof Error ? err.message : "Failed to delete reference range");
@@ -203,7 +221,7 @@ export default function ReferenceRangesPage() {
   const handleSaveRange = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.parameterId) {
-      alert("Please select a target parameter for this reference range");
+      alert("Please select a target analyte parameter for this interval");
       return;
     }
     setSaving(true);
@@ -212,27 +230,26 @@ export default function ReferenceRangesPage() {
       const payload: any = {
         gender: formData.gender,
         ageGroup: formData.ageGroup,
-        minAge: Number(formData.minAge) || 0,
-        maxAge: Number(formData.maxAge) || 120,
+        minAge: Number(formData.minAge),
+        maxAge: Number(formData.maxAge),
         minAgeUnit: formData.minAgeUnit,
         maxAgeUnit: formData.maxAgeUnit,
+        normalLow: formData.normalLow ? Number(formData.normalLow) : undefined,
+        normalHigh: formData.normalHigh ? Number(formData.normalHigh) : undefined,
+        criticalLow: formData.criticalLow ? Number(formData.criticalLow) : undefined,
+        criticalHigh: formData.criticalHigh ? Number(formData.criticalHigh) : undefined,
+        normalValueText: formData.normalValueText || undefined,
+        interpretation: formData.interpretation || undefined,
+        notes: formData.notes || undefined,
         isActive: formData.isActive,
       };
 
-      if (formData.criticalLow !== "") payload.criticalLow = parseFloat(formData.criticalLow);
-      if (formData.normalLow !== "") payload.normalLow = parseFloat(formData.normalLow);
-      if (formData.normalHigh !== "") payload.normalHigh = parseFloat(formData.normalHigh);
-      if (formData.criticalHigh !== "") payload.criticalHigh = parseFloat(formData.criticalHigh);
-      if (formData.normalValueText) payload.normalValueText = formData.normalValueText;
-      if (formData.interpretation) payload.interpretation = formData.interpretation;
-      if (formData.notes) payload.notes = formData.notes;
-
       if (editingRange) {
         await testApi.updateReferenceRange(editingRange.id, payload);
-        showNotification("Reference range updated successfully!");
+        showNotification("Reference interval updated successfully!");
       } else {
         await testApi.addReferenceRange(formData.parameterId, payload);
-        showNotification("Reference range added successfully!");
+        showNotification("Reference interval added successfully!");
       }
       setShowModal(false);
       await fetchData();
@@ -243,477 +260,428 @@ export default function ReferenceRangesPage() {
     }
   };
 
+  // Filtered parameters of selected test in form modal
+  const activeFormTest = tests.find((t) => t.id === formData.testId);
+  const activeTestParameters = activeFormTest?.parameters || [];
+
+  // Filtered ranges list
   const filteredRanges = ranges.filter((range) => {
     const matchesSearch =
-      !searchTerm ||
-      (range.parameter?.parameterName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (range.parameter?.test?.testName || "").toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (range.parameter?.test?.testCode || "").toLowerCase().includes(searchTerm.toLowerCase());
+      (range.parameter?.parameterName && range.parameter.parameterName.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (range.parameter?.unit && range.parameter.unit.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (range.parameter?.test?.testName && range.parameter.test.testName.toLowerCase().includes(searchTerm.toLowerCase()));
 
-    const matchesGender = !selectedGender || range.gender === selectedGender;
-    const matchesTest = !selectedTest || range.parameter?.test?.id === selectedTest;
+    const matchesGender = selectedGender ? range.gender === selectedGender : true;
+    const matchesTest = selectedTest ? range.parameter?.test?.id === selectedTest : true;
 
     return matchesSearch && matchesGender && matchesTest;
   });
 
   return (
     <ProtectedRoute requiredRoles={["ADMIN", "FRONT_DESK", "LAB_TECH", "PATHOLOGIST", "DOCTOR"]}>
-      <div className="space-y-6">
-        {/* Floating Notification */}
+      <div className="space-y-6 pb-24">
+        {/* Success Toast */}
         {successMessage && (
-          <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-xl border border-green-200 bg-green-50 px-4 py-3 text-xs font-bold text-green-800 shadow-lg animate-in slide-in-from-top duration-200">
-            <span>✓</span> {successMessage}
+          <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl border border-emerald-500/40 bg-emerald-950/90 px-5 py-3 text-xs font-black text-emerald-300 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+            <span>{successMessage}</span>
           </div>
         )}
 
-        {/* Top Header */}
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        {/* Master Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
           <div>
-            <h1 className="text-2xl font-extrabold text-gray-900 tracking-tight">
-              Clinical Reference Ranges & Critical Panic Values
+            <div className="flex items-center gap-2 text-xs font-bold text-blue-400 mb-1">
+              <Scale className="h-3.5 w-3.5" />
+              <span>NABL & CAP Biological Normal Limits / Decision Thresholds</span>
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+              <span>Biological Reference Intervals Matrix</span>
             </h1>
-            <p className="text-xs text-gray-500 mt-1">
-              Configure physiological safe zones, demographic thresholds (age & gender), and critical alert values
+            <p className="text-xs font-medium text-slate-400 mt-1">
+              Configure gender, age-stratified reference ranges, panic critical values, and interpretation guidelines
             </p>
           </div>
 
-          <button
-            onClick={handleOpenAddModal}
-            className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-xs font-bold text-white hover:bg-blue-700 transition shadow-sm"
-          >
-            <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-            </svg>
-            Add Reference Range
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => handleOpenAddModal()}
+              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4.5 py-2.5 text-xs font-black text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-lg shadow-blue-500/25"
+            >
+              <Plus className="h-4 w-4" />
+              <span>Add Reference Interval</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Search & Filter Bar */}
+        <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-3 shadow-xl flex flex-col lg:flex-row items-center justify-between gap-3">
+          <div className="relative w-full lg:w-96">
+            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+            <input
+              type="text"
+              placeholder="Search by analyte name, unit, or investigation..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full rounded-xl border border-slate-700 bg-slate-900 pl-10 pr-4 py-2 text-xs font-semibold text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 w-full lg:w-auto">
+            <select
+              value={selectedGender}
+              onChange={(e) => setSelectedGender(e.target.value)}
+              className="rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
+            >
+              <option value="">All Genders</option>
+              <option value="MALE">Male Only</option>
+              <option value="FEMALE">Female Only</option>
+              <option value="BOTH">Universal (Both)</option>
+            </select>
+
+            <select
+              value={selectedTest}
+              onChange={(e) => setSelectedTest(e.target.value)}
+              className="rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
+            >
+              <option value="">All Investigations ({tests.length})</option>
+              {tests.map((t) => (
+                <option key={t.id} value={t.id} className="bg-slate-900">
+                  {t.testCode || t.code} - {t.testName || t.name}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
 
         {error && (
-          <div className="rounded-xl bg-red-50 border border-red-200 p-4 text-xs text-red-800">
+          <div className="rounded-2xl bg-rose-950/60 border border-rose-500/40 p-4 text-xs font-bold text-rose-300">
             {error}
           </div>
         )}
 
-        {/* Filters */}
-        <div className="bg-white rounded-2xl border border-gray-200 p-4 shadow-sm">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Search Ranges</label>
-              <input
-                type="text"
-                placeholder="Search by parameter or test name..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-xs focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Filter by Test</label>
-              <select
-                value={selectedTest}
-                onChange={(e) => setSelectedTest(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-xs bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-              >
-                <option value="">All Tests ({tests.length} tests)</option>
-                {tests.map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.testCode} - {t.testName}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-gray-700 mb-1">Gender Cohort</label>
-              <select
-                value={selectedGender}
-                onChange={(e) => setSelectedGender(e.target.value)}
-                className="w-full rounded-xl border border-gray-300 px-3 py-2 text-xs bg-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-100"
-              >
-                <option value="">All Genders</option>
-                <option value="MALE">Male Only</option>
-                <option value="FEMALE">Female Only</option>
-                <option value="OTHER">Both / Universal</option>
-              </select>
-            </div>
+        {/* Intervals Table View */}
+        {loading ? (
+          <div className="py-20 text-center space-y-3">
+            <div className="h-8 w-8 animate-spin rounded-full border-3 border-blue-500 border-t-transparent mx-auto" />
+            <div className="text-xs font-bold text-slate-400">Loading Biological Intervals...</div>
           </div>
-        </div>
-
-        {/* Reference Ranges Data Table */}
-        <div className="rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left">
-              <thead className="bg-gray-50/80 border-b border-gray-200 text-gray-500 uppercase tracking-wider text-[11px] font-bold">
-                <tr>
-                  <th className="py-3 px-4">Test & Parameter</th>
-                  <th className="py-3 px-4">Cohort (Age & Gender)</th>
-                  <th className="py-3 px-4 text-center">Panic Low</th>
-                  <th className="py-3 px-4 text-center">Normal Safe Range</th>
-                  <th className="py-3 px-4 text-center">Panic High</th>
-                  <th className="py-3 px-4 text-center">Visual Gauge</th>
-                  <th className="py-3 pr-6 pl-4 text-right">Actions</th>
-                </tr>
-              </thead>
-
-              <tbody className="divide-y divide-gray-100 text-xs">
-                {loading ? (
+        ) : filteredRanges.length === 0 ? (
+          <div className="rounded-2xl border-2 border-dashed border-slate-800 bg-slate-900/40 p-12 text-center space-y-4">
+            <Scale className="h-10 w-10 text-slate-600 mx-auto" />
+            <h3 className="text-base font-black text-white">No reference intervals configured</h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Configure physiological reference ranges (Male, Female, Pediatric, Geriatric) with panic critical thresholds.
+            </p>
+            <button
+              onClick={() => handleOpenAddModal()}
+              className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-xs font-bold text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-lg shadow-blue-500/25"
+            >
+              + Add First Interval
+            </button>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-slate-800 bg-slate-900/70 backdrop-blur-xl overflow-hidden shadow-2xl">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-slate-950/90 border-b border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-400">
                   <tr>
-                    <td colSpan={7} className="py-16 text-center text-gray-500">
-                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent mx-auto mb-2" />
-                      Loading clinical reference ranges...
-                    </td>
+                    <th className="px-4 py-3.5">Analyte Parameter</th>
+                    <th className="px-4 py-3.5">Investigation</th>
+                    <th className="px-4 py-3.5">Gender / Age Demographic</th>
+                    <th className="px-4 py-3.5">Normal Physiological Range</th>
+                    <th className="px-4 py-3.5">Critical Panic Thresholds</th>
+                    <th className="px-4 py-3.5 text-right">Actions</th>
                   </tr>
-                ) : filteredRanges.length === 0 ? (
-                  <tr>
-                    <td colSpan={7} className="py-16 text-center text-gray-500">
-                      <p className="font-semibold text-gray-800">No reference ranges configured</p>
-                      <p className="text-[11px] text-gray-400 mt-1">
-                        Click &quot;Add Reference Range&quot; to define age/gender ranges and critical panic alert limits.
-                      </p>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredRanges.map((range) => {
-                    const unit = range.parameter?.unit || "";
+                </thead>
+                <tbody className="divide-y divide-slate-800/60 text-xs font-medium text-slate-300">
+                  {filteredRanges.map((range) => {
+                    const hasCritical = range.criticalLow !== undefined || range.criticalHigh !== undefined;
 
                     return (
-                      <tr key={range.id} className="hover:bg-gray-50 transition">
-                        {/* Parameter & Test */}
-                        <td className="py-3.5 px-4">
-                          <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded mr-1.5">
-                            {range.parameter?.test?.testCode || "TEST"}
+                      <tr key={range.id} className="hover:bg-slate-800/40 transition">
+                        <td className="px-4 py-3.5">
+                          <span className="font-bold text-white">
+                            {range.parameter?.parameterName || "Parameter"}
                           </span>
-                          <span className="font-bold text-gray-900">
-                            {range.parameter?.parameterName || "—"}
-                          </span>
-                          <span className="text-[11px] text-gray-400 block mt-0.5">
-                            {range.parameter?.test?.testName}
+                          <span className="ml-2 font-mono text-[10px] text-blue-400 bg-blue-950/60 px-1.5 py-0.5 rounded border border-blue-800/40">
+                            {range.parameter?.unit || "—"}
                           </span>
                         </td>
 
-                        {/* Demographics */}
-                        <td className="py-3.5 px-4">
-                          <div className="flex items-center gap-1.5">
-                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-bold ${
+                        <td className="px-4 py-3.5 text-slate-300">
+                          {range.parameter?.test?.testName || "—"}
+                        </td>
+
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-2">
+                            <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
                               range.gender === "MALE"
-                                ? "bg-blue-100 text-blue-800"
+                                ? "bg-blue-500/10 text-blue-400 border border-blue-500/30"
                                 : range.gender === "FEMALE"
-                                ? "bg-pink-100 text-pink-800"
-                                : "bg-gray-100 text-gray-800"
+                                ? "bg-pink-500/10 text-pink-400 border border-pink-500/30"
+                                : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
                             }`}>
-                              {range.gender || "ALL"}
+                              {range.gender}
                             </span>
-                            <span className="text-gray-700 font-medium">
-                              {range.ageGroup ? range.ageGroup : `${range.minAge || 0} - ${range.maxAge || 120} ${range.maxAgeUnit || "Yrs"}`}
+                            <span className="text-[11px] text-slate-400">
+                              {range.minAge ?? 0} - {range.maxAge ?? 100} {range.minAgeUnit || "YEARS"}
                             </span>
                           </div>
                         </td>
 
-                        {/* Panic Low */}
-                        <td className="py-3.5 px-4 text-center">
-                          {range.criticalLow !== undefined && range.criticalLow !== null ? (
-                            <span className="font-mono font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded">
-                              &lt; {range.criticalLow}
-                            </span>
+                        <td className="px-4 py-3.5 font-bold text-emerald-400 font-mono">
+                          {range.normalLow !== undefined && range.normalHigh !== undefined
+                            ? `${range.normalLow} - ${range.normalHigh} ${range.parameter?.unit || ""}`
+                            : range.normalValueText || "Qualitative"}
+                        </td>
+
+                        <td className="px-4 py-3.5">
+                          {hasCritical ? (
+                            <div className="space-y-0.5">
+                              {range.criticalLow !== undefined && (
+                                <span className="inline-flex items-center gap-1 rounded bg-rose-950/80 px-2 py-0.5 text-[10px] font-bold text-rose-400 border border-rose-800/40 mr-1">
+                                  <span>&lt; {range.criticalLow}</span>
+                                </span>
+                              )}
+                              {range.criticalHigh !== undefined && (
+                                <span className="inline-flex items-center gap-1 rounded bg-rose-950/80 px-2 py-0.5 text-[10px] font-bold text-rose-400 border border-rose-800/40">
+                                  <span>&gt; {range.criticalHigh}</span>
+                                </span>
+                              )}
+                            </div>
                           ) : (
-                            <span className="text-gray-300">—</span>
+                            <span className="text-slate-500 text-[11px]">None</span>
                           )}
                         </td>
 
-                        {/* Normal Range */}
-                        <td className="py-3.5 px-4 text-center">
-                          {range.normalLow !== undefined && range.normalHigh !== undefined && range.normalLow !== null ? (
-                            <span className="font-mono font-bold text-emerald-700 bg-emerald-50 border border-emerald-200 px-2.5 py-1 rounded">
-                              {range.normalLow} - {range.normalHigh} {unit}
-                            </span>
-                          ) : range.normalValueText ? (
-                            <span className="font-medium text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded">
-                              {range.normalValueText}
-                            </span>
-                          ) : (
-                            <span className="text-gray-400">Not set</span>
-                          )}
-                        </td>
-
-                        {/* Panic High */}
-                        <td className="py-3.5 px-4 text-center">
-                          {range.criticalHigh !== undefined && range.criticalHigh !== null ? (
-                            <span className="font-mono font-bold text-red-600 bg-red-50 border border-red-200 px-2 py-0.5 rounded">
-                              &gt; {range.criticalHigh}
-                            </span>
-                          ) : (
-                            <span className="text-gray-300">—</span>
-                          )}
-                        </td>
-
-                        {/* Visual Range Indicator Bar */}
-                        <td className="py-3.5 px-4 text-center">
-                          <div className="flex items-center justify-center gap-1 w-28 mx-auto">
-                            <span className="h-2 w-4 rounded-l bg-red-400" title="Panic Low Threshold" />
-                            <span className="h-2 w-12 bg-green-500 rounded-xs" title="Normal Safe Zone" />
-                            <span className="h-2 w-4 rounded-r bg-red-400" title="Panic High Threshold" />
-                          </div>
-                        </td>
-
-                        {/* Actions */}
-                        <td className="py-3.5 pr-6 pl-4 text-right">
-                          <div className="flex items-center justify-end gap-1">
+                        <td className="px-4 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-1.5">
                             <button
+                              type="button"
                               onClick={() => handleEditRange(range)}
-                              className="rounded-lg p-1.5 text-gray-600 hover:bg-gray-100 transition"
+                              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition"
                               title="Edit Range"
                             >
-                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                              </svg>
+                              <Edit className="h-3.5 w-3.5" />
                             </button>
                             <button
+                              type="button"
                               onClick={() => handleDeleteRange(range.id)}
-                              className="rounded-lg p-1.5 text-red-600 hover:bg-red-50 transition"
+                              className="p-1.5 rounded-lg text-slate-400 hover:bg-rose-950/50 hover:text-rose-400 transition"
                               title="Delete Range"
                             >
-                              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                              </svg>
+                              <Trash2 className="h-3.5 w-3.5" />
                             </button>
                           </div>
                         </td>
                       </tr>
                     );
-                  })
-                )}
-              </tbody>
-            </table>
+                  })}
+                </tbody>
+              </table>
+            </div>
           </div>
-        </div>
+        )}
 
-        {/* Modal: Add/Edit Reference Range */}
+        {/* MODAL: ADD / EDIT REFERENCE RANGE */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs animate-in fade-in duration-200">
-            <div className="relative w-full max-w-xl rounded-2xl bg-white shadow-2xl overflow-hidden border border-gray-100">
-              <div className="border-b border-gray-200 bg-gray-50 px-6 py-4 flex items-center justify-between">
-                <h2 className="text-base font-bold text-gray-900">
-                  {editingRange ? "Edit Reference Range" : "Add Demographic Reference Range"}
-                </h2>
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md animate-in fade-in">
+            <div className="relative w-full max-w-2xl rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-2 rounded-xl bg-blue-600/20 text-blue-400">
+                    <Scale className="h-5 w-5" />
+                  </span>
+                  <div>
+                    <h2 className="text-base font-black text-white">
+                      {editingRange ? "Edit Biological Reference Range" : "Add Biological Reference Interval"}
+                    </h2>
+                    <p className="text-[11px] text-slate-400">
+                      Configure gender, age thresholds, and panic alert triggers
+                    </p>
+                  </div>
+                </div>
+
                 <button
+                  type="button"
                   onClick={() => setShowModal(false)}
-                  className="rounded-lg p-1 text-gray-400 hover:bg-gray-200"
+                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition"
                 >
-                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
+                  <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <form onSubmit={handleSaveRange} className="p-6 space-y-4">
-                {/* Test & Parameter Selector */}
-                <div className="grid grid-cols-2 gap-3">
+              <form onSubmit={handleSaveRange} className="space-y-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Parent Test */}
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      Parent Test <span className="text-red-500">*</span>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      Investigation
                     </label>
                     <select
-                      required
-                      disabled={Boolean(editingRange)}
                       value={formData.testId}
                       onChange={(e) => {
                         const newTestId = e.target.value;
                         const tObj = tests.find((t) => t.id === newTestId);
-                        setFormData({
-                          ...formData,
-                          testId: newTestId,
-                          parameterId: tObj?.parameters?.[0]?.id || "",
-                        });
+                        const firstP = tObj?.parameters?.[0]?.id || "";
+                        setFormData({ ...formData, testId: newTestId, parameterId: firstP });
                       }}
-                      className="w-full rounded-xl border border-gray-300 px-3 py-2 text-xs bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-100"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
                     >
-                      <option value="">Select Test</option>
+                      <option value="">Select Investigation</option>
                       {tests.map((t) => (
-                        <option key={t.id} value={t.id}>
-                          {t.testCode} - {t.testName}
+                        <option key={t.id} value={t.id} className="bg-slate-900">
+                          {t.testCode || t.code} - {t.testName || t.name}
                         </option>
                       ))}
                     </select>
                   </div>
 
+                  {/* Target Parameter */}
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">
-                      Target Parameter <span className="text-red-500">*</span>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      Analyte Parameter <span className="text-rose-400">*</span>
                     </label>
                     <select
                       required
-                      disabled={Boolean(editingRange)}
                       value={formData.parameterId}
                       onChange={(e) => setFormData({ ...formData, parameterId: e.target.value })}
-                      className="w-full rounded-xl border border-gray-300 px-3 py-2 text-xs bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 disabled:bg-gray-100"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
                     >
                       <option value="">Select Parameter</option>
-                      {availableParameters.map((p: any) => (
-                        <option key={p.id} value={p.id}>
-                          {p.parameterName} ({p.unit || "no unit"})
+                      {activeTestParameters.map((p: any) => (
+                        <option key={p.id} value={p.id} className="bg-slate-900">
+                          {p.parameterName} ({p.unit || "—"})
                         </option>
                       ))}
                     </select>
                   </div>
                 </div>
 
-                {/* Demographics: Gender & Age Presets */}
-                <div className="grid grid-cols-2 gap-3">
+                {/* Gender & Demographic */}
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Gender</label>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      Gender Demographic
+                    </label>
                     <select
                       value={formData.gender}
                       onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                      className="w-full rounded-xl border border-gray-300 px-3 py-2 text-xs bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
                     >
-                      <option value="MALE">Male (Adult / Pediatric)</option>
-                      <option value="FEMALE">Female (Adult / Pediatric)</option>
-                      <option value="OTHER">Both / Universal Cohort</option>
+                      <option value="MALE" className="bg-slate-900">Male Only</option>
+                      <option value="FEMALE" className="bg-slate-900">Female Only</option>
+                      <option value="BOTH" className="bg-slate-900">Universal (Both)</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Age Group</label>
-                    <select
-                      value={formData.ageGroup}
-                      onChange={(e) => setFormData({ ...formData, ageGroup: e.target.value })}
-                      className="w-full rounded-xl border border-gray-300 px-3 py-2 text-xs bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    >
-                      <option value="ADULT">Adult</option>
-                      <option value="PEDIATRIC">Pediatric</option>
-                      <option value="SENIOR">Senior / Geriatric</option>
-                      <option value="INFANT">Infant</option>
-                      <option value="NEWBORN">Newborn</option>
-                      <option value="ALL">All Ages</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Age Range Inputs */}
-                <div className="grid grid-cols-4 gap-2">
-                  <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Min Age</label>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      Min Age ({formData.minAgeUnit})
+                    </label>
                     <input
                       type="number"
-                      min="0"
                       value={formData.minAge}
                       onChange={(e) => setFormData({ ...formData, minAge: parseInt(e.target.value) || 0 })}
-                      className="w-full rounded-xl border border-gray-300 px-3 py-2 text-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Max Age</label>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      Max Age ({formData.maxAgeUnit})
+                    </label>
                     <input
                       type="number"
-                      min="0"
                       value={formData.maxAge}
                       onChange={(e) => setFormData({ ...formData, maxAge: parseInt(e.target.value) || 120 })}
-                      className="w-full rounded-xl border border-gray-300 px-3 py-2 text-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
                     />
                   </div>
-
-                  <div className="col-span-2">
-                    <label className="block text-xs font-semibold text-gray-700 mb-1">Age Unit</label>
-                    <select
-                      value={formData.maxAgeUnit}
-                      onChange={(e) => setFormData({ ...formData, minAgeUnit: e.target.value, maxAgeUnit: e.target.value })}
-                      className="w-full rounded-xl border border-gray-300 px-3 py-2 text-xs bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                    >
-                      <option value="YEARS">Years</option>
-                      <option value="MONTHS">Months</option>
-                      <option value="DAYS">Days</option>
-                    </select>
-                  </div>
                 </div>
 
-                {/* Numerical Reference Safe Zone & Panic Limits */}
-                <div className="rounded-xl border border-gray-200 bg-gray-50/70 p-3 space-y-3">
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-gray-700">
-                    Numerical Safe Zone & Panic Thresholds
-                  </h3>
-
-                  <div className="grid grid-cols-4 gap-2 text-xs">
+                {/* Normal Bounds */}
+                <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 space-y-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-emerald-400 block">
+                    Normal Reference Bounds
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-red-600 font-bold mb-1">Panic Low (&lt;)</label>
+                      <label className="block text-[10px] font-bold text-emerald-400 mb-1">
+                        Normal Low Value
+                      </label>
                       <input
                         type="number"
                         step="any"
-                        placeholder="e.g. 7.0"
-                        value={formData.criticalLow}
-                        onChange={(e) => setFormData({ ...formData, criticalLow: e.target.value })}
-                        className="w-full rounded-xl border border-red-300 bg-red-50/50 px-3 py-2 text-xs font-bold text-red-700 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-emerald-700 font-bold mb-1">Normal Low</label>
-                      <input
-                        type="number"
-                        step="any"
-                        placeholder="e.g. 13.0"
                         value={formData.normalLow}
                         onChange={(e) => setFormData({ ...formData, normalLow: e.target.value })}
-                        className="w-full rounded-xl border border-emerald-300 bg-emerald-50/50 px-3 py-2 text-xs font-bold text-emerald-800 focus:outline-none"
+                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white"
                       />
                     </div>
-
                     <div>
-                      <label className="block text-emerald-700 font-bold mb-1">Normal High</label>
+                      <label className="block text-[10px] font-bold text-emerald-400 mb-1">
+                        Normal High Value
+                      </label>
                       <input
                         type="number"
                         step="any"
-                        placeholder="e.g. 17.0"
                         value={formData.normalHigh}
                         onChange={(e) => setFormData({ ...formData, normalHigh: e.target.value })}
-                        className="w-full rounded-xl border border-emerald-300 bg-emerald-50/50 px-3 py-2 text-xs font-bold text-emerald-800 focus:outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-red-600 font-bold mb-1">Panic High (&gt;)</label>
-                      <input
-                        type="number"
-                        step="any"
-                        placeholder="e.g. 20.0"
-                        value={formData.criticalHigh}
-                        onChange={(e) => setFormData({ ...formData, criticalHigh: e.target.value })}
-                        className="w-full rounded-xl border border-red-300 bg-red-50/50 px-3 py-2 text-xs font-bold text-red-700 focus:outline-none"
+                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Qualitative Textual Range */}
-                <div>
-                  <label className="block text-xs font-semibold text-gray-700 mb-1">
-                    Qualitative / Text Normal Value (Optional)
-                  </label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Negative, Non-Reactive, Clear / Pale Yellow"
-                    value={formData.normalValueText}
-                    onChange={(e) => setFormData({ ...formData, normalValueText: e.target.value })}
-                    className="w-full rounded-xl border border-gray-300 px-3 py-2 text-xs focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
-                  />
-                  <span className="text-[10px] text-gray-400 mt-0.5 block">Used for non-numeric or serology tests</span>
+                {/* Panic Bounds */}
+                <div className="rounded-2xl border border-rose-500/30 bg-rose-950/20 p-4 space-y-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-rose-400 block">
+                    Panic Critical Value Alert Triggers
+                  </span>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[10px] font-bold text-rose-300 mb-1">
+                        Critical Panic Low (Doctor Immediate Alert)
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={formData.criticalLow}
+                        onChange={(e) => setFormData({ ...formData, criticalLow: e.target.value })}
+                        className="w-full rounded-xl border border-rose-500/30 bg-slate-900 px-3 py-2 text-xs font-bold text-rose-300 placeholder-rose-700"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-bold text-rose-300 mb-1">
+                        Critical Panic High (Doctor Immediate Alert)
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        value={formData.criticalHigh}
+                        onChange={(e) => setFormData({ ...formData, criticalHigh: e.target.value })}
+                        className="w-full rounded-xl border border-rose-500/30 bg-slate-900 px-3 py-2 text-xs font-bold text-rose-300 placeholder-rose-700"
+                      />
+                    </div>
+                  </div>
                 </div>
 
-                <div className="border-t border-gray-100 pt-4 flex items-center justify-end gap-2">
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="rounded-xl border border-gray-300 px-4 py-2 text-xs font-semibold text-gray-700 hover:bg-gray-50"
+                    className="rounded-xl border border-slate-700 bg-slate-800 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-700"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    className="rounded-xl bg-blue-600 px-5 py-2 text-xs font-bold text-white hover:bg-blue-700 disabled:opacity-50"
+                    className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-xs font-black text-white hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/25 disabled:opacity-50"
                   >
-                    {saving ? "Saving..." : editingRange ? "Update Range" : "Save Reference Range"}
+                    {saving ? "Saving..." : editingRange ? "Update Interval" : "Add Interval"}
                   </button>
                 </div>
               </form>
