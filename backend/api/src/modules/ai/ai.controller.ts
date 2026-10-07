@@ -9,6 +9,12 @@ import {
   getModelRegistry,
   deployModel,
   getAiAuditLogs,
+  analyzeCbc,
+  checkDrugInteractions,
+  predictAmrSusceptibility,
+  classifyThyroidDisease,
+  analyzeCoagulation,
+  generateSmartReport,
 } from "./ai.service";
 
 export const trainClassical = async (
@@ -166,6 +172,112 @@ export const getAuditLogs = async (
       success: true,
       message: "AI Audit trail fetched",
       data: logs,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+// =======================================================
+// NEW CLINICAL ENGINE CONTROLLERS
+// =======================================================
+
+export const cbcAnalyze = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const result = await analyzeCbc(req.body);
+    res.status(200).json({
+      success: true,
+      message: "CBC auto-differential analysis complete",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const drugInteractionCheck = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const result = await checkDrugInteractions(req.body);
+    res.status(200).json({
+      success: true,
+      message: "Drug interaction analysis complete",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const amrPredict = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const result = await predictAmrSusceptibility(req.body);
+    res.status(200).json({
+      success: true,
+      message: "AMR susceptibility prediction complete",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const thyroidClassify = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const result = await classifyThyroidDisease(req.body);
+    res.status(200).json({
+      success: true,
+      message: "Thyroid disease classification complete",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const coagulationAnalyze = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const result = await analyzeCoagulation(req.body);
+    res.status(200).json({
+      success: true,
+      message: "Coagulation risk analysis complete",
+      data: result,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+export const smartReportGenerate = async (
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const result = await generateSmartReport(req.body);
+    res.status(200).json({
+      success: true,
+      message: "Smart report narrative generated",
+      data: result,
     });
   } catch (error) {
     next(error);

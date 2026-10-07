@@ -66,7 +66,13 @@ type AiTab =
   | "forecasting"
   | "evaluation"
   | "registry"
-  | "audit";
+  | "audit"
+  | "cbc-analyzer"
+  | "drug-interactions"
+  | "amr-susceptibility"
+  | "thyroid-classifier"
+  | "coagulation-risk"
+  | "smart-report";
 
 type DiagnosticPanel =
   | "CARDIAC_ACS"
@@ -306,6 +312,85 @@ function AiStudioContent() {
   const [showDocModal, setShowDocModal] = useState(false);
   const [isGuideBannerOpen, setIsGuideBannerOpen] = useState(true);
   const [guideLang, setGuideLang] = useState<GuideLangCode>("hi");
+
+  // ==================== NEW ENGINE STATES ====================
+
+  // CBC Analyzer
+  const [cbcHb, setCbcHb] = useState(8.2);
+  const [cbcRbc, setCbcRbc] = useState(3.4);
+  const [cbcWbc, setCbcWbc] = useState(14.8);
+  const [cbcPlatelets, setCbcPlatelets] = useState(85);
+  const [cbcHematocrit, setCbcHematocrit] = useState(28);
+  const [cbcMcv, setCbcMcv] = useState(65);
+  const [cbcMch, setCbcMch] = useState(18);
+  const [cbcMchc, setCbcMchc] = useState(28);
+  const [cbcNeutrophils, setCbcNeutrophils] = useState(78);
+  const [cbcLymphocytes, setCbcLymphocytes] = useState(16);
+  const [cbcMonocytes, setCbcMonocytes] = useState(4);
+  const [cbcEosinophils, setCbcEosinophils] = useState(1);
+  const [cbcBasophils, setCbcBasophils] = useState(1);
+  const [cbcRdw, setCbcRdw] = useState(16.2);
+  const [cbcGender, setCbcGender] = useState<"MALE" | "FEMALE">("FEMALE");
+  const [cbcAge, setCbcAge] = useState(38);
+  const [cbcResult, setCbcResult] = useState<any>(null);
+  const [cbcLoading, setCbcLoading] = useState(false);
+
+  // Drug Interaction
+  const [drugMedList, setDrugMedList] = useState<string[]>(["warfarin", "aspirin", "atorvastatin"]);
+  const [drugMedInput, setDrugMedInput] = useState("");
+  const [drugResult, setDrugResult] = useState<any>(null);
+  const [drugLoading, setDrugLoading] = useState(false);
+  const [drugRenalFn, setDrugRenalFn] = useState("NORMAL");
+  const [drugHepaticFn, setDrugHepaticFn] = useState("NORMAL");
+  const [drugAge, setDrugAge] = useState(64);
+
+  // AMR Susceptibility
+  const [amrOrganism, setAmrOrganism] = useState("E. coli");
+  const [amrSpecimen, setAmrSpecimen] = useState("URINE");
+  const [amrGramStain, setAmrGramStain] = useState("NEGATIVE");
+  const [amrHospital, setAmrHospital] = useState(false);
+  const [amrResult, setAmrResult] = useState<any>(null);
+  const [amrLoading, setAmrLoading] = useState(false);
+
+  // Thyroid Classifier
+  const [thyroidTsh, setThyroidTsh] = useState(12.4);
+  const [thyroidFt4, setThyroidFt4] = useState(10.2);
+  const [thyroidFt3, setThyroidFt3] = useState(3.4);
+  const [thyroidTpo, setThyroidTpo] = useState(420);
+  const [thyroidTg, setThyroidTg] = useState(180);
+  const [thyroidAge, setThyroidAge] = useState(42);
+  const [thyroidGender, setThyroidGender] = useState("FEMALE");
+  const [thyroidResult, setThyroidResult] = useState<any>(null);
+  const [thyroidLoading, setThyroidLoading] = useState(false);
+
+  // Coagulation
+  const [coagPt, setCoagPt] = useState(18.5);
+  const [coagInr, setCoagInr] = useState(1.8);
+  const [coagAptt, setCoagAptt] = useState(52);
+  const [coagFibrinogen, setCoagFibrinogen] = useState(180);
+  const [coagDDimer, setCoagDDimer] = useState(1250);
+  const [coagPlatelets, setCoagPlatelets] = useState(68);
+  const [coagIndication, setCoagIndication] = useState("DIC_ASSESSMENT");
+  const [coagResult, setCoagResult] = useState<any>(null);
+  const [coagLoading, setCoagLoading] = useState(false);
+
+  // Smart Report
+  const [srPatientName, setSrPatientName] = useState("Ramesh Verma");
+  const [srPatientAge, setSrPatientAge] = useState(55);
+  const [srPatientGender, setSrPatientGender] = useState("MALE");
+  const [srUhid, setSrUhid] = useState("UHID-10892");
+  const [srDoctor, setSrDoctor] = useState("Dr. Ashok Sharma");
+  const [srDept, setSrDept] = useState("Biochemistry");
+  const [srHistory, setSrHistory] = useState("Known T2DM, Hypertension on antihypertensives. Referred for cardiac workup.");
+  const [srTestResults, setSrTestResults] = useState([
+    { testName: "Troponin I (hs-cTnI)", value: 1.84, unit: "ng/mL", referenceRange: "<0.04", flag: "CRITICAL_HIGH" },
+    { testName: "Serum Potassium (K+)", value: 6.4, unit: "mEq/L", referenceRange: "3.5–5.1", flag: "CRITICAL_HIGH" },
+    { testName: "Serum Creatinine", value: 2.3, unit: "mg/dL", referenceRange: "0.7–1.3", flag: "HIGH" },
+    { testName: "HbA1c", value: 8.6, unit: "%", referenceRange: "<5.7", flag: "HIGH" },
+    { testName: "Total Cholesterol", value: 198, unit: "mg/dL", referenceRange: "<200", flag: "NORMAL" },
+  ]);
+  const [srResult, setSrResult] = useState<any>(null);
+  const [srLoading, setSrLoading] = useState(false);
 
   // Load Model Registry from backend
   const loadModels = async () => {
@@ -813,35 +898,71 @@ function AiStudioContent() {
       </div>
 
       {/* ==================== 2. HOSPITAL SUB-MODULE NAVIGATION TOOLBAR (WHITE THEME) ==================== */}
-      <div className="bg-white border border-slate-200/90 rounded-xl p-1.5 shadow-[0_2px_8px_rgba(15,23,42,0.03)] flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
-        {[
-          { id: "overview", label: "Clinical AI Hub", icon: Brain },
-          { id: "classical-ml", label: "Diagnostic Risk ML", icon: Network },
-          { id: "deep-learning", label: "Biomarker Neural Nets", icon: Layers },
-          { id: "nlp", label: "Clinical NLP & EMR", icon: FileText },
-          { id: "anomalies", label: "Critical Delta-Checks", icon: AlertTriangle },
-          { id: "forecasting", label: "Hospital TAT Forecaster", icon: TrendingUp },
-          { id: "evaluation", label: "Clinical Validation", icon: LineChart },
-          { id: "registry", label: `Hospital Model Registry (${registryModels.length})`, icon: Archive },
-          { id: "audit", label: "Regulatory AI Audit", icon: ShieldCheck },
-        ].map((tab) => {
-          const Icon = tab.icon;
-          const isActive = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id as AiTab)}
-              className={`px-3.5 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-2 shrink-0 cursor-pointer ${
-                isActive
-                  ? "bg-blue-600 text-white shadow-sm"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent"
-              }`}
-            >
-              <Icon className="w-3.5 h-3.5" />
-              {tab.label}
-            </button>
-          );
-        })}
+      <div className="bg-white border border-slate-200/90 rounded-xl p-1.5 shadow-[0_2px_8px_rgba(15,23,42,0.03)] flex items-center gap-1 overflow-x-auto no-scrollbar text-xs">
+        {/* Core AI Modules */}
+        <div className="flex items-center gap-1 shrink-0">
+          {[
+            { id: "overview", label: "AI Hub", icon: Brain },
+            { id: "classical-ml", label: "Risk ML", icon: Network },
+            { id: "deep-learning", label: "Neural Nets", icon: Layers },
+            { id: "nlp", label: "NLP & EMR", icon: FileText },
+            { id: "anomalies", label: "Delta-Check", icon: AlertTriangle },
+            { id: "forecasting", label: "TAT Forecast", icon: TrendingUp },
+            { id: "evaluation", label: "Validation", icon: LineChart },
+            { id: "registry", label: `Registry (${registryModels.length})`, icon: Archive },
+            { id: "audit", label: "AI Audit", icon: ShieldCheck },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as AiTab)}
+                className={`px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  isActive
+                    ? "bg-blue-600 text-white shadow-sm"
+                    : "text-slate-600 hover:text-slate-900 hover:bg-slate-50 border border-transparent"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {/* Divider */}
+        <div className="w-px h-6 bg-slate-200 shrink-0 mx-1" />
+
+        {/* NEW Clinical Engines */}
+        <div className="flex items-center gap-1 shrink-0">
+          <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-1 shrink-0">New</span>
+          {[
+            { id: "cbc-analyzer", label: "CBC Analyzer", icon: Microscope },
+            { id: "drug-interactions", label: "Drug Interactions", icon: FlaskConical },
+            { id: "amr-susceptibility", label: "AMR Predictor", icon: Dna },
+            { id: "thyroid-classifier", label: "Thyroid AI", icon: Activity },
+            { id: "coagulation-risk", label: "Coagulation", icon: HeartPulse },
+            { id: "smart-report", label: "Smart Report", icon: FileCheck },
+          ].map((tab) => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id as AiTab)}
+                className={`px-3 py-2 rounded-lg text-xs font-semibold transition flex items-center gap-1.5 shrink-0 cursor-pointer ${
+                  isActive
+                    ? "bg-emerald-600 text-white shadow-sm"
+                    : "text-emerald-700 hover:text-emerald-900 hover:bg-emerald-50 border border-transparent"
+                }`}
+              >
+                <Icon className="w-3.5 h-3.5" />
+                {tab.label}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       {/* ==================== TAB 1: CLINICAL AI OVERVIEW ==================== */}
@@ -2163,6 +2284,1021 @@ function AiStudioContent() {
                 </tbody>
               </table>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* ==================== TAB: CBC AUTO-ANALYZER ==================== */}
+      {activeTab === "cbc-analyzer" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left: CBC Inputs */}
+            <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-6 space-y-4 shadow-xs">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                    <Microscope className="w-4 h-4 text-emerald-600" /> CBC Auto-Analyzer with Morphology AI
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Complete Blood Count differential & morphology pattern recognition</p>
+                </div>
+                <span className="text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded">SYSMEX XN-Class</span>
+              </div>
+
+              {/* Preset Buttons */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  { label: "IDA Anemia", hb: 7.8, wbc: 8.2, plt: 280, mcv: 62, neut: 72, lymph: 22, eos: 2 },
+                  { label: "Dengue Fever", hb: 12.4, wbc: 3.2, plt: 42, mcv: 84, neut: 48, lymph: 42, eos: 1 },
+                  { label: "Acute Infection", hb: 13.8, wbc: 18.4, plt: 320, mcv: 88, neut: 84, lymph: 12, eos: 1 },
+                  { label: "Normal", hb: 14.2, wbc: 7.4, plt: 240, mcv: 88, neut: 62, lymph: 30, eos: 2 },
+                ].map((preset) => (
+                  <button
+                    key={preset.label}
+                    onClick={() => {
+                      setCbcHb(preset.hb); setCbcWbc(preset.wbc); setCbcPlatelets(preset.plt);
+                      setCbcMcv(preset.mcv); setCbcNeutrophils(preset.neut); setCbcLymphocytes(preset.lymph); setCbcEosinophils(preset.eos);
+                    }}
+                    className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-emerald-50 hover:border-emerald-300 hover:text-emerald-700 text-slate-600 cursor-pointer transition"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Patient Gender</label>
+                  <select value={cbcGender} onChange={(e) => setCbcGender(e.target.value as any)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500">
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Age (years)</label>
+                  <input type="number" value={cbcAge} onChange={(e) => setCbcAge(Number(e.target.value))} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500" />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-2.5 text-xs font-mono">
+                {[
+                  { label: "Hb (g/dL)", val: cbcHb, set: setCbcHb, step: 0.1 },
+                  { label: "RBC (M/μL)", val: cbcRbc, set: setCbcRbc, step: 0.1 },
+                  { label: "WBC (K/μL)", val: cbcWbc, set: setCbcWbc, step: 0.1 },
+                  { label: "Platelets (K)", val: cbcPlatelets, set: setCbcPlatelets, step: 1 },
+                  { label: "Hematocrit %", val: cbcHematocrit, set: setCbcHematocrit, step: 0.5 },
+                  { label: "MCV (fL)", val: cbcMcv, set: setCbcMcv, step: 0.5 },
+                  { label: "MCH (pg)", val: cbcMch, set: setCbcMch, step: 0.1 },
+                  { label: "MCHC (g/dL)", val: cbcMchc, set: setCbcMchc, step: 0.1 },
+                  { label: "RDW %", val: cbcRdw, set: setCbcRdw, step: 0.1 },
+                  { label: "Neutrophils %", val: cbcNeutrophils, set: setCbcNeutrophils, step: 1 },
+                  { label: "Lymphocytes %", val: cbcLymphocytes, set: setCbcLymphocytes, step: 1 },
+                  { label: "Eosinophils %", val: cbcEosinophils, set: setCbcEosinophils, step: 0.5 },
+                ].map((field) => (
+                  <div key={field.label}>
+                    <label className="block text-[10px] text-slate-500 font-semibold mb-1">{field.label}</label>
+                    <input type="number" step={field.step} value={field.val} onChange={(e) => field.set(Number(e.target.value))}
+                      className="w-full bg-white border border-slate-200 rounded-lg px-2 py-1.5 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-emerald-100 focus:border-emerald-500" />
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={async () => {
+                  setCbcLoading(true);
+                  try {
+                    const res = await (aiApi as any).analyzeCbc({
+                      hb: cbcHb, rbc: cbcRbc, wbc: cbcWbc, platelets: cbcPlatelets,
+                      hematocrit: cbcHematocrit, mcv: cbcMcv, mch: cbcMch, mchc: cbcMchc,
+                      neutrophils: cbcNeutrophils, lymphocytes: cbcLymphocytes, monocytes: cbcMonocytes,
+                      eosinophils: cbcEosinophils, basophils: cbcBasophils, rdw: cbcRdw,
+                      patientAge: cbcAge, patientGender: cbcGender,
+                    });
+                    if (res?.data) setCbcResult(res.data);
+                  } catch (e) { console.error(e); } finally { setCbcLoading(false); }
+                }}
+                disabled={cbcLoading}
+                className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition text-xs"
+              >
+                {cbcLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing CBC...</> : <><Microscope className="w-4 h-4" /> Run CBC Auto-Differential Analysis</>}
+              </button>
+            </div>
+
+            {/* Right: CBC Results */}
+            <div className="lg:col-span-7 space-y-4">
+              {cbcResult ? (
+                <>
+                  {/* Urgency Banner */}
+                  <div className={`rounded-xl p-4 border ${
+                    cbcResult.urgency === "CRITICAL_PANIC" ? "bg-rose-50 border-rose-200" :
+                    cbcResult.urgency === "HIGH_RISK" ? "bg-amber-50 border-amber-200" :
+                    cbcResult.urgency === "ELEVATED" ? "bg-yellow-50 border-yellow-200" :
+                    "bg-emerald-50 border-emerald-200"
+                  }`}>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 ${
+                        cbcResult.urgency === "CRITICAL_PANIC" ? "bg-rose-100" :
+                        cbcResult.urgency === "HIGH_RISK" ? "bg-amber-100" :
+                        cbcResult.urgency === "ELEVATED" ? "bg-yellow-100" : "bg-emerald-100"
+                      }`}>
+                        <Microscope className={`w-5 h-5 ${
+                          cbcResult.urgency === "CRITICAL_PANIC" ? "text-rose-600" :
+                          cbcResult.urgency === "HIGH_RISK" ? "text-amber-600" :
+                          cbcResult.urgency === "ELEVATED" ? "text-yellow-700" : "text-emerald-600"
+                        }`} />
+                      </div>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full ${
+                            cbcResult.urgency === "CRITICAL_PANIC" ? "bg-rose-100 text-rose-700" :
+                            cbcResult.urgency === "HIGH_RISK" ? "bg-amber-100 text-amber-700" :
+                            cbcResult.urgency === "ELEVATED" ? "bg-yellow-100 text-yellow-700" : "bg-emerald-100 text-emerald-700"
+                          }`}>{cbcResult.urgency}</span>
+                        </div>
+                        <p className="text-xs font-bold text-slate-900 mt-1">{cbcResult.overallImpression}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Morphology Pattern */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-4">
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1">Morphology Pattern</div>
+                    <div className="text-xs font-bold text-blue-700">{cbcResult.morphologyPattern}</div>
+                  </div>
+
+                  {/* Flags Table */}
+                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/70">
+                      <h4 className="font-bold text-xs text-slate-900 flex items-center gap-2">
+                        <BarChart3 className="w-3.5 h-3.5 text-emerald-600" /> CBC Parameter Flags
+                      </h4>
+                    </div>
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-100">
+                        <tr>
+                          <th className="py-2.5 px-4 text-left">Parameter</th>
+                          <th className="py-2.5 px-4 text-left">Value</th>
+                          <th className="py-2.5 px-4 text-left">Reference</th>
+                          <th className="py-2.5 px-4 text-left">Flag</th>
+                          <th className="py-2.5 px-4 text-left">Interpretation</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {cbcResult.flags?.map((flag: any, i: number) => (
+                          <tr key={i} className="hover:bg-slate-50/80 transition">
+                            <td className="py-2.5 px-4 font-bold text-slate-700">{flag.parameter}</td>
+                            <td className="py-2.5 px-4 font-mono font-bold text-slate-900">{flag.value}</td>
+                            <td className="py-2.5 px-4 text-slate-500">{flag.referenceRange}</td>
+                            <td className="py-2.5 px-4">
+                              <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
+                                flag.flag === "CRITICAL_LOW" || flag.flag === "CRITICAL_HIGH" ? "bg-rose-50 text-rose-700 border border-rose-200" :
+                                flag.flag === "LOW" || flag.flag === "HIGH" ? "bg-amber-50 text-amber-700 border border-amber-200" :
+                                "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              }`}>{flag.flag}</span>
+                            </td>
+                            <td className="py-2.5 px-4 text-slate-600 text-[11px]">{flag.interpretation}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {/* Differential Diagnosis */}
+                  {cbcResult.differentialDiagnosis?.length > 0 && (
+                    <div className="bg-white border border-slate-200 rounded-xl p-4">
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Differential Diagnosis</div>
+                      <div className="flex flex-wrap gap-2">
+                        {cbcResult.differentialDiagnosis.map((d: string, i: number) => (
+                          <span key={i} className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full font-semibold">{d}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recommended Follow-Up */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                      <Stethoscope className="w-3.5 h-3.5" /> Recommended Follow-Up
+                    </div>
+                    <p className="text-xs text-blue-900 font-medium">{cbcResult.recommendedFollowUp}</p>
+                  </div>
+                </>
+              ) : (
+                <div className="h-full bg-white border border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center py-16 text-slate-400 space-y-3">
+                  <Microscope className="w-12 h-12 text-slate-200" />
+                  <p className="text-sm font-semibold">Enter CBC values and run analysis</p>
+                  <p className="text-xs text-slate-400">Automatic flagging, morphology pattern & differential diagnosis</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== TAB: DRUG INTERACTION CHECKER ==================== */}
+      {activeTab === "drug-interactions" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            {/* Left: Drug Input */}
+            <div className="lg:col-span-4 bg-white border border-slate-200/90 rounded-2xl p-6 space-y-4 shadow-xs">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                  <FlaskConical className="w-4 h-4 text-violet-600" /> Pharmaceutical Drug Interaction AI
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">Multi-drug DDI screening with mechanism & severity grading</p>
+              </div>
+
+              {/* Quick Presets */}
+              <div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Quick Case Presets</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    { label: "Cardiac Patient", meds: ["warfarin", "aspirin", "atorvastatin", "metformin"] },
+                    { label: "Post-Op", meds: ["heparin", "amoxicillin", "aspirin"] },
+                    { label: "Thyroid + DM", meds: ["levothyroxine", "metformin", "calcium"] },
+                    { label: "Safe Combo", meds: ["atorvastatin", "metformin"] },
+                  ].map((preset) => (
+                    <button key={preset.label} onClick={() => setDrugMedList(preset.meds)}
+                      className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-violet-50 hover:border-violet-300 hover:text-violet-700 text-slate-600 cursor-pointer transition">
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Drug List */}
+              <div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Active Medications ({drugMedList.length})</div>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {drugMedList.map((med, i) => (
+                    <span key={i} className="flex items-center gap-1.5 text-xs bg-violet-50 text-violet-700 border border-violet-200 px-2.5 py-1 rounded-full font-semibold">
+                      {med}
+                      <button onClick={() => setDrugMedList(drugMedList.filter((_, j) => j !== i))} className="text-violet-400 hover:text-rose-600 cursor-pointer">×</button>
+                    </span>
+                  ))}
+                </div>
+                <div className="flex gap-2">
+                  <input type="text" value={drugMedInput} onChange={(e) => setDrugMedInput(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === "Enter" && drugMedInput.trim()) { setDrugMedList([...drugMedList, drugMedInput.trim().toLowerCase()]); setDrugMedInput(""); } }}
+                    placeholder="Type drug name, press Enter"
+                    className="flex-1 bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-500" />
+                  <button onClick={() => { if (drugMedInput.trim()) { setDrugMedList([...drugMedList, drugMedInput.trim().toLowerCase()]); setDrugMedInput(""); } }}
+                    className="px-3 py-2 bg-violet-600 text-white rounded-lg text-xs font-bold cursor-pointer hover:bg-violet-700 transition">Add</button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Renal Function</label>
+                  <select value={drugRenalFn} onChange={(e) => setDrugRenalFn(e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-500 text-xs">
+                    <option value="NORMAL">Normal</option>
+                    <option value="MILD_IMPAIRMENT">Mild Impairment (eGFR 60–90)</option>
+                    <option value="MODERATE_IMPAIRMENT">Moderate (eGFR 30–60)</option>
+                    <option value="SEVERE_IMPAIRMENT">Severe (eGFR &lt;30)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Hepatic Function</label>
+                  <select value={drugHepaticFn} onChange={(e) => setDrugHepaticFn(e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-violet-100 focus:border-violet-500 text-xs">
+                    <option value="NORMAL">Normal</option>
+                    <option value="MILD_IMPAIRMENT">Mild Impairment</option>
+                    <option value="SEVERE_IMPAIRMENT">Severe (Child-Pugh B/C)</option>
+                  </select>
+                </div>
+              </div>
+
+              <button
+                onClick={async () => {
+                  setDrugLoading(true);
+                  try {
+                    const res = await (aiApi as any).checkDrugInteractions({ medications: drugMedList, patientAge: drugAge, renalFunction: drugRenalFn, hepaticFunction: drugHepaticFn });
+                    if (res?.data) setDrugResult(res.data);
+                  } catch (e) { console.error(e); } finally { setDrugLoading(false); }
+                }}
+                disabled={drugLoading || drugMedList.length < 2}
+                className="w-full py-2.5 bg-violet-600 hover:bg-violet-700 text-white rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition text-xs"
+              >
+                {drugLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Screening Interactions...</> : <><FlaskConical className="w-4 h-4" /> Screen Drug Interactions</>}
+              </button>
+            </div>
+
+            {/* Right: Drug Interaction Results */}
+            <div className="lg:col-span-8 space-y-4">
+              {drugResult ? (
+                <>
+                  {/* Overall Risk */}
+                  <div className={`rounded-xl p-5 border ${
+                    drugResult.overallRisk === "CONTRAINDICATED" ? "bg-rose-50 border-rose-300" :
+                    drugResult.overallRisk === "HIGH_RISK" ? "bg-orange-50 border-orange-300" :
+                    drugResult.overallRisk === "CAUTION" ? "bg-amber-50 border-amber-300" :
+                    "bg-emerald-50 border-emerald-300"
+                  }`}>
+                    <div className="flex items-start gap-3">
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${
+                        drugResult.overallRisk === "CONTRAINDICATED" ? "bg-rose-100" :
+                        drugResult.overallRisk === "HIGH_RISK" ? "bg-orange-100" :
+                        drugResult.overallRisk === "CAUTION" ? "bg-amber-100" : "bg-emerald-100"
+                      }`}>
+                        <FlaskConical className={`w-5 h-5 ${
+                          drugResult.overallRisk === "CONTRAINDICATED" ? "text-rose-600" :
+                          drugResult.overallRisk === "HIGH_RISK" ? "text-orange-600" :
+                          drugResult.overallRisk === "CAUTION" ? "text-amber-600" : "text-emerald-600"
+                        }`} />
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                            drugResult.overallRisk === "CONTRAINDICATED" ? "bg-rose-100 text-rose-700 border-rose-300" :
+                            drugResult.overallRisk === "HIGH_RISK" ? "bg-orange-100 text-orange-700 border-orange-300" :
+                            drugResult.overallRisk === "CAUTION" ? "bg-amber-100 text-amber-700 border-amber-300" :
+                            "bg-emerald-100 text-emerald-700 border-emerald-300"
+                          }`}>{drugResult.overallRisk}</span>
+                          <span className="text-xs text-slate-600 font-medium">{drugResult.totalInteractions} interaction(s) found</span>
+                        </div>
+                        <p className="text-xs font-bold text-slate-900">{drugResult.pharmacistAlert}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Interaction Cards */}
+                  {drugResult.interactions?.length > 0 && (
+                    <div className="space-y-3">
+                      {drugResult.interactions.map((int: any, i: number) => (
+                        <div key={i} className="bg-white border border-slate-200 rounded-xl p-4 space-y-2.5 shadow-xs">
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                              <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono capitalize">{int.drug1}</span>
+                              <span className="text-slate-400">⟺</span>
+                              <span className="bg-slate-100 text-slate-700 px-2 py-0.5 rounded font-mono capitalize">{int.drug2}</span>
+                            </div>
+                            <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                              int.severity === "MAJOR" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                              int.severity === "MODERATE" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                              int.severity === "CONTRAINDICATED" ? "bg-rose-100 text-rose-800 border-rose-300" :
+                              "bg-slate-50 text-slate-600 border-slate-200"
+                            }`}>{int.severity}</span>
+                          </div>
+                          <div className="grid grid-cols-1 gap-1.5 text-[11px]">
+                            <div><span className="font-bold text-slate-600">Mechanism: </span><span className="text-slate-700">{int.mechanism}</span></div>
+                            <div><span className="font-bold text-slate-600">Clinical Effect: </span><span className="text-slate-700">{int.clinicalEffect}</span></div>
+                            <div className="p-2 bg-blue-50 border border-blue-100 rounded-lg"><span className="font-bold text-blue-700">Management: </span><span className="text-blue-900">{int.management}</span></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {drugResult.interactions?.length === 0 && (
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-6 text-center">
+                      <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2" />
+                      <p className="text-sm font-bold text-emerald-800">No Clinically Significant Drug Interactions Detected</p>
+                      <p className="text-xs text-emerald-600 mt-1">Prescription is safe to dispense for the analyzed drug combination.</p>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="h-full bg-white border border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center py-16 text-slate-400 space-y-3">
+                  <FlaskConical className="w-12 h-12 text-slate-200" />
+                  <p className="text-sm font-semibold">Add 2+ medications and screen</p>
+                  <p className="text-xs text-slate-400">DDI check with mechanism, severity grading & pharmacist recommendations</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== TAB: AMR SUSCEPTIBILITY PREDICTOR ==================== */}
+      {activeTab === "amr-susceptibility" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-4 bg-white border border-slate-200/90 rounded-2xl p-6 space-y-4 shadow-xs">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                  <Dna className="w-4 h-4 text-teal-600" /> AMR & Antibiotic Susceptibility Predictor
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">CLSI/EUCAST-aligned AI susceptibility panel prediction for microbiological isolates</p>
+              </div>
+
+              <div className="text-xs space-y-3">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Organism / Pathogen</label>
+                  <select value={amrOrganism} onChange={(e) => setAmrOrganism(e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-500">
+                    <option value="E. coli">Escherichia coli (E. coli)</option>
+                    <option value="Staphylococcus aureus">Staphylococcus aureus (MRSA/MSSA)</option>
+                    <option value="Klebsiella pneumoniae">Klebsiella pneumoniae (ESBL/KPC)</option>
+                    <option value="Unknown Gram-negative">Unknown Gram-negative Bacillus</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Specimen Type</label>
+                  <select value={amrSpecimen} onChange={(e) => setAmrSpecimen(e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-500">
+                    <option value="BLOOD">Blood Culture</option>
+                    <option value="URINE">Urine (C&S)</option>
+                    <option value="WOUND">Wound Swab</option>
+                    <option value="SPUTUM">Sputum / BAL</option>
+                    <option value="CSF">Cerebrospinal Fluid (CSF)</option>
+                    <option value="STOOL">Stool Culture</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Gram Stain</label>
+                  <select value={amrGramStain} onChange={(e) => setAmrGramStain(e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-500">
+                    <option value="NEGATIVE">Gram Negative</option>
+                    <option value="POSITIVE">Gram Positive</option>
+                  </select>
+                </div>
+                <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-200">
+                  <input type="checkbox" checked={amrHospital} onChange={(e) => setAmrHospital(e.target.checked)} id="hospitalAcquired" className="w-4 h-4 accent-teal-600" />
+                  <label htmlFor="hospitalAcquired" className="text-xs text-slate-700 font-semibold cursor-pointer">
+                    Healthcare-Associated Infection (HAI) / ICU Patient
+                  </label>
+                </div>
+              </div>
+
+              <button
+                onClick={async () => {
+                  setAmrLoading(true);
+                  try {
+                    const res = await (aiApi as any).predictAmr({
+                      organism: amrOrganism, specimenType: amrSpecimen,
+                      gramStain: amrGramStain, patientHistory: amrHospital ? ["healthcare"] : [],
+                    });
+                    if (res?.data) setAmrResult(res.data);
+                  } catch (e) { console.error(e); } finally { setAmrLoading(false); }
+                }}
+                disabled={amrLoading}
+                className="w-full py-2.5 bg-teal-600 hover:bg-teal-700 text-white rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition text-xs"
+              >
+                {amrLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Predicting...</> : <><Dna className="w-4 h-4" /> Predict Antibiotic Susceptibility</>}
+              </button>
+            </div>
+
+            {/* AMR Results */}
+            <div className="lg:col-span-8 space-y-4">
+              {amrResult ? (
+                <>
+                  {/* Alert Banner */}
+                  {amrResult.infectiologyAlert && (
+                    <div className={`rounded-xl p-4 border ${
+                      amrResult.riskProfile === "MDR_RISK" || amrResult.riskProfile === "XDR_RISK" ? "bg-rose-50 border-rose-200" :
+                      "bg-amber-50 border-amber-200"
+                    }`}>
+                      <div className="flex items-start gap-2">
+                        <AlertTriangle className={`w-4 h-4 shrink-0 mt-0.5 ${
+                          amrResult.riskProfile === "MDR_RISK" ? "text-rose-600" : "text-amber-600"
+                        }`} />
+                        <div>
+                          <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full mb-1 inline-block ${
+                            amrResult.riskProfile.includes("MDR") ? "bg-rose-100 text-rose-700" : "bg-amber-100 text-amber-700"
+                          }`}>{amrResult.riskProfile}</span>
+                          <p className="text-xs font-semibold text-slate-800 mt-0.5">{amrResult.infectiologyAlert}</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Susceptibility Panel */}
+                  <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-xs">
+                    <div className="px-4 py-3 border-b border-slate-100 bg-slate-50/70 flex items-center justify-between">
+                      <h4 className="font-bold text-xs text-slate-900">Antibiotic Susceptibility Panel — {amrResult.organism}</h4>
+                      <span className="text-[10px] text-slate-500 font-mono">{amrResult.isoStandard}</span>
+                    </div>
+                    <table className="w-full text-xs">
+                      <thead className="bg-slate-50 text-[10px] uppercase tracking-wider text-slate-500 border-b border-slate-100">
+                        <tr>
+                          <th className="py-2.5 px-4 text-left">Antibiotic</th>
+                          <th className="py-2.5 px-4 text-left">Class</th>
+                          <th className="py-2.5 px-4 text-center">Predicted Result</th>
+                          <th className="py-2.5 px-4 text-center">Confidence</th>
+                          <th className="py-2.5 px-4 text-left">Clinical Note</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-50">
+                        {amrResult.susceptibilityPanel?.map((item: any, i: number) => (
+                          <tr key={i} className="hover:bg-slate-50/80">
+                            <td className="py-2.5 px-4 font-bold text-slate-800">{item.antibiotic}</td>
+                            <td className="py-2.5 px-4 text-slate-500">{item.class}</td>
+                            <td className="py-2.5 px-4 text-center">
+                              <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                                item.predictedResult === "SENSITIVE" ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                item.predictedResult === "RESISTANT" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                                "bg-amber-50 text-amber-700 border-amber-200"
+                              }`}>{item.predictedResult[0]}</span>
+                            </td>
+                            <td className="py-2.5 px-4">
+                              <div className="flex items-center gap-2">
+                                <div className="flex-1 h-1.5 rounded-full bg-slate-100">
+                                  <div className={`h-full rounded-full ${
+                                    item.predictedResult === "SENSITIVE" ? "bg-emerald-500" :
+                                    item.predictedResult === "RESISTANT" ? "bg-rose-500" : "bg-amber-500"
+                                  }`} style={{ width: `${item.confidencePercent}%` }} />
+                                </div>
+                                <span className="text-[11px] font-mono text-slate-600">{item.confidencePercent}%</span>
+                              </div>
+                            </td>
+                            <td className="py-2.5 px-4 text-[11px] text-slate-500">{item.clinicalNote || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                      <div className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider mb-2">Recommended Empiric Therapy</div>
+                      {amrResult.recommendedEmpiric?.map((r: string, i: number) => (
+                        <div key={i} className="flex items-center gap-2 text-xs text-emerald-900 font-medium py-0.5">
+                          <Check className="w-3.5 h-3.5 text-emerald-600 shrink-0" />{r}
+                        </div>
+                      ))}
+                    </div>
+                    <div className="bg-rose-50 border border-rose-200 rounded-xl p-4">
+                      <div className="text-[10px] font-bold text-rose-700 uppercase tracking-wider mb-2">Avoid (High Resistance Risk)</div>
+                      {amrResult.avoidList?.map((r: string, i: number) => (
+                        <div key={i} className="flex items-center gap-2 text-xs text-rose-900 font-medium py-0.5">
+                          <XCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />{r}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </>
+              ) : (
+                <div className="h-full bg-white border border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center py-16 text-slate-400 space-y-3">
+                  <Dna className="w-12 h-12 text-slate-200" />
+                  <p className="text-sm font-semibold">Select organism & specimen, then predict</p>
+                  <p className="text-xs text-slate-400">AI-powered antibiotic susceptibility panel prediction (CLSI M100)</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== TAB: THYROID DISEASE CLASSIFIER ==================== */}
+      {activeTab === "thyroid-classifier" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-4 bg-white border border-slate-200/90 rounded-2xl p-6 space-y-4 shadow-xs">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-indigo-600" /> Thyroid Disease Classifier (TSH/FT3/FT4)
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">AI classification of thyroid functional status with autoimmunity risk scoring</p>
+              </div>
+
+              {/* Quick Presets */}
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: "Hypothyroid", tsh: 12.4, ft4: 10.2, ft3: 3.4, tpo: 420 },
+                  { label: "Hyperthyroid", tsh: 0.01, ft4: 32, ft3: 9.2, tpo: 280 },
+                  { label: "Subclinical Hypo", tsh: 6.8, ft4: 14.2, ft3: 4.8, tpo: 68 },
+                  { label: "Normal", tsh: 2.1, ft4: 16.8, ft3: 5.2, tpo: 12 },
+                ].map((preset) => (
+                  <button key={preset.label} onClick={() => {
+                    setThyroidTsh(preset.tsh); setThyroidFt4(preset.ft4);
+                    setThyroidFt3(preset.ft3); setThyroidTpo(preset.tpo);
+                  }} className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-indigo-50 hover:border-indigo-300 hover:text-indigo-700 text-slate-600 cursor-pointer transition">{preset.label}</button>
+                ))}
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Patient Gender</label>
+                  <select value={thyroidGender} onChange={(e) => setThyroidGender(e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500">
+                    <option value="FEMALE">Female</option>
+                    <option value="MALE">Male</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Patient Age</label>
+                  <input type="number" value={thyroidAge} onChange={(e) => setThyroidAge(Number(e.target.value))} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500" />
+                </div>
+              </div>
+
+              <div className="space-y-3 text-xs font-mono">
+                {[
+                  { label: "TSH (mIU/L)", val: thyroidTsh, set: setThyroidTsh, ref: "0.3–4.5", step: 0.01 },
+                  { label: "Free T4 (pmol/L)", val: thyroidFt4, set: setThyroidFt4, ref: "12–22", step: 0.1 },
+                  { label: "Free T3 (pmol/L)", val: thyroidFt3, set: setThyroidFt3, ref: "3.1–6.8", step: 0.1 },
+                  { label: "Anti-TPO (IU/mL)", val: thyroidTpo, set: setThyroidTpo, ref: "<35", step: 1 },
+                  { label: "Anti-Tg (IU/mL)", val: thyroidTg, set: setThyroidTg, ref: "<115", step: 1 },
+                ].map((field) => (
+                  <div key={field.label}>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="block text-slate-600 font-semibold text-[11px]">{field.label}</label>
+                      <span className="text-[10px] text-slate-400">Ref: {field.ref}</span>
+                    </div>
+                    <input type="number" step={field.step} value={field.val} onChange={(e) => field.set(Number(e.target.value))}
+                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-500 text-xs" />
+                  </div>
+                ))}
+              </div>
+
+              <button
+                onClick={async () => {
+                  setThyroidLoading(true);
+                  try {
+                    const res = await (aiApi as any).classifyThyroid({ tsh: thyroidTsh, ft4: thyroidFt4, ft3: thyroidFt3, tpoAntibody: thyroidTpo, tgAntibody: thyroidTg, patientAge: thyroidAge, patientGender: thyroidGender });
+                    if (res?.data) setThyroidResult(res.data);
+                  } catch (e) { console.error(e); } finally { setThyroidLoading(false); }
+                }}
+                disabled={thyroidLoading}
+                className="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition text-xs"
+              >
+                {thyroidLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Classifying...</> : <><Activity className="w-4 h-4" /> Classify Thyroid Function</>}
+              </button>
+            </div>
+
+            {/* Thyroid Results */}
+            <div className="lg:col-span-8 space-y-4">
+              {thyroidResult ? (
+                <>
+                  {/* Classification Banner */}
+                  <div className={`rounded-xl p-5 border ${
+                    thyroidResult.urgency === "CRITICAL_PANIC" ? "bg-rose-50 border-rose-200" :
+                    thyroidResult.urgency === "HIGH_RISK" ? "bg-orange-50 border-orange-200" :
+                    thyroidResult.urgency === "ELEVATED" ? "bg-amber-50 border-amber-200" :
+                    "bg-emerald-50 border-emerald-200"
+                  }`}>
+                    <div className="flex items-start gap-4">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                          <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                            thyroidResult.functionalStatus === "HYPERTHYROID" ? "bg-rose-100 text-rose-700 border-rose-300" :
+                            thyroidResult.functionalStatus === "HYPOTHYROID" ? "bg-blue-100 text-blue-700 border-blue-300" :
+                            thyroidResult.functionalStatus === "EUTHYROID" ? "bg-emerald-100 text-emerald-700 border-emerald-300" :
+                            "bg-amber-100 text-amber-700 border-amber-300"
+                          }`}>{thyroidResult.functionalStatus}</span>
+                          <span className="text-[10px] font-bold bg-indigo-50 text-indigo-700 border border-indigo-200 px-2 py-0.5 rounded-full">ICD-10: {thyroidResult.icd10Code}</span>
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            thyroidResult.autoimmunityRisk === "HIGH" ? "bg-rose-50 text-rose-700 border-rose-200" :
+                            thyroidResult.autoimmunityRisk === "MODERATE" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                            "bg-slate-50 text-slate-600 border-slate-200"
+                          }`}>Autoimmunity Risk: {thyroidResult.autoimmunityRisk}</span>
+                        </div>
+                        <h4 className="font-bold text-slate-900 text-sm">{thyroidResult.classification}</h4>
+                        <p className="text-xs text-slate-600 mt-1">{thyroidResult.clinicalRecommendation}</p>
+                        <div className="mt-3 flex items-center gap-3">
+                          <div>
+                            <div className="text-[10px] text-slate-500 font-medium">Risk Score</div>
+                            <div className="text-lg font-extrabold text-indigo-700 font-mono">{thyroidResult.riskScore}%</div>
+                          </div>
+                          <div>
+                            <div className="text-[10px] text-slate-500 font-medium">Repeat Interval</div>
+                            <div className="text-xs font-bold text-slate-700">{thyroidResult.repeatInterval}</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* SHAP-style parameter breakdown */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+                    <h4 className="font-bold text-xs text-slate-900 flex items-center gap-2">
+                      <BarChart3 className="w-3.5 h-3.5 text-indigo-600" /> Thyroid Parameter Interpretation
+                    </h4>
+                    {thyroidResult.shapAttributions?.map((attr: any, i: number) => (
+                      <div key={i} className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className={`w-2.5 h-2.5 rounded-full mt-1 shrink-0 ${
+                          attr.flag === "CRITICAL" ? "bg-rose-500" :
+                          attr.flag === "HIGH" || attr.flag === "LOW" ? "bg-amber-500" : "bg-emerald-500"
+                        }`} />
+                        <div className="flex-1">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-800">{attr.parameter}</span>
+                            <span className="text-xs font-mono text-blue-700 font-bold">{attr.value}</span>
+                          </div>
+                          <p className="text-[11px] text-slate-600 mt-0.5">{attr.interpretation}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              ) : (
+                <div className="h-full bg-white border border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center py-16 text-slate-400 space-y-3">
+                  <Activity className="w-12 h-12 text-slate-200" />
+                  <p className="text-sm font-semibold">Enter TSH, FT3, FT4 values and classify</p>
+                  <p className="text-xs text-slate-400">AI thyroid classification with autoimmunity risk and clinical recommendations</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== TAB: COAGULATION RISK ENGINE ==================== */}
+      {activeTab === "coagulation-risk" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-4 bg-white border border-slate-200/90 rounded-2xl p-6 space-y-4 shadow-xs">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                  <HeartPulse className="w-4 h-4 text-rose-600" /> Coagulation Risk Engine (PT/INR/aPTT/DIC)
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">ISTH DIC scoring, bleeding risk, and hemostasis status assessment</p>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: "Overt DIC", pt: 22, inr: 3.2, aptt: 72, fib: 80, dd: 2800, plt: 42 },
+                  { label: "Over-Anticoag", pt: 28, inr: 4.5, aptt: 58, fib: 280, dd: 400, plt: 180 },
+                  { label: "Normal", pt: 12.5, inr: 1.0, aptt: 32, fib: 320, dd: 180, plt: 220 },
+                ].map((preset) => (
+                  <button key={preset.label} onClick={() => {
+                    setCoagPt(preset.pt); setCoagInr(preset.inr); setCoagAptt(preset.aptt);
+                    setCoagFibrinogen(preset.fib); setCoagDDimer(preset.dd); setCoagPlatelets(preset.plt);
+                  }} className="px-2.5 py-1 text-[11px] font-bold rounded-lg border border-slate-200 bg-slate-50 hover:bg-rose-50 hover:border-rose-300 hover:text-rose-700 text-slate-600 cursor-pointer transition">{preset.label}</button>
+                ))}
+              </div>
+
+              <div className="space-y-3 text-xs font-mono">
+                {[
+                  { label: "PT (seconds)", val: coagPt, set: setCoagPt, ref: "11–15s", step: 0.1 },
+                  { label: "INR (ratio)", val: coagInr, set: setCoagInr, ref: "0.8–1.2", step: 0.1 },
+                  { label: "aPTT (seconds)", val: coagAptt, set: setCoagAptt, ref: "25–45s", step: 0.5 },
+                  { label: "Fibrinogen (mg/dL)", val: coagFibrinogen, set: setCoagFibrinogen, ref: "200–400", step: 5 },
+                  { label: "D-Dimer (ng/mL)", val: coagDDimer, set: setCoagDDimer, ref: "<500", step: 10 },
+                  { label: "Platelets (K/μL)", val: coagPlatelets, set: setCoagPlatelets, ref: "150–400", step: 1 },
+                ].map((field) => (
+                  <div key={field.label}>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] text-slate-600 font-semibold">{field.label}</label>
+                      <span className="text-[10px] text-slate-400">Ref: {field.ref}</span>
+                    </div>
+                    <input type="number" step={field.step} value={field.val} onChange={(e) => field.set(Number(e.target.value))}
+                      className="w-full bg-white border border-slate-200 rounded-lg px-3 py-2 text-slate-900 text-xs focus:outline-none focus:ring-2 focus:ring-rose-100 focus:border-rose-500" />
+                  </div>
+                ))}
+              </div>
+
+              <div>
+                <label className="block text-[10px] text-slate-600 font-semibold mb-1 uppercase tracking-wider">Clinical Indication</label>
+                <select value={coagIndication} onChange={(e) => setCoagIndication(e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-rose-100 focus:border-rose-500">
+                  <option value="DIC_ASSESSMENT">DIC Assessment (Sepsis/Obstetric)</option>
+                  <option value="ANTICOAG_MONITORING">Anticoagulation Monitoring (Warfarin/Heparin)</option>
+                  <option value="BLEEDING_WORKUP">Bleeding Diathesis Workup</option>
+                  <option value="PRE_OP_SCREEN">Pre-Operative Coagulation Screen</option>
+                </select>
+              </div>
+
+              <button
+                onClick={async () => {
+                  setCoagLoading(true);
+                  try {
+                    const res = await (aiApi as any).analyzeCoagulation({ pt: coagPt, inr: coagInr, aptt: coagAptt, fibrinogen: coagFibrinogen, dDimer: coagDDimer, platelets: coagPlatelets, indication: coagIndication });
+                    if (res?.data) setCoagResult(res.data);
+                  } catch (e) { console.error(e); } finally { setCoagLoading(false); }
+                }}
+                disabled={coagLoading}
+                className="w-full py-2.5 bg-rose-600 hover:bg-rose-700 text-white rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition text-xs"
+              >
+                {coagLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Analyzing...</> : <><HeartPulse className="w-4 h-4" /> Analyze Coagulation Risk</>}
+              </button>
+            </div>
+
+            {/* Coagulation Results */}
+            <div className="lg:col-span-8 space-y-4">
+              {coagResult ? (
+                <>
+                  {/* Status Banner */}
+                  <div className={`rounded-xl p-5 border ${
+                    coagResult.urgency === "CRITICAL_PANIC" ? "bg-rose-50 border-rose-300" :
+                    coagResult.urgency === "HIGH_RISK" ? "bg-orange-50 border-orange-200" :
+                    coagResult.urgency === "ELEVATED" ? "bg-amber-50 border-amber-200" :
+                    "bg-emerald-50 border-emerald-200"
+                  }`}>
+                    <div className="flex items-start gap-3">
+                      <HeartPulse className={`w-8 h-8 shrink-0 ${
+                        coagResult.urgency === "CRITICAL_PANIC" ? "text-rose-600" :
+                        coagResult.urgency === "HIGH_RISK" ? "text-orange-600" : "text-emerald-600"
+                      }`} />
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                            coagResult.overallHemostaticStatus === "DIC" ? "bg-rose-100 text-rose-700 border-rose-300" :
+                            coagResult.overallHemostaticStatus === "SEVERE_COAGULOPATHY" ? "bg-orange-100 text-orange-700 border-orange-300" :
+                            coagResult.overallHemostaticStatus === "NORMAL" ? "bg-emerald-100 text-emerald-700 border-emerald-300" :
+                            "bg-amber-100 text-amber-700 border-amber-300"
+                          }`}>{coagResult.overallHemostaticStatus}</span>
+                          {coagResult.dicScore !== undefined && (
+                            <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                              coagResult.dicScore >= 5 ? "bg-rose-100 text-rose-700 border-rose-200" :
+                              coagResult.dicScore >= 3 ? "bg-amber-100 text-amber-700 border-amber-200" :
+                              "bg-slate-100 text-slate-600 border-slate-200"
+                            }`}>ISTH DIC Score: {coagResult.dicScore}</span>
+                          )}
+                          <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border bg-slate-50 text-slate-600 border-slate-200`}>Bleeding Risk: {coagResult.bleedingRisk}</span>
+                        </div>
+                        <p className="text-xs font-bold text-slate-900">{coagResult.management}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Parameter Interpretations */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-4 space-y-3">
+                    <h4 className="font-bold text-xs text-slate-900">Coagulation Parameter Analysis</h4>
+                    {[coagResult.ptInterpretation, coagResult.inrInterpretation, coagResult.apttInterpretation].map((interp: string, i: number) => (
+                      <div key={i} className="p-3 bg-slate-50 rounded-xl text-[11px] text-slate-700 border border-slate-100">{interp}</div>
+                    ))}
+                  </div>
+
+                  {/* Clinical Flags */}
+                  {coagResult.clinicalFlags?.length > 0 && (
+                    <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-2">
+                      <div className="text-[10px] font-bold text-rose-700 uppercase tracking-wider">Critical Clinical Flags</div>
+                      {coagResult.clinicalFlags.map((flag: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2 text-xs text-rose-900">
+                          <AlertTriangle className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />{flag}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="h-full bg-white border border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center py-16 text-slate-400 space-y-3">
+                  <HeartPulse className="w-12 h-12 text-slate-200" />
+                  <p className="text-sm font-semibold">Enter PT, INR, aPTT values and analyze</p>
+                  <p className="text-xs text-slate-400">ISTH DIC scoring, bleeding risk & hemostasis status</p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ==================== TAB: SMART REPORT GENERATOR ==================== */}
+      {activeTab === "smart-report" && (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+            <div className="lg:col-span-5 bg-white border border-slate-200/90 rounded-2xl p-6 space-y-4 shadow-xs">
+              <div>
+                <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                  <FileCheck className="w-4 h-4 text-sky-600" /> Smart AI Report Narrative Generator
+                </h3>
+                <p className="text-xs text-slate-500 mt-0.5">Auto-generates clinical impression, ICD-10 codes, and pathologist narrative from test results</p>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Patient Name</label>
+                  <input type="text" value={srPatientName} onChange={(e) => setSrPatientName(e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500" />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">UHID</label>
+                  <input type="text" value={srUhid} onChange={(e) => setSrUhid(e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500" />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Age</label>
+                  <input type="number" value={srPatientAge} onChange={(e) => setSrPatientAge(Number(e.target.value))} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500" />
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Gender</label>
+                  <select value={srPatientGender} onChange={(e) => setSrPatientGender(e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500">
+                    <option value="MALE">Male</option>
+                    <option value="FEMALE">Female</option>
+                    <option value="OTHER">Other</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Department</label>
+                  <select value={srDept} onChange={(e) => setSrDept(e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500">
+                    <option value="Biochemistry">Biochemistry</option>
+                    <option value="Hematology">Hematology</option>
+                    <option value="Microbiology">Microbiology</option>
+                    <option value="Immunology">Immunology</option>
+                    <option value="Molecular Biology">Molecular Biology</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-slate-600 font-semibold mb-1">Referring Doctor</label>
+                  <input type="text" value={srDoctor} onChange={(e) => setSrDoctor(e.target.value)} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-600 font-semibold mb-1">Clinical History</label>
+                <textarea value={srHistory} onChange={(e) => setSrHistory(e.target.value)} rows={2} className="w-full bg-white border border-slate-300 rounded-lg px-3 py-2 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-sky-100 focus:border-sky-500 resize-none" />
+              </div>
+
+              {/* Test Results */}
+              <div>
+                <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Test Results ({srTestResults.length})</div>
+                <div className="space-y-2 max-h-64 overflow-y-auto">
+                  {srTestResults.map((tr, i) => (
+                    <div key={i} className="flex items-center gap-2 p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px]">
+                      <div className="flex-1">
+                        <div className="font-bold text-slate-800">{tr.testName}</div>
+                        <div className="text-slate-500">{tr.value} {tr.unit} | Ref: {tr.referenceRange}</div>
+                      </div>
+                      <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${
+                        tr.flag?.includes("CRITICAL") ? "bg-rose-50 text-rose-700 border-rose-200" :
+                        tr.flag === "HIGH" || tr.flag === "LOW" ? "bg-amber-50 text-amber-700 border-amber-200" :
+                        "bg-emerald-50 text-emerald-700 border-emerald-200"
+                      }`}>{tr.flag || "NORMAL"}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <button
+                onClick={async () => {
+                  setSrLoading(true);
+                  try {
+                    const res = await (aiApi as any).generateSmartReport({
+                      patientName: srPatientName, patientAge: srPatientAge, patientGender: srPatientGender,
+                      uhid: srUhid, referringDoctor: srDoctor, department: srDept,
+                      testResults: srTestResults, clinicalHistory: srHistory,
+                    });
+                    if (res?.data) setSrResult(res.data);
+                  } catch (e) { console.error(e); } finally { setSrLoading(false); }
+                }}
+                disabled={srLoading}
+                className="w-full py-2.5 bg-sky-600 hover:bg-sky-700 text-white rounded-xl font-bold shadow-sm flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 transition text-xs"
+              >
+                {srLoading ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating Report...</> : <><FileCheck className="w-4 h-4" /> Generate Smart Clinical Report</>}
+              </button>
+            </div>
+
+            {/* Smart Report Results */}
+            <div className="lg:col-span-7 space-y-4">
+              {srResult ? (
+                <>
+                  {/* Report Grade */}
+                  <div className={`rounded-xl p-4 border ${
+                    srResult.reportGrade === "CRITICAL" ? "bg-rose-50 border-rose-300" :
+                    srResult.reportGrade === "SIGNIFICANT_ABNORMAL" ? "bg-orange-50 border-orange-200" :
+                    srResult.reportGrade === "MILD_ABNORMAL" ? "bg-amber-50 border-amber-200" :
+                    "bg-emerald-50 border-emerald-200"
+                  }`}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <FileCheck className={`w-4 h-4 ${
+                        srResult.reportGrade === "CRITICAL" ? "text-rose-600" : srResult.reportGrade === "NORMAL" ? "text-emerald-600" : "text-amber-600"
+                      }`} />
+                      <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full border ${
+                        srResult.reportGrade === "CRITICAL" ? "bg-rose-100 text-rose-700 border-rose-300" :
+                        srResult.reportGrade === "NORMAL" ? "bg-emerald-100 text-emerald-700 border-emerald-300" :
+                        "bg-amber-100 text-amber-700 border-amber-300"
+                      }`}>Report Grade: {srResult.reportGrade}</span>
+                    </div>
+                    <p className="text-xs font-semibold text-slate-800">{srResult.clinicalImpression}</p>
+                  </div>
+
+                  {/* Narrative */}
+                  <div className="bg-white border border-slate-200 rounded-xl p-4">
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">AI-Generated Clinical Narrative</div>
+                    <pre className="text-[11px] text-slate-700 whitespace-pre-wrap font-sans leading-relaxed">{srResult.narrativeSummary}</pre>
+                  </div>
+
+                  {/* Critical Findings */}
+                  {srResult.criticalFindings?.length > 0 && (
+                    <div className="bg-rose-50 border border-rose-200 rounded-xl p-4 space-y-2">
+                      <div className="text-[10px] font-bold text-rose-700 uppercase tracking-wider">Critical Findings Requiring Immediate Action</div>
+                      {srResult.criticalFindings.map((f: string, i: number) => (
+                        <div key={i} className="flex items-start gap-2 text-xs text-rose-900">
+                          <AlertOctagon className="w-3.5 h-3.5 text-rose-600 shrink-0 mt-0.5" />{f}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* ICD-10 Codes */}
+                  {srResult.autoIcd10Codes?.length > 0 && (
+                    <div className="bg-white border border-slate-200 rounded-xl p-4">
+                      <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-2">Auto-Generated ICD-10 Codes</div>
+                      <div className="flex flex-wrap gap-2">
+                        {srResult.autoIcd10Codes.map((code: any, i: number) => (
+                          <span key={i} className="text-[11px] bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-1 rounded-full font-mono font-bold">{code.code} — {code.description}</span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Recommendations */}
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 space-y-1.5">
+                    <div className="text-[10px] font-bold text-blue-700 uppercase tracking-wider mb-1">Recommendations</div>
+                    {srResult.recommendations?.map((r: string, i: number) => (
+                      <div key={i} className="flex items-start gap-2 text-xs text-blue-900">
+                        <ChevronRight className="w-3.5 h-3.5 text-blue-600 shrink-0 mt-0.5" />{r}
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Pathologist Note */}
+                  <div className="bg-slate-50 border border-slate-200 rounded-xl p-4">
+                    <div className="text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" /> Pathologist Authorization Note
+                    </div>
+                    <p className="text-[11px] text-slate-700 font-medium">{srResult.pathologistNote}</p>
+                  </div>
+                </>
+              ) : (
+                <div className="h-full bg-white border border-dashed border-slate-300 rounded-2xl flex flex-col items-center justify-center py-16 text-slate-400 space-y-3">
+                  <FileCheck className="w-12 h-12 text-slate-200" />
+                  <p className="text-sm font-semibold">Fill patient info and generate AI report</p>
+                  <p className="text-xs text-slate-400">Clinical narrative, ICD-10 auto-coding & pathologist authorization note</p>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}

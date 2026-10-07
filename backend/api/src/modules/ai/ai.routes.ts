@@ -9,6 +9,12 @@ import {
   listRegistryModels,
   updateModelStatus,
   getAuditLogs,
+  cbcAnalyze,
+  drugInteractionCheck,
+  amrPredict,
+  thyroidClassify,
+  coagulationAnalyze,
+  smartReportGenerate,
 } from "./ai.controller";
 import { authenticate } from "../../../middleware/auth";
 
@@ -17,11 +23,12 @@ const router = Router();
 // Allow authenticated users to interact with AI Studio
 router.use(authenticate);
 
-// Training Endpoints
+// =====================================================
+// EXISTING TRAINING & INFERENCE ENDPOINTS
+// =====================================================
 router.post("/train/classical", trainClassical);
 router.post("/train/deep-learning", trainDeepLearning);
 
-// Inference & Clinical AI
 router.post("/predict", predict);
 router.post("/nlp/analyze", analyzeNlp);
 router.post("/anomaly/delta-check", deltaCheck);
@@ -34,5 +41,27 @@ router.get("/models", listRegistryModels);
 router.post("/models/deploy", updateModelStatus);
 router.post("/models/:id/deploy", updateModelStatus);
 router.get("/audit", getAuditLogs);
+
+// =====================================================
+// NEW CLINICAL DIAGNOSTIC ENGINE ENDPOINTS
+// =====================================================
+
+// Engine 1: CBC Auto-Analyzer with Morphology & Differential
+router.post("/cbc/analyze", cbcAnalyze);
+
+// Engine 2: Pharmaceutical Drug Interaction Checker
+router.post("/drug/interactions", drugInteractionCheck);
+
+// Engine 3: Antibiotic Susceptibility / AMR Predictor
+router.post("/amr/predict", amrPredict);
+
+// Engine 4: Thyroid Disease Classifier (TSH/FT3/FT4/Anti-TPO)
+router.post("/thyroid/classify", thyroidClassify);
+
+// Engine 5: Coagulation Risk Engine (PT/INR/aPTT/DIC)
+router.post("/coagulation/analyze", coagulationAnalyze);
+
+// Engine 6: Smart Report Narrative Generator (AI Auto-Report)
+router.post("/report/generate", smartReportGenerate);
 
 export default router;

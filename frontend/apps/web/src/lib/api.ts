@@ -3821,6 +3821,83 @@ export const aiApi = {
   getAudit: async () => {
     return apiCall('/api/ai/audit');
   },
+
+  // =====================================================
+  // NEW CLINICAL ENGINE API METHODS
+  // =====================================================
+
+  analyzeCbc: async (params: {
+    hb: number; rbc: number; wbc: number; platelets: number;
+    hematocrit: number; mcv: number; mch: number; mchc: number;
+    neutrophils: number; lymphocytes: number; monocytes: number;
+    eosinophils: number; basophils: number; rdw: number;
+    patientAge?: number; patientGender?: 'MALE' | 'FEMALE';
+  }) => {
+    return apiCall('/api/ai/cbc/analyze', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  checkDrugInteractions: async (params: {
+    medications: string[];
+    patientAge?: number;
+    renalFunction?: string;
+    hepaticFunction?: string;
+  }) => {
+    return apiCall('/api/ai/drug/interactions', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  predictAmr: async (params: {
+    organism: string;
+    specimenType: string;
+    gramStain?: string;
+    patientHistory?: string[];
+  }) => {
+    return apiCall('/api/ai/amr/predict', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  classifyThyroid: async (params: {
+    tsh: number; ft4: number; ft3: number;
+    tpoAntibody?: number; tgAntibody?: number;
+    patientAge?: number; patientGender?: string;
+    symptoms?: string[];
+  }) => {
+    return apiCall('/api/ai/thyroid/classify', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  analyzeCoagulation: async (params: {
+    pt: number; inr: number; aptt: number;
+    fibrinogen?: number; dDimer?: number; platelets?: number;
+    antithrombinIII?: number; proteinC?: number;
+    indication?: string;
+  }) => {
+    return apiCall('/api/ai/coagulation/analyze', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  generateSmartReport: async (params: {
+    patientName: string; patientAge: number; patientGender: string;
+    uhid: string; referringDoctor?: string; department: string;
+    testResults: { testName: string; value: string | number; unit: string; referenceRange: string; flag?: string }[];
+    clinicalHistory?: string; specimenType?: string; collectionDateTime?: string;
+  }) => {
+    return apiCall('/api/ai/report/generate', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
 };
 
 // Dashboard API
