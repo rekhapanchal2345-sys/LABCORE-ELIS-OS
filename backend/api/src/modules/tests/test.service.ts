@@ -616,10 +616,10 @@ export const getPackages = async (
           },
         },
       },
-      orderBy: {
-        displayOrder: "asc",
-        packageName: "asc",
-      },
+      orderBy: [
+        { displayOrder: "asc" },
+        { packageName: "asc" },
+      ],
     }),
 
     prisma.testPackage.count({

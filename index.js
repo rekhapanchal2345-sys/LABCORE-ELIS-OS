@@ -2,6 +2,7 @@ const express = require('express');
 const cors = require('cors');
 const path = require('path');
 const doctorRoutes = require('./src/routes/doctorRoutes');
+const aiStudioRoutes = require('./src/routes/aiStudioRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -16,6 +17,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 
 // API Routes
 app.use('/api/v1/doctor-module', doctorRoutes);
+app.use('/api/v1/ai-studio', aiStudioRoutes);
 
 // System Health & Module Info
 app.get('/api/health', (req, res) => {

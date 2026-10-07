@@ -385,7 +385,7 @@ export default function SampleTrackModal({
       timestamp: sample.createdAt,
       event: "Order Created & Sample Registered",
       description: `Lab order ${sample.order.orderNumber} created. Sample ${sample.sampleNumber} registered in ELIS.`,
-      status: "success",
+      status: "success" as const,
       user: "Front Desk",
       location: "Registration",
       metadata: { barcode: sample.barcode, priority: sample.priority || "ROUTINE" },

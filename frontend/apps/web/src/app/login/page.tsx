@@ -715,6 +715,8 @@ export default function LoginPage() {
   const [mounted, setMounted] = useState(false);
   const [cardHovered, setCardHovered] = useState(false);
   const [showMasterModal, setShowMasterModal] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const [lockoutTimer, setLockoutTimer] = useState<number | null>(null);
 
   const passwordRef = useRef<HTMLInputElement>(null);
 
@@ -810,10 +812,11 @@ export default function LoginPage() {
     setLoading(true);
     try {
       if (!email || !password) {
-        setError("Enter email and password.");
+        setError("Enter operator email or employee code and access key.");
         return;
       }
-      const session = await login({ email, password });
+      const session = await login({ email: email.trim(), password });
+      setFailedAttempts(0);
 
       if (session.requiresMfaSetup) {
         startMfaSetup(session);
@@ -837,7 +840,12 @@ export default function LoginPage() {
       await new Promise((r) => setTimeout(r, 200));
       revealWelcome(session.user);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Unable to sign in.");
+      setFailedAttempts((prev) => prev + 1);
+      const msg = err instanceof Error ? err.message : "Unable to sign in.";
+      setError(msg);
+      if (msg.toLowerCase().includes("locked") || (err instanceof ApiError && err.status === 429)) {
+        setLockoutTimer(300);
+      }
       setLoginSuccess(false);
     } finally {
       setLoading(false);
@@ -1197,7 +1205,7 @@ export default function LoginPage() {
             RIGHT PANEL — LOGIN FORM
         ════════════════════════════════════════════════════════ */}
         <div className="flex-1 flex items-center justify-center relative z-10 px-6 pt-20 pb-10">
-          <div className="w-full max-w-[400px]">
+          <div className="w-full max-w-[460px]">
 
             {/* Mobile logo */}
             <div className="lg:hidden text-center mb-8" style={{ animation: "slideUp 0.6s ease both" }}>
@@ -1211,11 +1219,11 @@ export default function LoginPage() {
 
             {/* Card with animated gradient border */}
             <div
-              className="gradient-border-card rounded-2xl p-7 card-glow relative"
+              className="gradient-border-card rounded-2xl p-8 card-glow relative"
               onMouseEnter={() => setCardHovered(true)}
               onMouseLeave={() => setCardHovered(false)}
               style={{
-                background: "rgba(10,10,18,0.92)",
+                background: "rgba(10,10,18,0.95)",
                 backdropFilter: "blur(40px)",
                 animation: mounted ? "scaleIn 0.6s cubic-bezier(0.16,1,0.3,1) both 0.15s" : "none",
                 transition: "box-shadow 0.4s ease",
@@ -1234,30 +1242,22 @@ export default function LoginPage() {
               </div>
 
               {/* Header */}
-              <div className="mb-6">
-                <div className="flex items-center justify-between mb-2">
-                  <div>
-                    <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
-                      {loginSuccess ? (
-                        <>
-                          <CheckCircle2 className="h-5 w-5 text-emerald-400" />
-                          Access Granted
-                        </>
-                      ) : (
-                        <>
-                          <KeyRound className="h-5 w-5 text-indigo-400/60" />
-                          Authenticate
-                        </>
-                      )}
-                    </h2>
-                  </div>
-                  <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full"
-                    style={{ background: "rgba(16,185,129,0.08)", border: "1px solid rgba(16,185,129,0.15)" }}>
-                    <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                    <span className="text-emerald-400/80 text-[10px] mono font-semibold">SECURE</span>
-                  </div>
+              <div className="flex items-center gap-3.5 mb-6">
+                <div className="h-12 w-12 rounded-2xl flex items-center justify-center bg-indigo-500/15 border border-indigo-500/30 text-indigo-400 shadow-[0_0_20px_rgba(99,102,241,0.25)] shrink-0">
+                  <Shield className="h-6 w-6" />
                 </div>
-                <p className="text-white/25 text-xs mono">Enter credentials to access ELIS workspace</p>
+                <div>
+                  <h2 className="text-xl font-black text-white tracking-tight flex items-center gap-2">
+                    {loginSuccess ? "Identity Verified" : "Secure Sign In"}
+                  </h2>
+                  <p className="text-white/40 text-xs font-mono">
+                    {loginSuccess ? "Routing to workspace…" : "LabCore ELIS · Enterprise LIS"}
+                  </p>
+                </div>
+                <div className="ml-auto flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+                  <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                  <span className="text-emerald-400 text-[10px] mono font-bold">256-BIT</span>
+                </div>
               </div>
 
               {/* Success overlay */}
@@ -1265,27 +1265,48 @@ export default function LoginPage() {
                 <div className="py-10 text-center success-state">
                   <div className="h-16 w-16 rounded-2xl mx-auto mb-4 flex items-center justify-center relative"
                     style={{ background: "rgba(16,185,129,0.12)", border: "1px solid rgba(16,185,129,0.25)" }}>
-                    {/* Pulse rings */}
                     <div className="absolute inset-0 rounded-2xl" style={{
                       border: "1px solid rgba(16,185,129,0.3)",
                       animation: "pulseRing 1.5s ease-out infinite",
                     }} />
-                    <div className="absolute inset-0 rounded-2xl" style={{
-                      border: "1px solid rgba(16,185,129,0.2)",
-                      animation: "pulseRing 1.5s ease-out 0.5s infinite",
-                    }} />
                     <ShieldCheck className="h-8 w-8 text-emerald-400" />
                   </div>
-                  <p className="text-white font-bold text-lg">Identity Verified</p>
+                  <p className="text-white font-bold text-lg">Access Granted</p>
                   <p className="text-white/30 text-xs mt-1.5 mono flex items-center justify-center gap-2">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    Routing to dashboard…
+                    <Loader2 className="h-3 w-3 animate-spin text-indigo-400" />
+                    Launching dashboard workspace…
                   </p>
                 </div>
               )}
 
               {!loginSuccess && (
                 <>
+                  {/* Brute force attempt warning */}
+                  {failedAttempts > 0 && (
+                    <div className="mb-4 p-3 rounded-xl bg-amber-500/10 border border-amber-500/25">
+                      <div className="flex items-center justify-between text-[11px] font-mono text-amber-300 mb-1.5">
+                        <span>Failed Attempts: {failedAttempts} / 5</span>
+                        <span>{5 - failedAttempts > 0 ? `${5 - failedAttempts} tries remaining` : "LOCKOUT ACTIVE"}</span>
+                      </div>
+                      <div className="flex gap-1 h-1.5 w-full bg-white/10 rounded-full overflow-hidden">
+                        {[1, 2, 3, 4, 5].map((seg) => (
+                          <div
+                            key={seg}
+                            className="flex-1 rounded-full transition-all duration-300"
+                            style={{
+                              background:
+                                seg <= failedAttempts
+                                  ? failedAttempts >= 4
+                                    ? "#ef4444"
+                                    : "#f59e0b"
+                                  : "transparent",
+                            }}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                   {/* Error */}
                   {error && (
                     <div className="mb-4 p-3.5 rounded-xl flex items-start gap-2.5 text-xs"
@@ -1303,14 +1324,14 @@ export default function LoginPage() {
 
                     {mfaChallenge ? (
                       /* ── Second factor ── */
-                      <div>
-                        <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-widest mono mb-2 flex items-center gap-1.5">
-                          <ShieldCheck className="h-3 w-3 text-indigo-400/40" />
-                          Authenticator Code
+                      <div className="space-y-2">
+                        <label className="block text-[11px] font-semibold text-white/50 uppercase tracking-widest mono flex items-center gap-1.5">
+                          <ShieldCheck className="h-3.5 w-3.5 text-indigo-400" />
+                          Authenticator Code (TOTP)
                         </label>
                         <div className={`input-wrap ${passwordFocused ? "focused" : ""}`}>
                           <div className="flex items-center px-4 py-3.5">
-                            <Lock className="h-4 w-4 mr-3 shrink-0 text-white/20" />
+                            <Lock className="h-4 w-4 mr-3 shrink-0 text-white/30" />
                             <input
                               id="login-mfa-code"
                               type="text"
@@ -1328,37 +1349,37 @@ export default function LoginPage() {
                             />
                           </div>
                         </div>
-                        <p className="mt-2 text-[10px] text-white/25 mono">
-                          Enter the 6-digit code from your authenticator app, or a backup code.
+                        <p className="text-[11px] text-white/30 mono">
+                          Enter the 6-digit rolling code from your authenticator app, or a backup code.
                         </p>
                         <button
                           type="button"
                           onClick={() => { setMfaChallenge(null); setMfaCode(""); setError(""); }}
-                          className="mt-2 text-[11px] text-indigo-400/60 hover:text-indigo-300 transition-colors mono"
+                          className="text-xs text-indigo-400 hover:text-indigo-300 transition-colors mono cursor-pointer block pt-1"
                         >
-                          Use a different account
+                          ← Use a different operator account
                         </button>
                       </div>
                     ) : (
                       <>
-                        {/* Email */}
-                        <div>
-                          <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-widest mono mb-2 flex items-center gap-1.5">
-                            <Mail className="h-3 w-3 text-indigo-400/40" />
-                            Operator Email
+                        {/* Email or Employee Code */}
+                        <div className="space-y-1.5">
+                          <label className="block text-[11px] font-semibold text-white/50 tracking-wide mono uppercase flex items-center gap-1.5">
+                            <Mail className="h-3.5 w-3.5 text-indigo-400/80" />
+                            Email or Employee Code
                           </label>
                           <div className={`input-wrap ${emailFocused ? "focused" : ""}`}>
                             <div className="flex items-center px-4 py-3.5">
-                              <Mail className="h-4 w-4 mr-3 shrink-0 transition-colors duration-300" style={{ color: emailFocused ? "#818cf8" : "rgba(255,255,255,0.2)" }} />
+                              <Mail className="h-4 w-4 mr-3 shrink-0 transition-colors duration-300" style={{ color: emailFocused ? "#818cf8" : "rgba(255,255,255,0.3)" }} />
                               <input
                                 id="login-email"
-                                type="email"
+                                type="text"
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 onFocus={() => setEmailFocused(true)}
                                 onBlur={() => setEmailFocused(false)}
                                 onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); passwordRef.current?.focus(); } }}
-                                placeholder="operator@labcore.com"
+                                placeholder="operator@labcore.com or ADMIN001"
                                 required
                                 autoComplete="username"
                               />
@@ -1367,14 +1388,23 @@ export default function LoginPage() {
                         </div>
 
                         {/* Password */}
-                        <div>
-                          <label className="block text-[10px] font-semibold text-white/30 uppercase tracking-widest mono mb-2 flex items-center gap-1.5">
-                            <Lock className="h-3 w-3 text-indigo-400/40" />
-                            Access Key
-                          </label>
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <label className="block text-[11px] font-semibold text-white/50 tracking-wide mono uppercase flex items-center gap-1.5">
+                              <Lock className="h-3.5 w-3.5 text-indigo-400/80" />
+                              Access Key / Password
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => router.push("/forgot-password")}
+                              className="text-[11px] text-indigo-400 hover:text-indigo-300 transition-colors mono font-medium cursor-pointer"
+                            >
+                              Forgot password?
+                            </button>
+                          </div>
                           <div className={`input-wrap ${passwordFocused ? "focused" : ""}`}>
                             <div className="flex items-center px-4 py-3.5">
-                              <Lock className="h-4 w-4 mr-3 shrink-0 transition-colors duration-300" style={{ color: passwordFocused ? "#818cf8" : "rgba(255,255,255,0.2)" }} />
+                              <Lock className="h-4 w-4 mr-3 shrink-0 transition-colors duration-300" style={{ color: passwordFocused ? "#818cf8" : "rgba(255,255,255,0.3)" }} />
                               <input
                                 id="login-password"
                                 ref={passwordRef}
@@ -1387,9 +1417,12 @@ export default function LoginPage() {
                                 required
                                 autoComplete="current-password"
                               />
-                              <button type="button" id="toggle-password-visibility"
+                              <button
+                                type="button"
+                                id="toggle-password-visibility"
                                 onClick={() => setShowPassword(!showPassword)}
-                                className="ml-2 shrink-0 text-white/20 hover:text-white/60 transition-colors p-1 rounded-lg hover:bg-white/5">
+                                className="ml-2 shrink-0 text-white/30 hover:text-white transition-colors p-1 rounded-lg hover:bg-white/5 cursor-pointer"
+                              >
                                 {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                               </button>
                             </div>
@@ -1398,32 +1431,44 @@ export default function LoginPage() {
                         </div>
 
                         {/* Controls */}
-                        <div className="flex items-center justify-between pt-1">
-                          <button type="button"
+                        <div className="flex items-center justify-between py-1">
+                          <button
+                            type="button"
                             onClick={() => { const n = !rememberMe; setRememberMeState(n); setRememberMe(n); }}
-                            className="flex items-center gap-2 group">
-                            <div className="h-4 w-4 rounded flex items-center justify-center transition-all duration-300"
+                            className="flex items-center gap-2 group cursor-pointer"
+                          >
+                            <div
+                              className="h-4 w-4 rounded flex items-center justify-center transition-all duration-300"
                               style={{
-                                background: rememberMe ? "linear-gradient(135deg,#4f46e5,#7c3aed)" : "rgba(255,255,255,0.04)",
-                                border: rememberMe ? "1px solid #818cf8" : "1px solid rgba(255,255,255,0.1)",
+                                background: rememberMe ? "linear-gradient(135deg,#4f46e5,#7c3aed)" : "rgba(255,255,255,0.06)",
+                                border: rememberMe ? "1px solid #818cf8" : "1px solid rgba(255,255,255,0.15)",
                                 boxShadow: rememberMe ? "0 0 10px rgba(99,102,241,0.3)" : "none",
-                              }}>
+                              }}
+                            >
                               {rememberMe && (
                                 <svg className="h-2.5 w-2.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
                                   <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
                                 </svg>
                               )}
                             </div>
-                            <span className="text-[11px] text-white/30 group-hover:text-white/60 transition-colors select-none mono">
-                              Keep session
+                            <span className="text-xs text-white/40 group-hover:text-white/70 transition-colors select-none font-mono">
+                              Keep session active
                             </span>
                           </button>
+
                           <button
                             type="button"
-                            onClick={() => router.push("/forgot-password")}
-                            className="text-[11px] text-indigo-400/90 hover:text-indigo-300 transition-colors mono flex items-center gap-1 cursor-pointer font-medium"
+                            onClick={() => { const n = !privacyMode; setPrivacyModeState(n); setPrivacyMode(n); }}
+                            className="flex items-center gap-1.5 text-xs text-white/30 hover:text-white/60 font-mono transition-colors cursor-pointer"
                           >
-                            Reset access key / Forgot password <ArrowRight className="h-3 w-3" />
+                            <div
+                              className="h-2.5 w-2.5 rounded-full transition-all"
+                              style={{
+                                background: privacyMode ? "#34d399" : "rgba(255,255,255,0.1)",
+                                boxShadow: privacyMode ? "0 0 6px rgba(52,211,153,0.6)" : "none",
+                              }}
+                            />
+                            <span>Privacy mode</span>
                           </button>
                         </div>
 
@@ -1432,46 +1477,62 @@ export default function LoginPage() {
                           <button type="button" id="biometric-login-btn"
                             onClick={handleBiometricLogin}
                             disabled={biometricLoading}
-                            className="w-full py-3 rounded-xl text-xs text-white/50 hover:text-white/80 transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-white/[0.04]"
+                            className="w-full py-3 rounded-xl text-xs text-white/50 hover:text-white/80 transition-all flex items-center justify-center gap-2 disabled:opacity-50 hover:bg-white/[0.04] cursor-pointer"
                             style={{
                               background: "rgba(255,255,255,0.02)",
                               border: "1px solid rgba(255,255,255,0.06)",
                             }}>
                             {biometricLoading
-                              ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Scanning…</>
-                              : <><Fingerprint className="h-3.5 w-3.5 text-indigo-400/60" /> Biometric login</>}
+                              ? <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Scanning biometric…</>
+                              : <><Fingerprint className="h-3.5 w-3.5 text-indigo-400" /> Biometric quick sign-in</>}
                           </button>
                         )}
                       </>
                     )}
 
                     {/* Submit button */}
-                    <div className="relative">
-                      <button id="login-submit-btn" type="submit" disabled={loading || Boolean(mfaChallenge && mfaCode.length < 6)}
-                        className="btn-primary w-full py-4 rounded-xl text-sm font-extrabold text-white flex items-center justify-center gap-2.5 relative z-10 shadow-lg shadow-indigo-600/30">
-                        {loading
-                          ? <><Loader2 className="h-4 w-4 animate-spin text-white" /> <span>{mfaChallenge ? "Verifying Code…" : "Authenticating…"}</span></>
-                          : <>
-                            <ShieldCheck className="h-4 w-4 text-white" />
-                            <span className="tracking-wide text-white">{mfaChallenge ? "Verify Code & Access Workspace" : "Access Workspace"}</span>
-                            <ChevronRight className="h-4 w-4 text-white/80" />
-                          </>}
+                    <div className="relative pt-1">
+                      <button
+                        id="login-submit-btn"
+                        type="submit"
+                        disabled={loading || Boolean(mfaChallenge && mfaCode.length < 6)}
+                        className="btn-primary w-full py-4 rounded-xl text-sm font-extrabold text-white flex items-center justify-center gap-2.5 relative z-10 shadow-lg shadow-indigo-600/30 cursor-pointer"
+                      >
+                        {loading ? (
+                          <>
+                            <Loader2 className="h-4 w-4 animate-spin text-white" />
+                            <span>{mfaChallenge ? "Verifying Code…" : "Authenticating Operator…"}</span>
+                          </>
+                        ) : (
+                          <>
+                            <Fingerprint className="h-4 w-4 text-white" />
+                            <span className="tracking-wide text-white font-bold">
+                              {mfaChallenge ? "Verify TOTP & Enter Workspace" : "Sign In Securely"}
+                            </span>
+                            <ChevronRight className="h-4 w-4 text-white/80 ml-auto" />
+                          </>
+                        )}
                       </button>
                     </div>
                   </form>
 
-                  {/* Footer security features notice */}
-                  <div className="mt-6 pt-4 flex items-center justify-center gap-5"
-                    style={{ borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+                  {/* Footer security badges */}
+                  <div
+                    className="mt-6 pt-4 flex items-center justify-center gap-3 flex-wrap"
+                    style={{ borderTop: "1px solid rgba(255,255,255,0.05)" }}
+                  >
                     {[
-                      { icon: ShieldCheck, text: "256-Bit SSL" },
-                      { icon: Lock, text: "Role-Based Access" },
-
-                      { icon: Cpu, text: "MFA Enabled" },
+                      { icon: ShieldCheck, text: "256-Bit TLS" },
+                      { icon: Lock, text: "JWT Auth" },
+                      { icon: Fingerprint, text: "TOTP MFA" },
+                      { icon: Cpu, text: "NABH Ready" },
                     ].map(({ icon: Icon, text }) => (
-                      <div key={text} className="flex items-center gap-1.5 group cursor-default">
-                        <Icon className="h-3 w-3 text-indigo-400/60 group-hover:text-indigo-300 transition-colors" />
-                        <span className="text-[10px] text-white/40 group-hover:text-white/70 transition-colors mono font-medium">{text}</span>
+                      <div
+                        key={text}
+                        className="flex items-center gap-1.5 px-2.5 py-1 rounded-md bg-white/[0.03] border border-white/[0.06] text-white/40"
+                      >
+                        <Icon className="h-3 w-3 text-indigo-400" />
+                        <span className="text-[10px] mono font-medium">{text}</span>
                       </div>
                     ))}
                   </div>
@@ -1479,37 +1540,19 @@ export default function LoginPage() {
               )}
             </div>
 
-            {/* Privacy & Master Provisioning Controls */}
-            <div className="mt-4 flex flex-col items-center justify-center gap-2">
-              <div className="flex items-center justify-center gap-3">
-                <button type="button"
-                  onClick={() => { const n = !privacyMode; setPrivacyModeState(n); setPrivacyMode(n); }}
-                  className="flex items-center gap-2 group px-3 py-1.5 rounded-full transition-all duration-300 hover:bg-white/[0.03]">
-                  <div className="h-3.5 w-3.5 rounded transition-all duration-300"
-                    style={{
-                      background: privacyMode ? "rgba(99,102,241,0.4)" : "transparent",
-                      border: privacyMode ? "1px solid #818cf8" : "1px solid rgba(255,255,255,0.1)",
-                      boxShadow: privacyMode ? "0 0 6px rgba(99,102,241,0.3)" : "none",
-                    }} />
-                  <span className="text-[10px] text-white/15 group-hover:text-white/40 transition-colors mono select-none">
-                    privacy mode
-                  </span>
-                </button>
-
-                <div className="h-3 w-px bg-white/10" />
-
-                <button
-                  type="button"
-                  onClick={() => setShowMasterModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] text-indigo-400/80 hover:text-indigo-300 hover:bg-indigo-500/10 border border-indigo-500/20 transition-all cursor-pointer mono"
-                >
-                  <Shield className="h-3 w-3 text-indigo-400" />
-                  <span>Master Lab & Role Setup</span>
-                </button>
-              </div>
+            {/* Master Lab & Role Provisioning Portal Button */}
+            <div className="mt-5 flex items-center justify-center">
+              <button
+                type="button"
+                onClick={() => setShowMasterModal(true)}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-mono font-medium text-indigo-300 hover:text-white bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/30 transition-all cursor-pointer shadow-[0_0_15px_rgba(99,102,241,0.15)]"
+              >
+                <ShieldCheck className="h-3.5 w-3.5 text-indigo-400" />
+                <span>Master Lab & Role Setup Portal</span>
+              </button>
             </div>
 
-            <p className="text-center text-white/8 text-[10px] mt-5 mono tracking-widest uppercase">
+            <p className="text-center text-white/10 text-[10px] mt-4 mono tracking-widest uppercase">
               © {new Date().getFullYear()} LabCore ELIS · SECURED SESSION
             </p>
           </div>

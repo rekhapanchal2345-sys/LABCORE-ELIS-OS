@@ -93,6 +93,33 @@ import type { AuthenticatedRequest } from "../../../middleware/auth";
   };
   
   // =======================================================
+  // GET MY ACTIVITY
+  // =======================================================
+  
+  export const getMyActivity = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction
+  ) => {
+    try {
+      const query = (req as any).validated?.query || req.query;
+      const result = await getAuditLogs({
+        userId: req.user?.id,
+        module: query.module?.toString(),
+        page: Number(query.page) || 1,
+        limit: Number(query.limit) || 20,
+      });
+  
+      res.status(200).json({
+        success: true,
+        message: "Activity fetched successfully",
+        data: result.logs,
+      });
+    } catch (error) {
+      next(error);
+    }
+  };
+  // =======================================================
   // GET ONE AUDIT LOG
   // =======================================================
   

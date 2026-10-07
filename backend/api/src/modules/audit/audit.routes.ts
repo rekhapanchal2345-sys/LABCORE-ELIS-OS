@@ -11,6 +11,7 @@ import {
   getOne,
   recordHistory,
   userActivity,
+  getMyActivity,
 } from "./audit.controller";
 
 import {
@@ -31,6 +32,17 @@ router.use(
 
 // =======================================================
 // CREATE AUDIT LOG
+// =======================================================
+
+router.get(
+  "/me",
+  validate({
+    query: auditQuerySchema,
+  }),
+  getMyActivity
+);
+
+// =======================================================
 // Usually internal/system use
 // =======================================================
 

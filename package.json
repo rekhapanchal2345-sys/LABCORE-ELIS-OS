@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "echo \"Tests passed\" && exit 0"
+    "test": "node test/aiStudio.test.js"
   },
   "dependencies": {
     "@agentclientprotocol/sdk": "^1.4.0",

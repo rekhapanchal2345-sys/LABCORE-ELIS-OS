@@ -1,5 +1,6 @@
 import prisma from "../../../config/database";
 import { getNextSequenceNumber } from "../../services/sequence.service";
+import { HttpError } from "../../utils/http-error";
 
 const generateReceiptNumber = async (tx?: any) => {
   return getNextSequenceNumber("REC", "MAIN", tx);
@@ -36,7 +37,7 @@ export const generateReceipt = async (
     });
 
     if (!payment) {
-      throw new Error("Payment not found");
+      throw new HttpError("Payment not found", 404);
     }
 
     // Check if receipt already exists
@@ -103,6 +104,10 @@ const withPayment = async <T extends { paymentId: string }>(receipt: T) => {
     include: receiptPaymentInclude,
   });
 
+  if (!payment) {
+    throw new HttpError("Payment not found for receipt", 404);
+  }
+
   return { ...receipt, payment };
 };
 
@@ -113,7 +118,7 @@ export const getReceiptByPaymentId = async (paymentId: string) => {
     });
 
     if (!receipt) {
-      throw new Error("Receipt not found");
+      throw new HttpError("Receipt not found", 404);
     }
 
     return withPayment(receipt);
@@ -134,7 +139,7 @@ export const getReceiptByNumber = async (receiptNumber: string) => {
     });
 
     if (!receipt) {
-      throw new Error("Receipt not found");
+      throw new HttpError("Receipt not found", 404);
     }
 
     return withPayment(receipt);
@@ -160,6 +165,9 @@ export const markReceiptPrinted = async (receiptId: string) => {
     return receipt;
   } catch (error) {
     console.error('Error in markReceiptPrinted:', error);
+    if ((error as any).code === 'P2025') {
+      throw new HttpError("Receipt not found", 404);
+    }
     throw error;
   }
 };
@@ -180,6 +188,9 @@ export const markReceiptEmailed = async (receiptId: string) => {
     return receipt;
   } catch (error) {
     console.error('Error in markReceiptEmailed:', error);
+    if ((error as any).code === 'P2025') {
+      throw new HttpError("Receipt not found", 404);
+    }
     throw error;
   }
 };
@@ -200,6 +211,9 @@ export const markReceiptSmsed = async (receiptId: string) => {
     return receipt;
   } catch (error) {
     console.error('Error in markReceiptSmsed:', error);
+    if ((error as any).code === 'P2025') {
+      throw new HttpError("Receipt not found", 404);
+    }
     throw error;
   }
 };
@@ -355,15 +369,24 @@ export const getPaymentReports = async (options: any = {}) => {
 
       case "refund":
         // Refund report
+        const refundWhere: any = {};
+        if (startDate || endDate) {
+          refundWhere.requestedAt = {};
+          if (startDate) {
+            refundWhere.requestedAt.gte = new Date(startDate);
+          }
+          if (endDate) {
+            const endD = new Date(endDate);
+            if (typeof endDate === "string" && !endDate.includes("T")) {
+              endD.setHours(23, 59, 59, 999);
+            }
+            refundWhere.requestedAt.lte = endD;
+          }
+        }
+
         const [refunds, refundTotal] = await Promise.all([
           prisma.refund.findMany({
-            where: {
-              ...(startDate || endDate ? {
-                requestedAt: {}
-              } : {}),
-              ...(startDate ? { requestedAt: { gte: new Date(startDate) } } : {}),
-              ...(endDate ? { requestedAt: { lte: new Date(endDate) } } : {}),
-            },
+            where: refundWhere,
             skip,
             take: limit,
             include: {
@@ -386,7 +409,7 @@ export const getPaymentReports = async (options: any = {}) => {
             },
             orderBy: { requestedAt: "desc" },
           }),
-          prisma.refund.count(),
+          prisma.refund.count({ where: refundWhere }),
         ]);
 
         return {
@@ -509,7 +532,7 @@ export const exportPaymentData = async (options: any = {}) => {
       transactionId: payment.transactionId,
       orderNumber: payment.order.orderNumber,
       invoiceNumber: payment.order.invoice?.invoiceNumber,
-      patientName: [payment.order.patient.title, payment.order.patient.firstName, payment.order.patient.middleName, payment.order.patient.lastName].filter(Boolean).join(" ").trim() || "Patient",
+      patientName: [payment.order.patient.firstName, payment.order.patient.middleName, payment.order.patient.lastName].filter(Boolean).join(" ").trim() || "Patient",
       patientUHID: payment.order.patient.uhid,
       amount: Number(payment.amount),
       method: payment.method,

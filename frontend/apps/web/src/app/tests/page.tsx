@@ -723,6 +723,7 @@ export default function TestsPage() {
           isOpen={isTariffModalOpen}
           onClose={() => setIsTariffModalOpen(false)}
           tests={tests}
+          categories={categories}
         />
       </div>
     </ProtectedRoute>

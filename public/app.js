@@ -459,7 +459,37 @@ function deleteDoctor(id) {
 }
 
 function switchMainView(viewName) {
-  showToast(`Navigated to ${viewName.toUpperCase()} module.`, 'info');
+  const docView = document.getElementById('doctorsModuleView');
+  const aiView = document.getElementById('aiStudioModuleView');
+
+  // Reset top nav item active classes
+  document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+
+  if (viewName === 'ai-studio') {
+    if (docView) docView.classList.add('hidden');
+    if (aiView) aiView.classList.remove('hidden');
+    const aiNav = document.getElementById('nav-item-ai-studio');
+    if (aiNav) aiNav.classList.add('active');
+    if (window.AiStudio) {
+      window.AiStudio.init();
+    }
+    showToast(`Navigated to AI STUDIO & RESEARCH.`, 'info');
+  } else {
+    if (docView) docView.classList.remove('hidden');
+    if (aiView) aiView.classList.add('hidden');
+    if (viewName === 'doctors') {
+      const docNav = document.querySelectorAll('.nav-item')[2]; // Doctors nav
+      if (docNav) docNav.classList.add('active');
+    }
+    showToast(`Navigated to ${viewName.toUpperCase()} module.`, 'info');
+  }
+}
+
+function switchAiTabDirect(tabName) {
+  switchMainView('ai-studio');
+  if (window.AiStudio) {
+    window.AiStudio.switchTab(tabName);
+  }
 }
 
 // Toast notification helper
@@ -475,3 +505,4 @@ function showToast(msg, type = 'info') {
     setTimeout(() => toast.remove(), 300);
   }, 3000);
 }
+

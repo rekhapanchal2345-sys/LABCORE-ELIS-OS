@@ -162,7 +162,7 @@ export const formatPatientResponse = (patient: any) => {
     currentMedications: medications,
     totalOrders: patient._count?.orders ?? orders.length,
     pendingOrders: activeOrders.length,
-    lastVisitDate: orders[0]?.createdAt ?? null,
+    lastVisitDate: orders.length > 0 ? orders[0]?.createdAt ?? null : null,
     additionalInformation: patient.notes ?? "",
     notificationPreferences: notificationPreferencesFrom(patient.communicationPreference),
   };

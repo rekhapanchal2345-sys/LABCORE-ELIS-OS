@@ -390,6 +390,7 @@ export const loginUser = async (
     await registerFailedLogin(user.id, req);
   }
 
+  // Password is valid - reset failed login count if user had any
   if (user.failedLoginCount > 0 || user.lockedUntil) {
     await prisma.user.update({
       where: { id: user.id },

@@ -539,19 +539,7 @@ export const getPayments =
       };
     } catch (error) {
       console.error('Error in getPayments:', error);
-      
-      // Return empty result instead of throwing error to prevent "Failed to fetch"
-      return {
-        payments: [],
-        pagination: {
-          page: 1,
-          limit: 20,
-          total: 0,
-          totalPages: 0,
-          hasNextPage: false,
-          hasPreviousPage: false,
-        },
-      };
+      throw error;
     }
   };
 
@@ -633,12 +621,12 @@ export const getPaymentMetrics = async (options: any = {}) => {
           _sum: { amount: true },
         }),
 
-        // Outstanding receivables (dueAmount from invoices)
+        // Outstanding receivables (grandTotal from unpaid invoices)
         prisma.invoice.aggregate({
           where: {
-            paymentStatus: { in: ["UNPAID", "PARTIAL", "PENDING"] },
+            paymentStatus: { in: ["PENDING", "PARTIAL"] },
           },
-          _sum: { dueAmount: true },
+          _sum: { grandTotal: true },
         }),
 
         // Today's Refunds in IST
@@ -651,9 +639,9 @@ export const getPaymentMetrics = async (options: any = {}) => {
         }).catch(() => ({ _sum: { amount: 0 } })),
 
         // Active Till Shift (Opening float)
-        prisma.cashCounterShift.findFirst({
-          where: { status: "OPEN" },
-          select: { openingFloat: true, cashCollected: true, expectedCash: true },
+        prisma.cashCounterSession.findFirst({
+          where: { closedAt: null },
+          select: { openingBalance: true, closingBalance: true, expectedCash: true },
         }).catch(() => null),
       ]);
 
@@ -662,10 +650,10 @@ export const getPaymentMetrics = async (options: any = {}) => {
       const netTodayCollection = Math.max(0, grossToday - todayRefunds);
 
       const cashCollected = Number(cashCollectionAgg._sum.amount || 0);
-      const openingFloat = activeShiftAgg ? Number(activeShiftAgg.openingFloat || 0) : 0;
+      const openingFloat = activeShiftAgg ? Number(activeShiftAgg.openingBalance || 0) : 0;
       const expectedCashDrawer = openingFloat + cashCollected;
 
-      const outstanding = Number(outstandingReceivablesAgg._sum.dueAmount || 0);
+      const outstanding = Number(outstandingReceivablesAgg._sum.grandTotal || 0);
       const digital = Number(digitalCollectionAgg._sum.amount || 0);
 
       return {
@@ -810,7 +798,7 @@ export const getShiftCloseReport = async (options: any = {}) => {
         receiptNumber: payment.receiptNumber,
         orderId: payment.orderId,
         orderNumber: payment.order.orderNumber,
-        patientName: [payment.order.patient.title, payment.order.patient.firstName, payment.order.patient.middleName, payment.order.patient.lastName].filter(Boolean).join(" ").trim() || "Patient",
+        patientName: [payment.order.patient.firstName, payment.order.patient.middleName, payment.order.patient.lastName].filter(Boolean).join(" ").trim() || "Patient",
         patientUHID: payment.order.patient.uhid,
         amount: Number(payment.amount),
         method: payment.method,

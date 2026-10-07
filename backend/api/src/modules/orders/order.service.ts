@@ -1,6 +1,7 @@
 import prisma from "../../../config/database";
 import type { PaymentMethod, PaymentStatus } from "@prisma/client";
 import { getNextSequenceNumber } from "../../services/sequence.service";
+import { HttpError } from "../../utils/http-error";
 
 export const createOrder = async (
   data: any,
@@ -15,9 +16,7 @@ export const createOrder = async (
       });
 
     if (!patient) {
-      throw new Error(
-        "Patient not found"
-      );
+      throw new HttpError("Patient not found", 404);
     }
 
     if (data.doctorId) {
@@ -29,9 +28,7 @@ export const createOrder = async (
         });
 
       if (!doctor || !doctor.isActive) {
-        throw new Error(
-          "Doctor not found or inactive"
-        );
+        throw new HttpError("Doctor not found or inactive", 404);
       }
     }
 
@@ -39,6 +36,12 @@ export const createOrder = async (
       data.items.map(
         (item: any) => item.testId
       );
+
+    // Check for duplicate testIds in the request
+    const uniqueTestIds = new Set(testIds);
+    if (uniqueTestIds.size !== testIds.length) {
+      throw new HttpError("Duplicate tests found in order items", 400);
+    }
 
     const tests =
       await prisma.test.findMany({
@@ -54,9 +57,7 @@ export const createOrder = async (
     tests.length !==
     data.items.length
   ) {
-    throw new Error(
-      "One or more tests are invalid or inactive"
-    );
+    throw new HttpError("One or more tests are invalid or inactive", 400);
   }
 
   // Generate unique order number and barcode with collision prevention
@@ -75,9 +76,7 @@ export const createOrder = async (
       );
 
       if (!test) {
-        throw new Error(
-          "Test not found"
-        );
+        throw new HttpError("Test not found", 404);
       }
 
       const price =
@@ -87,9 +86,7 @@ export const createOrder = async (
         Number(item.discount ?? 0);
 
       if (discount > price) {
-        throw new Error(
-          `Discount cannot exceed price for ${test.testName}`
-        );
+        throw new HttpError(`Discount cannot exceed price for ${test.testName}`, 400);
       }
 
       const finalPrice =

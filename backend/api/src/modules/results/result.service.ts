@@ -1,4 +1,5 @@
 import prisma from "../../../config/database";
+import { HttpError } from "../../utils/http-error";
 
 // =======================================================
 // GET RESULT TREND DATA
@@ -91,23 +92,23 @@ export const acknowledgeCriticalValue = async (
     });
 
     if (!result) {
-      throw new Error("Result not found");
+      throw new HttpError("Result not found", 404);
     }
 
     // If specific resultValueId provided, verify it exists and is critical
     if (data.resultValueId) {
       const resultValue = result.values.find(v => v.id === data.resultValueId);
       if (!resultValue) {
-        throw new Error("Result value not found");
+        throw new HttpError("Result value not found", 404);
       }
       if (resultValue.flag !== "CRITICAL") {
-        throw new Error("Only critical values can be acknowledged");
+        throw new HttpError("Only critical values can be acknowledged", 400);
       }
     } else {
       // Verify result has at least one critical value
       const hasCriticalValues = result.values.some(v => v.flag === "CRITICAL");
       if (!hasCriticalValues) {
-        throw new Error("Result has no critical values to acknowledge");
+        throw new HttpError("Result has no critical values to acknowledge", 400);
       }
     }
 

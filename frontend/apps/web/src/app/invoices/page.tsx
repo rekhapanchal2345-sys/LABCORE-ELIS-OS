@@ -606,7 +606,7 @@ export default function InvoicesPage() {
               Day Book Shift Close
             </button>
             <button
-              onClick={fetchInvoices}
+              onClick={() => fetchInvoices()}
               title="Refresh register"
               className="flex items-center gap-1.5 rounded-xl border border-slate-800 bg-slate-900/90 px-3 py-2 text-xs font-semibold text-slate-300 hover:bg-slate-800 hover:text-white transition-colors shadow-sm"
             >
@@ -724,7 +724,7 @@ export default function InvoicesPage() {
               <div className="rounded-xl border border-red-200 bg-red-50 p-4">
                 <p className="text-sm text-red-800">{error}</p>
                 <button
-                  onClick={fetchInvoices}
+                  onClick={() => fetchInvoices()}
                   className="mt-2 rounded-lg bg-red-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-800"
                 >
                   Retry

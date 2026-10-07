@@ -458,7 +458,7 @@ export default function OrderDetailPage({
             doctors={[]}
             isOpen={true}
             onClose={() => setModalType(null)}
-            onSubmit={async (doctorId) => {
+            onAssigned={async (doctorId) => {
               await orderApi.update(order.id, { doctorId });
               showToast("Referring doctor updated", "success");
               setModalType(null);
@@ -473,7 +473,7 @@ export default function OrderDetailPage({
             order={order}
             isOpen={true}
             onClose={() => setModalType(null)}
-            onSubmit={async (data) => {
+            onCollected={async (data) => {
               await orderApi.collectSample(order.id, {
                 barcode: data.barcode,
                 notes: data.notes,
@@ -491,7 +491,7 @@ export default function OrderDetailPage({
             order={order}
             isOpen={true}
             onClose={() => setModalType(null)}
-            onSubmit={async (data) => {
+            onPaymentAdded={async (data) => {
               await paymentsApi.create({
                 orderId: order.id,
                 amount: data.amount,
@@ -511,7 +511,7 @@ export default function OrderDetailPage({
             order={order}
             isOpen={true}
             onClose={() => setModalType(null)}
-            onSubmit={async (reason) => {
+            onCancelled={async (reason) => {
               await orderApi.cancel(order.id, { reason });
               showToast(`Order #${order.orderNumber} cancelled`, "warning");
               setModalType(null);

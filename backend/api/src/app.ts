@@ -33,12 +33,18 @@ import notificationTemplateRoutes from "./modules/notifications/notification-tem
 import backupRoutes from "./modules/backup/backup.routes";
 import barcodeRoutes from "./modules/barcode/barcode.routes";
 import abdmRoutes, { abdmWebhookRouter } from "./modules/abdm/abdm.routes";
+import aiRoutes from "./modules/ai/ai.routes";
 
 // =======================================================
 // MIDDLEWARE
 // =======================================================
 
 import { errorMiddleware } from "../middleware/error.middleware";
+import {
+  ipSecurityGuard,
+  suspiciousRequestDetector,
+  authEventLogger,
+} from "../middleware/security.middleware";
 
 // =======================================================
 // EXPRESS APPLICATION
@@ -130,6 +136,16 @@ app.use(
     credentials: true,
   })
 );
+
+// =======================================================
+// GLOBAL SECURITY GUARDS
+// =======================================================
+
+// Block IPs that have exceeded failure limits
+app.use("/api/auth", ipSecurityGuard);
+
+// Detect SQL injection, XSS and path traversal payloads
+app.use("/api", suspiciousRequestDetector);
 
 // =======================================================
 // REQUEST BODY
@@ -256,6 +272,7 @@ app.get("/api", (_req: Request, res: Response) => {
       notifications: "/api/notifications/templates",
       backups: "/api/backups",
       barcodes: "/api/barcodes",
+      ai: "/api/ai",
     },
   });
 });
@@ -263,6 +280,9 @@ app.get("/api", (_req: Request, res: Response) => {
 // =======================================================
 // AUTH
 // =======================================================
+
+// Log every auth attempt (identifier only — never passwords/tokens)
+app.use("/api/auth", authEventLogger);
 
 app.use("/api/auth", authRoutes);
 
@@ -420,6 +440,12 @@ app.use("/api/abdm", abdmRoutes);
 // ABDM Gateway Webhooks (open endpoint — ABDM Gateway posts here)
 app.use("/v0.5", abdmWebhookRouter);
 app.use("/api/v0.5", abdmWebhookRouter);         // for Next.js /api/* proxy (simulator)
+
+// =======================================================
+// AI STUDIO & CLINICAL MACHINE LEARNING
+// =======================================================
+
+app.use("/api/ai", aiRoutes);
 app.use("/api/abdm/v0.5", abdmWebhookRouter);
 
 // =======================================================

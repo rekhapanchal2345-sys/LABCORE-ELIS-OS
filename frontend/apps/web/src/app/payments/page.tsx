@@ -429,7 +429,7 @@ export default function PaymentsPage() {
       context: "PAYMENT",
       receiptNumber: payment.receiptNumber,
       amount: payment.amount,
-      dueBalance: payment.dueBalance,
+      dueBalance: payment.invoiceBalance,
       orderNumber: payment.orderNumber,
       date: payment.paidAt,
     });

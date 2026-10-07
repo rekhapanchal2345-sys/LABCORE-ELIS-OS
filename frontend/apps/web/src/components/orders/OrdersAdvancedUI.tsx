@@ -116,7 +116,7 @@ function StatCard({
       </div>
       <div className="text-2xl font-bold text-white">{value}</div>
       {sub && <div className="text-[11px] text-slate-400">{sub}</div>}
-      {urgent && value > 0 && (
+      {urgent && Number(value) > 0 && (
         <div className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 animate-ping" />
       )}
     </div>

@@ -224,7 +224,7 @@ export const getOrderAnalytics = async (options: DashboardStatsOptions = {}) => 
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
     const dailyOrders = await prisma.$queryRaw<Array<{ date: Date; count: bigint }>>`
-      SELECT 
+      SELECT
         DATE("createdAt") as date,
         COUNT(*) as count
       FROM orders
@@ -243,7 +243,10 @@ export const getOrderAnalytics = async (options: DashboardStatsOptions = {}) => 
         status: item.paymentStatus,
         count: item._count,
       })),
-      dailyTrend: dailyOrders,
+      dailyTrend: dailyOrders.map(item => ({
+        date: item.date,
+        count: Number(item.count),
+      })),
     };
   });
 };

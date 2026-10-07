@@ -184,7 +184,7 @@ export default function NotificationDispatchModal({
     setSendStatus("sending");
     try {
       const res = await communicationApi.sendEmail({
-        patientId: payload.patientId,
+        patientId: payload.patientId || "",
         to: email,
         subject,
         body: currentMessage,

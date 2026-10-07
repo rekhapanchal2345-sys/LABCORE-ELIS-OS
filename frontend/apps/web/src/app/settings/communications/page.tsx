@@ -373,7 +373,7 @@ function GeneralTab({ s, u }: { s: CommSettings; u: (k: keyof CommSettings, v: a
 function EmailTab({
   s, u, testStatus, onTest,
 }: { s: CommSettings; u: (k: keyof CommSettings, v: any) => void; testStatus: TestStatus; onTest: () => void; }) {
-  const configured = s.emailProvider && s.emailProvider !== "custom";
+  const configured = Boolean(s.emailProvider && s.emailProvider !== "custom");
   return (
     <div className="space-y-5">
       <SectionCard
@@ -497,7 +497,7 @@ function EmailTab({
 function SmsTab({
   s, u, testStatus, onTest,
 }: { s: CommSettings; u: (k: keyof CommSettings, v: any) => void; testStatus: TestStatus; onTest: () => void; }) {
-  const configured = s.smsProvider && s.smsProvider !== "custom";
+  const configured = Boolean(s.smsProvider && s.smsProvider !== "custom");
   return (
     <div className="space-y-5">
       <SectionCard
@@ -589,7 +589,7 @@ function SmsTab({
 function WhatsappTab({
   s, u, testStatus, onTest,
 }: { s: CommSettings; u: (k: keyof CommSettings, v: any) => void; testStatus: TestStatus; onTest: () => void; }) {
-  const configured = s.whatsappProvider && s.whatsappProvider !== "custom";
+  const configured = Boolean(s.whatsappProvider && s.whatsappProvider !== "custom");
   return (
     <div className="space-y-5">
       <SectionCard
@@ -660,7 +660,7 @@ function WhatsappTab({
 function CallTab({
   s, u, testStatus, onTest,
 }: { s: CommSettings; u: (k: keyof CommSettings, v: any) => void; testStatus: TestStatus; onTest: () => void; }) {
-  const configured = s.callProvider && s.callProvider !== "custom";
+  const configured = Boolean(s.callProvider && s.callProvider !== "custom");
   return (
     <div className="space-y-5">
       <SectionCard

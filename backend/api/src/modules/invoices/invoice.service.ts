@@ -1,6 +1,7 @@
 import prisma from "../../../config/database";
 import { getNextSequenceNumber } from "../../services/sequence.service";
 import { getISTDayBounds, roundHalfUp } from "../../utils/money";
+import { HttpError } from "../../utils/http-error";
 
 // =======================================================
 // CREATE INVOICE
@@ -18,7 +19,7 @@ export const createInvoice = async (
   try {
     // Validate input data
     if (!data.orderId) {
-      throw new Error("Order ID is required");
+      throw new HttpError("Order ID is required", 400);
     }
 
     const order =
@@ -35,19 +36,15 @@ export const createInvoice = async (
       });
 
     if (!order) {
-      throw new Error("Order not found");
+      throw new HttpError("Order not found", 404);
     }
 
     if (order.invoice) {
-      throw new Error(
-        "Invoice already exists for this order"
-      );
+      throw new HttpError("Invoice already exists for this order", 409);
     }
 
     if (!order.items || order.items.length === 0) {
-      throw new Error(
-        "Cannot create invoice without order items"
-      );
+      throw new HttpError("Cannot create invoice without order items", 400);
     }
 
     const subtotal = order.items.reduce(
@@ -58,7 +55,7 @@ export const createInvoice = async (
     );
 
     if (subtotal <= 0) {
-      throw new Error("Invalid subtotal amount");
+      throw new HttpError("Invalid subtotal amount", 400);
     }
 
     const discount = Math.max(
@@ -67,9 +64,7 @@ export const createInvoice = async (
     );
 
     if (discount > subtotal) {
-      throw new Error(
-        "Discount cannot be greater than subtotal"
-      );
+      throw new HttpError("Discount cannot be greater than subtotal", 400);
     }
 
     const taxableAmount = roundHalfUp(subtotal - discount);
@@ -78,7 +73,7 @@ export const createInvoice = async (
     const gstPercent = data.gstPercent !== undefined ? data.gstPercent : 18;
 
     if (gstPercent < 0 || gstPercent > 100) {
-      throw new Error("GST percentage must be between 0 and 100");
+      throw new HttpError("GST percentage must be between 0 and 100", 400);
     }
 
     const gstAmount = roundHalfUp((taxableAmount * gstPercent) / 100);

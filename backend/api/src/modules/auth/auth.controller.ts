@@ -47,7 +47,7 @@ export const login = async (
     const { identifier, password } = bodyOf(req);
     const result = await loginUser(identifier, password, req);
 
-    if (result.accessToken) {
+    if ("accessToken" in result && result.accessToken) {
       res.cookie("accessToken", result.accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -56,7 +56,7 @@ export const login = async (
         maxAge: 15 * 60 * 1000,
       });
     }
-    if (result.refreshToken) {
+    if ("refreshToken" in result && result.refreshToken) {
       res.cookie("refreshToken", result.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -81,7 +81,7 @@ export const verifyMfa = async (
     const { mfaToken, code } = bodyOf(req);
     const result = await verifyMfaLogin(mfaToken, code, req);
 
-    if (result.accessToken) {
+    if ("accessToken" in result && result.accessToken) {
       res.cookie("accessToken", result.accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -90,7 +90,7 @@ export const verifyMfa = async (
         maxAge: 15 * 60 * 1000,
       });
     }
-    if (result.refreshToken) {
+    if ("refreshToken" in result && result.refreshToken) {
       res.cookie("refreshToken", result.refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
@@ -115,7 +115,7 @@ export const refresh = async (
     const refreshToken = bodyOf(req).refreshToken || (req as any).cookies?.refreshToken;
     const result = await refreshSession(refreshToken, req);
 
-    if (result.accessToken) {
+    if ("accessToken" in result && result.accessToken) {
       res.cookie("accessToken", result.accessToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",

@@ -1,4 +1,5 @@
 import prisma from "../../../config/database";
+import { HttpError } from "../../utils/http-error";
 
 export const createSample = async (
   data: any
@@ -11,15 +12,13 @@ export const createSample = async (
     });
 
   if (!order) {
-    throw new Error("Order not found");
+    throw new HttpError("Order not found", 404);
   }
 
   if (
     order.orderStatus === "CANCELLED"
   ) {
-    throw new Error(
-      "Cannot create sample for cancelled order"
-    );
+    throw new HttpError("Cannot create sample for cancelled order", 400);
   }
 
   const sampleNumber =

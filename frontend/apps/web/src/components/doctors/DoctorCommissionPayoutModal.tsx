@@ -13,6 +13,7 @@ import {
   AlertCircle,
   Download,
   Loader2,
+  MessageSquare,
 } from "lucide-react";
 import { doctorApi } from "@/lib/api";
 import { showSuccess, showError } from "@/lib/notifications";

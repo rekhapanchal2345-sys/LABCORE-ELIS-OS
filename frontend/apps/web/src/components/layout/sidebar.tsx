@@ -32,6 +32,7 @@ import {
   Zap,
   Radio,
   MessageSquare,
+  Brain,
   X
 } from "lucide-react";
 import { approvalApi, invoiceApi } from "@/lib/api";
@@ -286,6 +287,36 @@ const menuSections: MenuSection[] = [
           activeIconBg: "bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-[0_0_12px_rgba(6,182,212,0.4)]",
           activeText: "text-white font-semibold",
         },
+      },
+    ],
+  },
+  {
+    id: "ai-research",
+    title: "CLINICAL AI & CDSS",
+    badge: "HOSPITAL",
+    items: [
+      {
+        label: "Clinical AI Diagnostics",
+        href: "/ai-studio",
+        icon: Brain,
+        accent: {
+          bg: "bg-blue-500/10 text-blue-400 group-hover:bg-blue-500/20 group-hover:text-blue-300",
+          text: "text-blue-400",
+          activeBorder: "border-blue-400",
+          activeIconBg: "bg-gradient-to-br from-blue-600 to-indigo-600 text-white shadow-[0_0_12px_rgba(37,99,235,0.4)]",
+          activeText: "text-white font-semibold",
+        },
+        children: [
+          { label: "Clinical AI Hub", href: "/ai-studio" },
+          { label: "Diagnostic Risk ML", href: "/ai-studio?tab=classical-ml" },
+          { label: "Biomarker Neural Nets", href: "/ai-studio?tab=deep-learning" },
+          { label: "Clinical NLP & EMR", href: "/ai-studio?tab=nlp" },
+          { label: "Critical Delta-Checks", href: "/ai-studio?tab=anomalies" },
+          { label: "Hospital TAT Forecaster", href: "/ai-studio?tab=forecasting" },
+          { label: "Clinical Validation", href: "/ai-studio?tab=evaluation" },
+          { label: "Hospital Model Registry", href: "/ai-studio?tab=registry" },
+          { label: "Regulatory AI Audit", href: "/ai-studio?tab=audit" },
+        ],
       },
     ],
   },

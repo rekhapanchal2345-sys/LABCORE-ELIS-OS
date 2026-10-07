@@ -3686,6 +3686,143 @@ export const authApi = {
   },
 };
 
+// Audit & Security Activity API
+export const auditApi = {
+  getAll: async (params?: { page?: number; limit?: number; module?: string; action?: string; userId?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.page) q.append('page', String(params.page));
+    if (params?.limit) q.append('limit', String(params.limit));
+    if (params?.module) q.append('module', params.module);
+    if (params?.action) q.append('action', params.action);
+    if (params?.userId) q.append('userId', params.userId);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return apiCall(`/api/audit${qs}`);
+  },
+  getMyActivity: async (params?: { page?: number; limit?: number; module?: string }) => {
+    const q = new URLSearchParams();
+    if (params?.page) q.append('page', String(params.page));
+    if (params?.limit) q.append('limit', String(params.limit));
+    if (params?.module) q.append('module', params.module);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return apiCall(`/api/audit/me${qs}`);
+  },
+  getOne: async (id: string) => {
+    return apiCall(`/api/audit/${id}`);
+  },
+  getRecordHistory: async (recordId: string) => {
+    return apiCall(`/api/audit/record/${recordId}`);
+  },
+};
+
+// AI Studio & Clinical Intelligence API
+export const aiApi = {
+  trainClassical: async (params: {
+    modelName: string;
+    algorithm: string;
+    dataset: string;
+    nEstimators: number;
+    maxDepth: number;
+    learningRate: number;
+  }) => {
+    return apiCall('/api/ai/train/classical', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  trainDeepLearning: async (params: {
+    architecture: string;
+    epochs: number;
+    batchSize: number;
+    optimizer: string;
+    learningRate: number;
+    dropout?: number;
+    layers?: number[];
+  }) => {
+    return apiCall('/api/ai/train/deep-learning', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  predict: async (data: {
+    panel?: string;
+    hba1c?: number;
+    fbs?: number;
+    creatinine?: number;
+    troponin?: number;
+    potassium?: number;
+    microalbumin?: number;
+    egfr?: number;
+    bun?: number;
+    procalcitonin?: number;
+    lactate?: number;
+    wbc?: number;
+    ddimer?: number;
+    alt?: number;
+    ast?: number;
+    bilirubin?: number;
+    alp?: number;
+    albumin?: number;
+    patientAge?: number;
+    patientGender?: string;
+    [key: string]: any;
+  }) => {
+    return apiCall('/api/ai/predict', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  analyzeNlp: async (clinicalText: string) => {
+    return apiCall('/api/ai/nlp/analyze', {
+      method: 'POST',
+      body: JSON.stringify({ clinicalText }),
+    });
+  },
+
+  deltaCheck: async (params: {
+    testCode: string;
+    testName: string;
+    currentValue: number;
+    previousValue: number;
+    timeGapHours: number;
+  }) => {
+    return apiCall('/api/ai/anomaly/delta-check', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  forecastTat: async (params: {
+    department: string;
+    complexityScore: number;
+    isStat: boolean;
+    queueDepth: number;
+    activeTechnicians: number;
+  }) => {
+    return apiCall('/api/ai/forecasting/tat', {
+      method: 'POST',
+      body: JSON.stringify(params),
+    });
+  },
+
+  getModels: async () => {
+    return apiCall('/api/ai/models');
+  },
+
+  deployModel: async (modelId: string, status: 'PRODUCTION' | 'STAGING' | 'ARCHIVED') => {
+    return apiCall('/api/ai/models/deploy', {
+      method: 'POST',
+      body: JSON.stringify({ modelId, status }),
+    });
+  },
+
+  getAudit: async () => {
+    return apiCall('/api/ai/audit');
+  },
+};
+
 // Dashboard API
 export const dashboardApi = {
   // Get dashboard stats

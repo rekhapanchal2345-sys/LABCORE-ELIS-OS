@@ -89,6 +89,10 @@ export async function handleHealthInfoRequest(hiReq: HiRequest): Promise<void> {
 
     const patientId = consent?.patientId;
 
+    if (!patientId) {
+      throw new Error("Patient ID not found in consent");
+    }
+
     // ── Step 4: Find care contexts in the requested date range ──
     const careContexts = await (prisma as any).abdmCareContext.findMany({
       where: {
@@ -98,18 +102,24 @@ export async function handleHealthInfoRequest(hiReq: HiRequest): Promise<void> {
       },
     });
 
-    // Filter care contexts by date range using associated orders
+    // Filter care contexts by date range using associated orders - optimized with single query
+    const orderIds = careContexts.map((ctx: any) => ctx.orderId).filter((id: any): id is string => id !== null);
+    const orders = await prisma.order.findMany({
+      where: { id: { in: orderIds } },
+      select: { id: true, createdAt: true, orderStatus: true },
+    });
+
+    const orderMap = new Map(orders.map(o => [o.id, o]));
+
+    const fromDate = new Date(hiRequest.dateRange.from);
+    const toDate = new Date(hiRequest.dateRange.to);
+
     const inRangeContexts: any[] = [];
     for (const ctx of careContexts) {
       if (ctx.orderId) {
-        const order = await prisma.order.findUnique({
-          where: { id: ctx.orderId },
-          select: { createdAt: true, orderStatus: true },
-        });
+        const order = orderMap.get(ctx.orderId);
         if (order) {
           const orderDate = new Date(order.createdAt);
-          const fromDate = new Date(hiRequest.dateRange.from);
-          const toDate = new Date(hiRequest.dateRange.to);
           if (orderDate >= fromDate && orderDate <= toDate) {
             inRangeContexts.push({ ...ctx, order });
           }

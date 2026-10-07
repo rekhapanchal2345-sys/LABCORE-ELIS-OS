@@ -1,4 +1,5 @@
 import prisma from "../../../config/database";
+import { HttpError } from "../../utils/http-error";
 
 // =======================================================
 // GET COMPLETE ORDER REPORT
@@ -80,9 +81,7 @@ export const getOrderReport = async (
     });
 
   if (!order) {
-    throw new Error(
-      "Order not found"
-    );
+    throw new HttpError("Order not found", 404);
   }
 
   return {
@@ -137,9 +136,7 @@ export const getPatientReports =
       });
 
     if (!patient) {
-      throw new Error(
-        "Patient not found"
-      );
+      throw new HttpError("Patient not found", 404);
     }
 
     const skip =

@@ -99,7 +99,7 @@ export default function BillingMetrics({
           : Math.max(0, net - paid);
       const disc = Number(inv.discount || 0);
       const gst = Number(inv.gstAmount || 0);
-      const taxable = Number(inv.taxableAmount || Math.max(0, net - gst));
+      const taxable = Number(inv.taxAmount || Math.max(0, net - gst));
 
       totalBilled += net;
       totalCollected += paid;

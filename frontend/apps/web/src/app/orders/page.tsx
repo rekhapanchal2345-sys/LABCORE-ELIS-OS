@@ -72,6 +72,7 @@ import {
   UserRound,
   ShieldCheck,
   Building2,
+  Activity,
   Stethoscope,
   X,
   ChevronRight,
@@ -872,7 +873,7 @@ export default function OrdersPage() {
                 {loading ? (
                   <OrdersTableSkeleton />
                 ) : filteredOrders.length === 0 ? (
-                  <OrdersEmptyState onResetFilters={() => { setSearchTerm(""); setStatusFilter("all"); setPaymentFilter("all"); setPriorityFilter("all"); }} />
+                  <OrdersEmptyState hasFilters={Boolean(searchTerm || statusFilter !== "all" || paymentFilter !== "all" || priorityFilter !== "all")} onResetFilters={() => { setSearchTerm(""); setStatusFilter("all"); setPaymentFilter("all"); setPriorityFilter("all"); }} />
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
@@ -961,7 +962,7 @@ export default function OrdersPage() {
                               <td className="px-5 py-4">
                                 <DoctorCell
                                   doctor={order.doctor}
-                                  onAssignClick={() => {
+                                  onAssignDoctorClick={() => {
                                     setActiveModalOrder(order);
                                     setModalType("assignDoctor");
                                   }}
@@ -1004,7 +1005,7 @@ export default function OrdersPage() {
                                 <div className="space-y-1.5 min-w-[130px]">
                                   <StatusBadge status={order.orderStatus as any} />
                                   <SampleStatusStepper
-                                    status={order.orderStatus as any}
+                                    orderStatus={order.orderStatus as any}
                                     sampleCollected={order.sampleCollected}
                                   />
                                 </div>
@@ -1025,7 +1026,6 @@ export default function OrdersPage() {
                                   <PaymentProgressBar
                                     grandTotal={order.grandTotal}
                                     paidAmount={order.paidAmount}
-                                    dueAmount={order.dueAmount}
                                     paymentStatus={order.paymentStatus}
                                     onAddPaymentClick={() => {
                                       setActiveModalOrder(order);
@@ -1106,16 +1106,14 @@ export default function OrdersPage() {
                                       setActiveModalOrder(order);
                                       setModalType("addPayment");
                                     }}
-                                    onCancelOrder={() => {
+                                    onCancel={() => {
                                       setActiveModalOrder(order);
                                       setModalType("cancelOrder");
                                     }}
-                                    onWhatsAppNotification={() => {
+                                    onWhatsApp={() => {
                                       setActiveModalOrder(order);
                                       setModalType("whatsApp");
                                     }}
-                                    onPrintBarcode={() => window.open(`/orders/${order.id}/barcode`, "_blank")}
-                                    onPrintInvoice={() => window.open(`/orders/${order.id}/invoice`, "_blank")}
                                   />
                                 </div>
                               </td>
@@ -1368,7 +1366,7 @@ export default function OrdersPage() {
             doctors={doctors}
             isOpen={true}
             onClose={() => { setModalType(null); setActiveModalOrder(null); }}
-            onSubmit={async (doctorId) => {
+            onAssigned={async (doctorId: string) => {
               await orderApi.update(activeModalOrder.id, { doctorId });
               showToast("Referring doctor updated", "success");
               setModalType(null);
@@ -1384,7 +1382,7 @@ export default function OrdersPage() {
             order={activeModalOrder as any}
             isOpen={true}
             onClose={() => { setModalType(null); setActiveModalOrder(null); }}
-            onSubmit={async (data) => {
+            onCollected={async (data) => {
               await orderApi.collectSample(activeModalOrder.id, {
                 barcode: data.barcode,
                 notes: data.notes,
@@ -1403,7 +1401,7 @@ export default function OrdersPage() {
             order={activeModalOrder as any}
             isOpen={true}
             onClose={() => { setModalType(null); setActiveModalOrder(null); }}
-            onSubmit={async (data) => {
+            onPaymentAdded={async (data) => {
               await paymentsApi.create({
                 orderId: activeModalOrder.id,
                 amount: data.amount,
@@ -1424,7 +1422,7 @@ export default function OrdersPage() {
             order={activeModalOrder as any}
             isOpen={true}
             onClose={() => { setModalType(null); setActiveModalOrder(null); }}
-            onSubmit={async (reason) => {
+            onCancelled={async (reason: string) => {
               await orderApi.cancel(activeModalOrder.id, { reason });
               showToast(`Order #${activeModalOrder.orderNumber} cancelled`, "warning");
               setModalType(null);
