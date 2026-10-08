@@ -23,4 +23,7 @@ backups/
 # Next.js build output
 .next/
 out/
-build/
+build/backend/dist/
+backend/dist/
+frontend/apps/web/.next/
+login-portal/dist/

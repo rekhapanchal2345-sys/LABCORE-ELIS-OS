@@ -223,7 +223,7 @@ export default function TestParametersPage() {
       setError(null);
       const [paramRes, testRes] = await Promise.all([
         testApi.getParameters(),
-        testApi.getAll({ limit: 200 })
+        testApi.getAll("limit=200")
       ]);
 
       if (paramRes.success && paramRes.data) {
