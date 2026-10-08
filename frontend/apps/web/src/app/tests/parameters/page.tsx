@@ -106,80 +106,73 @@ interface MultiAnalyteBundle {
     femaleHigh?: number;
     criticalLow?: number;
     criticalHigh?: number;
-    panicLowAlert?: string;
-    panicHighAlert?: string;
+    loincCode?: string;
+    deltaCheckPercentage?: number;
   }[];
 }
 
 const STANDARD_ANALYTE_BUNDLES: MultiAnalyteBundle[] = [
   {
-    bundleName: "Complete Blood Count (14 Hemogram Analytes)",
+    bundleName: "Complete Blood Count (CBC / Hemogram)",
     targetTestCode: "CBC",
-    description: "Full cellular blood count: Hb, TLC, RBC, Platelet, indices & 5-part differential.",
+    description: "Full 7-parameter standard hematology panel with panic triggers for severe anemia & thrombocytopenia",
     icon: "🩸",
-    color: "#8B5CF6",
+    color: "#7c3aed",
     analytes: [
-      { parameterName: "Hemoglobin (Hb)", shortName: "Hb", unit: "g/dL", dataType: "NUMERIC", displayOrder: 1, maleLow: 13.0, maleHigh: 17.0, femaleLow: 12.0, femaleHigh: 15.0, criticalLow: 7.0, criticalHigh: 20.0, panicLowAlert: "Critical Anemia (< 7.0 g/dL)", panicHighAlert: "Polycythemia (> 20.0 g/dL)" },
-      { parameterName: "Total Leukocyte Count (TLC / WBC)", shortName: "TLC / WBC", unit: "10^3/µL", dataType: "NUMERIC", displayOrder: 2, maleLow: 4.0, maleHigh: 11.0, femaleLow: 4.0, femaleHigh: 11.0, criticalLow: 2.0, criticalHigh: 30.0, panicLowAlert: "Agranulocytosis / Severe Sepsis", panicHighAlert: "Leukemoid Reaction / Hyperleukocytosis" },
-      { parameterName: "Total RBC Count", shortName: "RBC", unit: "10^6/µL", dataType: "NUMERIC", displayOrder: 3, maleLow: 4.5, maleHigh: 5.9, femaleLow: 4.0, femaleHigh: 5.2 },
-      { parameterName: "Platelet Count (PLT)", shortName: "PLT", unit: "10^3/µL", dataType: "NUMERIC", displayOrder: 4, maleLow: 150, maleHigh: 450, femaleLow: 150, femaleHigh: 450, criticalLow: 20, criticalHigh: 1000, panicLowAlert: "Severe Thrombocytopenia (Bleeding Risk)", panicHighAlert: "Extreme Thrombocytosis" },
-      { parameterName: "Packed Cell Volume (PCV / Hematocrit)", shortName: "PCV", unit: "%", dataType: "NUMERIC", displayOrder: 5, maleLow: 40.0, maleHigh: 50.0, femaleLow: 36.0, femaleHigh: 46.0, criticalLow: 20.0, criticalHigh: 60.0 },
-      { parameterName: "Mean Corpuscular Volume (MCV)", shortName: "MCV", unit: "fL", dataType: "NUMERIC", displayOrder: 6, maleLow: 80.0, maleHigh: 100.0, femaleLow: 80.0, femaleHigh: 100.0 },
-      { parameterName: "Mean Corpuscular Hemoglobin (MCH)", shortName: "MCH", unit: "pg", dataType: "NUMERIC", displayOrder: 7, maleLow: 27.0, maleHigh: 32.0, femaleLow: 27.0, femaleHigh: 32.0 },
-      { parameterName: "MCH Concentration (MCHC)", shortName: "MCHC", unit: "g/dL", dataType: "NUMERIC", displayOrder: 8, maleLow: 32.0, maleHigh: 36.0, femaleLow: 32.0, femaleHigh: 36.0 },
-      { parameterName: "Red Cell Distribution Width (RDW-CV)", shortName: "RDW", unit: "%", dataType: "NUMERIC", displayOrder: 9, maleLow: 11.5, maleHigh: 14.5, femaleLow: 11.5, femaleHigh: 14.5 },
-      { parameterName: "Neutrophils Absolute / %", shortName: "NEUT", unit: "%", dataType: "NUMERIC", displayOrder: 10, maleLow: 40.0, maleHigh: 75.0, femaleLow: 40.0, femaleHigh: 75.0, criticalLow: 10.0 },
-      { parameterName: "Lymphocytes Absolute / %", shortName: "LYMPH", unit: "%", dataType: "NUMERIC", displayOrder: 11, maleLow: 20.0, maleHigh: 45.0, femaleLow: 20.0, femaleHigh: 45.0 },
-      { parameterName: "Monocytes Absolute / %", shortName: "MONO", unit: "%", dataType: "NUMERIC", displayOrder: 12, maleLow: 2.0, maleHigh: 10.0, femaleLow: 2.0, femaleHigh: 10.0 },
-      { parameterName: "Eosinophils Absolute / %", shortName: "EOS", unit: "%", dataType: "NUMERIC", displayOrder: 13, maleLow: 1.0, maleHigh: 6.0, femaleLow: 1.0, femaleHigh: 6.0 },
-      { parameterName: "Basophils Absolute / %", shortName: "BASO", unit: "%", dataType: "NUMERIC", displayOrder: 14, maleLow: 0.0, maleHigh: 1.5, femaleLow: 0.0, femaleHigh: 1.5 },
-    ],
+      { parameterName: "Hemoglobin", shortName: "Hb", unit: "g/dL", dataType: "NUMERIC", displayOrder: 1, maleLow: 13.5, maleHigh: 17.5, femaleLow: 12.0, femaleHigh: 15.5, criticalLow: 7.0, criticalHigh: 20.0, loincCode: "718-7", deltaCheckPercentage: 15 },
+      { parameterName: "Total Leukocyte Count (TLC / WBC)", shortName: "WBC", unit: "10^3/µL", dataType: "NUMERIC", displayOrder: 2, maleLow: 4.0, maleHigh: 11.0, femaleLow: 4.0, femaleHigh: 11.0, criticalLow: 2.0, criticalHigh: 30.0, loincCode: "6690-2", deltaCheckPercentage: 20 },
+      { parameterName: "Total Platelet Count", shortName: "PLT", unit: "10^3/µL", dataType: "NUMERIC", displayOrder: 3, maleLow: 150, maleHigh: 450, femaleLow: 150, femaleHigh: 450, criticalLow: 50, criticalHigh: 1000, loincCode: "777-3", deltaCheckPercentage: 25 },
+      { parameterName: "Packed Cell Volume (PCV)", shortName: "PCV", unit: "%", dataType: "NUMERIC", displayOrder: 4, maleLow: 40.0, maleHigh: 50.0, femaleLow: 36.0, femaleHigh: 46.0, criticalLow: 20.0, criticalHigh: 60.0, loincCode: "4544-3", deltaCheckPercentage: 15 },
+      { parameterName: "Mean Corpuscular Volume (MCV)", shortName: "MCV", unit: "fL", dataType: "NUMERIC", displayOrder: 5, maleLow: 80.0, maleHigh: 100.0, femaleLow: 80.0, femaleHigh: 100.0, loincCode: "787-2", deltaCheckPercentage: 10 },
+      { parameterName: "Mean Corpuscular Hemoglobin (MCH)", shortName: "MCH", unit: "pg", dataType: "NUMERIC", displayOrder: 6, maleLow: 27.0, maleHigh: 33.0, femaleLow: 27.0, femaleHigh: 33.0, loincCode: "785-6", deltaCheckPercentage: 10 },
+      { parameterName: "Red Cell Distribution Width (RDW-CV)", shortName: "RDW", unit: "%", dataType: "NUMERIC", displayOrder: 7, maleLow: 11.5, maleHigh: 14.5, femaleLow: 11.5, femaleHigh: 14.5, loincCode: "788-0", deltaCheckPercentage: 15 },
+    ]
   },
   {
-    bundleName: "Liver Function Test (8 Hepatic Analytes)",
+    bundleName: "Liver Function Test (Comprehensive LFT)",
     targetTestCode: "LFT",
-    description: "Hepatic panel: Bilirubin Total/Direct, SGOT/AST, SGPT/ALT, ALP, Total Protein, Albumin.",
+    description: "Hepatic enzymes, bilirubin fractions, total proteins & albumin with hepatotoxic panic thresholds",
     icon: "🧪",
-    color: "#3B82F6",
+    color: "#2563eb",
     analytes: [
-      { parameterName: "Serum Bilirubin Total", shortName: "TBIL", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 1, maleLow: 0.2, maleHigh: 1.2, femaleLow: 0.2, femaleHigh: 1.2, criticalHigh: 15.0, panicHighAlert: "Severe Hyperbilirubinemia / Kernicterus Risk" },
-      { parameterName: "Serum Bilirubin Direct (Conjugated)", shortName: "DBIL", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 2, maleLow: 0.0, maleHigh: 0.3, femaleLow: 0.0, femaleHigh: 0.3 },
-      { parameterName: "Serum Bilirubin Indirect (Unconjugated)", shortName: "IBIL", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 3, maleLow: 0.1, maleHigh: 0.8, femaleLow: 0.1, femaleHigh: 0.8 },
-      { parameterName: "SGOT / AST (Aspartate Aminotransferase)", shortName: "SGOT", unit: "U/L", dataType: "NUMERIC", displayOrder: 4, maleLow: 5.0, maleHigh: 40.0, femaleLow: 5.0, femaleHigh: 35.0, criticalHigh: 500.0, panicHighAlert: "Acute Hepatitis / Fulminant Hepatic Necrosis" },
-      { parameterName: "SGPT / ALT (Alanine Aminotransferase)", shortName: "SGPT", unit: "U/L", dataType: "NUMERIC", displayOrder: 5, maleLow: 5.0, maleHigh: 45.0, femaleLow: 5.0, femaleHigh: 35.0, criticalHigh: 500.0, panicHighAlert: "Acute Hepatocellular Toxicity" },
-      { parameterName: "Alkaline Phosphatase (ALP)", shortName: "ALP", unit: "U/L", dataType: "NUMERIC", displayOrder: 6, maleLow: 44.0, maleHigh: 147.0, femaleLow: 44.0, femaleHigh: 147.0 },
-      { parameterName: "Total Serum Protein", shortName: "TP", unit: "g/dL", dataType: "NUMERIC", displayOrder: 7, maleLow: 6.0, maleHigh: 8.3, femaleLow: 6.0, femaleHigh: 8.3 },
-      { parameterName: "Serum Albumin", shortName: "ALB", unit: "g/dL", dataType: "NUMERIC", displayOrder: 8, maleLow: 3.5, maleHigh: 5.2, femaleLow: 3.5, femaleHigh: 5.2, criticalLow: 1.8, panicLowAlert: "Severe Hypoalbuminemia" },
-    ],
+      { parameterName: "Bilirubin Total", shortName: "T-Bili", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 1, maleLow: 0.2, maleHigh: 1.2, femaleLow: 0.2, femaleHigh: 1.2, criticalHigh: 15.0, loincCode: "1975-2", deltaCheckPercentage: 30 },
+      { parameterName: "Bilirubin Direct (Conjugated)", shortName: "D-Bili", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 2, maleLow: 0.0, maleHigh: 0.3, femaleLow: 0.0, femaleHigh: 0.3, loincCode: "1968-7", deltaCheckPercentage: 30 },
+      { parameterName: "SGOT / AST (Aspartate Aminotransferase)", shortName: "AST", unit: "U/L", dataType: "NUMERIC", displayOrder: 3, maleLow: 5, maleHigh: 40, femaleLow: 5, femaleHigh: 35, criticalHigh: 500, loincCode: "1920-8", deltaCheckPercentage: 40 },
+      { parameterName: "SGPT / ALT (Alanine Aminotransferase)", shortName: "ALT", unit: "U/L", dataType: "NUMERIC", displayOrder: 4, maleLow: 7, maleHigh: 56, femaleLow: 7, femaleHigh: 45, criticalHigh: 500, loincCode: "1742-6", deltaCheckPercentage: 40 },
+      { parameterName: "Alkaline Phosphatase (ALP)", shortName: "ALP", unit: "U/L", dataType: "NUMERIC", displayOrder: 5, maleLow: 44, maleHigh: 147, femaleLow: 44, femaleHigh: 147, loincCode: "6768-6", deltaCheckPercentage: 25 },
+      { parameterName: "Total Protein", shortName: "TP", unit: "g/dL", dataType: "NUMERIC", displayOrder: 6, maleLow: 6.0, maleHigh: 8.3, femaleLow: 6.0, femaleHigh: 8.3, criticalLow: 4.5, loincCode: "2885-2", deltaCheckPercentage: 15 },
+      { parameterName: "Serum Albumin", shortName: "ALB", unit: "g/dL", dataType: "NUMERIC", displayOrder: 7, maleLow: 3.5, maleHigh: 5.5, femaleLow: 3.5, femaleHigh: 5.5, criticalLow: 2.0, loincCode: "1751-7", deltaCheckPercentage: 15 },
+    ]
   },
   {
-    bundleName: "Kidney Function / Renal Panel (6 Analytes)",
+    bundleName: "Kidney / Renal Function Panel (KFT / RFT)",
     targetTestCode: "KFT",
-    description: "Renal clearance panel: Blood Urea, Creatinine, BUN, Uric Acid, Calcium, Phosphorus.",
-    icon: "🫘",
-    color: "#10B981",
+    description: "Renal profile with serum creatinine, blood urea, BUN, electrolytes & uric acid with uremic panic alerts",
+    icon: "🧫",
+    color: "#059669",
     analytes: [
-      { parameterName: "Blood Urea", shortName: "UREA", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 1, maleLow: 15.0, maleHigh: 45.0, femaleLow: 15.0, femaleHigh: 45.0, criticalHigh: 120.0, panicHighAlert: "Uremic Encephalopathy Risk" },
-      { parameterName: "Serum Creatinine", shortName: "CREAT", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 2, maleLow: 0.7, maleHigh: 1.3, femaleLow: 0.5, femaleHigh: 1.1, criticalHigh: 4.5, panicHighAlert: "Acute Kidney Injury / Anuria Risk" },
-      { parameterName: "Blood Urea Nitrogen (BUN)", shortName: "BUN", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 3, maleLow: 7.0, maleHigh: 20.0, femaleLow: 7.0, femaleHigh: 20.0 },
-      { parameterName: "Serum Uric Acid", shortName: "UA", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 4, maleLow: 3.5, maleHigh: 7.2, femaleLow: 2.6, femaleHigh: 6.0, criticalHigh: 12.0 },
-      { parameterName: "Serum Calcium Total", shortName: "CA", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 5, maleLow: 8.8, maleHigh: 10.2, femaleLow: 8.8, femaleHigh: 10.2, criticalLow: 6.5, criticalHigh: 13.0, panicLowAlert: "Tetany / Arrhythmia Risk", panicHighAlert: "Hypercalcemic Crisis" },
-      { parameterName: "Serum Inorganic Phosphorus", shortName: "PHOS", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 6, maleLow: 2.5, maleHigh: 4.5, femaleLow: 2.5, femaleHigh: 4.5 },
-    ],
+      { parameterName: "Serum Creatinine", shortName: "CREAT", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 1, maleLow: 0.7, maleHigh: 1.3, femaleLow: 0.5, femaleHigh: 1.1, criticalHigh: 6.0, loincCode: "2160-0", deltaCheckPercentage: 25 },
+      { parameterName: "Blood Urea", shortName: "UREA", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 2, maleLow: 15, maleHigh: 45, femaleLow: 15, femaleHigh: 45, criticalHigh: 150, loincCode: "3094-0", deltaCheckPercentage: 30 },
+      { parameterName: "Blood Urea Nitrogen (BUN)", shortName: "BUN", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 3, maleLow: 7, maleHigh: 20, femaleLow: 7, femaleHigh: 20, criticalHigh: 80, loincCode: "3094-0", deltaCheckPercentage: 30 },
+      { parameterName: "Serum Uric Acid", shortName: "UA", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 4, maleLow: 3.5, maleHigh: 7.2, femaleLow: 2.6, femaleHigh: 6.0, loincCode: "3084-1", deltaCheckPercentage: 20 },
+      { parameterName: "Serum Sodium (Na+)", shortName: "Na", unit: "mmol/L", dataType: "NUMERIC", displayOrder: 5, maleLow: 135, maleHigh: 145, femaleLow: 135, femaleHigh: 145, criticalLow: 120, criticalHigh: 160, loincCode: "2951-2", deltaCheckPercentage: 5 },
+      { parameterName: "Serum Potassium (K+)", shortName: "K", unit: "mmol/L", dataType: "NUMERIC", displayOrder: 6, maleLow: 3.5, maleHigh: 5.1, femaleLow: 3.5, femaleHigh: 5.1, criticalLow: 2.8, criticalHigh: 6.5, loincCode: "2823-3", deltaCheckPercentage: 10 },
+    ]
   },
   {
-    bundleName: "Serum Electrolytes Panel (4 Analytes)",
-    targetTestCode: "ELECTROLYTES",
-    description: "Ion-selective electrode panel: Sodium, Potassium, Chloride, Bicarbonate.",
-    icon: "⚡",
-    color: "#F59E0B",
+    bundleName: "Lipid Profile & Atherogenic Risk Panel",
+    targetTestCode: "LIPID",
+    description: "Standard cardiovascular lipid panel: Total cholesterol, HDL, LDL, Triglycerides, and VLDL",
+    icon: "❤️",
+    color: "#db2777",
     analytes: [
-      { parameterName: "Serum Sodium (Na+)", shortName: "Na+", unit: "mmol/L", dataType: "NUMERIC", displayOrder: 1, maleLow: 136.0, maleHigh: 145.0, femaleLow: 136.0, femaleHigh: 145.0, criticalLow: 120.0, criticalHigh: 160.0, panicLowAlert: "Severe Hyponatremia (Seizure Risk)", panicHighAlert: "Severe Hypernatremia" },
-      { parameterName: "Serum Potassium (K+)", shortName: "K+", unit: "mmol/L", dataType: "NUMERIC", displayOrder: 2, maleLow: 3.5, maleHigh: 5.1, femaleLow: 3.5, femaleHigh: 5.1, criticalLow: 2.8, criticalHigh: 6.2, panicLowAlert: "Hypokalemic Ventricular Arrhythmia", panicHighAlert: "Hyperkalemic Cardiac Arrest Risk" },
-      { parameterName: "Serum Chloride (Cl-)", shortName: "Cl-", unit: "mmol/L", dataType: "NUMERIC", displayOrder: 3, maleLow: 98.0, maleHigh: 107.0, femaleLow: 98.0, femaleHigh: 107.0, criticalLow: 80.0, criticalHigh: 125.0 },
-      { parameterName: "Serum Bicarbonate (HCO3-)", shortName: "HCO3-", unit: "mmol/L", dataType: "NUMERIC", displayOrder: 4, maleLow: 22.0, maleHigh: 29.0, femaleLow: 22.0, femaleHigh: 29.0, criticalLow: 10.0, criticalHigh: 40.0, panicLowAlert: "Severe Metabolic Acidosis" },
-    ],
-  },
+      { parameterName: "Total Cholesterol", shortName: "CHOL", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 1, maleLow: 125, maleHigh: 200, femaleLow: 125, femaleHigh: 200, criticalHigh: 400, loincCode: "2093-3", deltaCheckPercentage: 20 },
+      { parameterName: "HDL Cholesterol (Good)", shortName: "HDL", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 2, maleLow: 40, maleHigh: 60, femaleLow: 50, femaleHigh: 70, loincCode: "2085-9", deltaCheckPercentage: 15 },
+      { parameterName: "LDL Cholesterol (Direct / Calc)", shortName: "LDL", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 3, maleLow: 60, maleHigh: 100, femaleLow: 60, femaleHigh: 100, criticalHigh: 250, loincCode: "13457-7", deltaCheckPercentage: 20 },
+      { parameterName: "Serum Triglycerides", shortName: "TRIG", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 4, maleLow: 50, maleHigh: 150, femaleLow: 50, femaleHigh: 150, criticalHigh: 500, loincCode: "2571-8", deltaCheckPercentage: 35 },
+      { parameterName: "VLDL Cholesterol", shortName: "VLDL", unit: "mg/dL", dataType: "NUMERIC", displayOrder: 5, maleLow: 10, maleHigh: 30, femaleLow: 10, femaleHigh: 30, loincCode: "13458-5", deltaCheckPercentage: 25 },
+    ]
+  }
 ];
 
 export default function TestParametersPage() {
@@ -189,42 +182,35 @@ export default function TestParametersPage() {
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Filters & Controls
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedTest, setSelectedTest] = useState("");
-  const [viewMode, setViewMode] = useState<"table" | "matrix" | "grouped">("table");
   const [filterCriticalOnly, setFilterCriticalOnly] = useState(false);
+  const [viewMode, setViewMode] = useState<"table" | "matrix" | "grouped">("table");
 
-  // Modals & Drawer
+  // Modal State
   const [showModal, setShowModal] = useState(false);
   const [editingParam, setEditingParam] = useState<TestParameter | null>(null);
-  const [inspectingParam, setInspectingParam] = useState<TestParameter | null>(null);
   const [saving, setSaving] = useState(false);
+  const [inspectingParam, setInspectingParam] = useState<TestParameter | null>(null);
   const [importingBundle, setImportingBundle] = useState(false);
 
-  // Form Data
+  // Form State
   const [formData, setFormData] = useState({
     testId: "",
     parameterName: "",
     shortName: "",
-    loincCode: "",
     unit: "mg/dL",
     dataType: "NUMERIC",
-    measurementMethod: "",
-    dropdownOptions: "",
-    decimalPrecision: 1,
+    loincCode: "",
     displayOrder: 1,
-    deltaCheckPercentage: 25,
     isRequired: true,
-    isActive: true,
+    deltaCheckPercentage: 20,
     maleLow: 0,
     maleHigh: 100,
     femaleLow: 0,
     femaleHigh: 100,
     criticalLow: undefined as number | undefined,
     criticalHigh: undefined as number | undefined,
-    panicLowAlert: "",
-    panicHighAlert: "",
   });
 
   useEffect(() => {
@@ -235,35 +221,20 @@ export default function TestParametersPage() {
     try {
       setLoading(true);
       setError(null);
-      const response = await testApi.getAll();
-      if (response.success && response.data) {
-        const testsData = response.data.tests || response.data || [];
-        const testsArray = Array.isArray(testsData) ? testsData : [];
-        setTests(testsArray);
+      const [paramRes, testRes] = await Promise.all([
+        testApi.getParameters(),
+        testApi.getAll({ limit: 200 })
+      ]);
 
-        const allParameters: TestParameter[] = [];
-        testsArray.forEach((test: any) => {
-          if (test.parameters && Array.isArray(test.parameters)) {
-            test.parameters.forEach((param: any) => {
-              allParameters.push({
-                ...param,
-                testId: test.id,
-                test: {
-                  id: test.id,
-                  testName: test.testName || test.name,
-                  testCode: test.testCode || test.code,
-                },
-              });
-            });
-          }
-        });
-        setParameters(allParameters);
-      } else {
-        setError(response.message || "Failed to fetch parameters");
+      if (paramRes.success && paramRes.data) {
+        setParameters(paramRes.data);
+      }
+      if (testRes.success && testRes.data) {
+        setTests(testRes.data);
       }
     } catch (err) {
       console.error("Error fetching parameters:", err);
-      setError(err instanceof Error ? err.message : "Failed to fetch parameters");
+      setError(err instanceof Error ? err.message : "Failed to load parameters");
     } finally {
       setLoading(false);
     }
@@ -271,107 +242,103 @@ export default function TestParametersPage() {
 
   const showNotification = (msg: string) => {
     setSuccessMessage(msg);
-    setTimeout(() => setSuccessMessage(null), 3500);
+    setTimeout(() => setSuccessMessage(null), 4000);
   };
 
-  const handleOpenAddModal = (testIdPrefill?: string) => {
+  const handleOpenAddModal = (initialTestId?: string) => {
     setEditingParam(null);
     setFormData({
-      testId: testIdPrefill || selectedTest || (tests[0]?.id ? String(tests[0].id) : ""),
+      testId: initialTestId || selectedTest || (tests[0]?.id || ""),
       parameterName: "",
       shortName: "",
-      loincCode: "",
       unit: "mg/dL",
       dataType: "NUMERIC",
-      measurementMethod: "",
-      dropdownOptions: "",
-      decimalPrecision: 1,
+      loincCode: "",
       displayOrder: parameters.length + 1,
-      deltaCheckPercentage: 25,
       isRequired: true,
-      isActive: true,
+      deltaCheckPercentage: 20,
       maleLow: 0,
       maleHigh: 100,
       femaleLow: 0,
       femaleHigh: 100,
       criticalLow: undefined,
       criticalHigh: undefined,
-      panicLowAlert: "",
-      panicHighAlert: "",
     });
     setShowModal(true);
   };
 
-  const handleEditParameter = (param: TestParameter) => {
+  const handleOpenEditModal = (param: TestParameter) => {
     setEditingParam(param);
     setFormData({
-      testId: param.test?.id || param.testId || "",
+      testId: param.testId || param.test?.id || "",
       parameterName: param.parameterName,
       shortName: param.shortName || "",
-      loincCode: param.loincCode || "",
-      unit: param.unit || "",
+      unit: param.unit || "mg/dL",
       dataType: param.dataType || "NUMERIC",
-      measurementMethod: param.measurementMethod || "",
-      dropdownOptions: param.dropdownOptions || "",
-      decimalPrecision: param.decimalPrecision ?? 1,
+      loincCode: param.loincCode || "",
       displayOrder: param.displayOrder || 1,
-      deltaCheckPercentage: param.deltaCheckPercentage ?? 25,
       isRequired: param.isRequired !== false,
-      isActive: param.isActive !== false,
+      deltaCheckPercentage: param.deltaCheckPercentage || 20,
       maleLow: param.maleLow ?? 0,
       maleHigh: param.maleHigh ?? 100,
       femaleLow: param.femaleLow ?? 0,
       femaleHigh: param.femaleHigh ?? 100,
       criticalLow: param.criticalLow,
       criticalHigh: param.criticalHigh,
-      panicLowAlert: param.panicLowAlert || "",
-      panicHighAlert: param.panicHighAlert || "",
     });
     setShowModal(true);
   };
 
-  const handleDeleteParameter = async (id: string, name: string) => {
-    if (!confirm(`Are you sure you want to delete analyte parameter "${name}"?`)) return;
+  const handleDeleteParam = async (id: string, name: string) => {
+    if (!confirm(`Are you sure you want to delete analyte "${name}"? Biological intervals for this parameter will also be deleted.`)) {
+      return;
+    }
 
     try {
       await testApi.deleteParameter(id);
-      showNotification(`Parameter "${name}" deleted`);
-      setParameters(parameters.filter((p) => p.id !== id));
-      if (inspectingParam?.id === id) setInspectingParam(null);
+      showNotification(`Analyte "${name}" removed successfully.`);
+      await fetchData();
     } catch (err) {
-      alert(err instanceof Error ? err.message : "Failed to delete parameter");
+      alert(err instanceof Error ? err.message : "Failed to delete analyte parameter");
     }
   };
 
   const handleSaveParameter = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.testId) {
-      alert("Please select a target parent investigation for this analyte parameter");
-      return;
-    }
     setSaving(true);
-
     try {
-      if (editingParam) {
-        await testApi.updateParameter(editingParam.id, formData);
-        showNotification(`Analyte "${formData.parameterName}" updated successfully!`);
-      } else {
-        const res = await testApi.addParameter(formData.testId, formData);
-        if (res?.success && res.data?.id && (formData.maleLow !== undefined || formData.femaleLow !== undefined)) {
-          // Add male/female reference ranges if supported
-          const paramId = res.data.id;
-          await testApi.addReferenceRange(paramId, {
-            gender: "MALE",
-            ageGroup: "ADULT",
-            normalLow: formData.maleLow,
-            normalHigh: formData.maleHigh,
-            criticalLow: formData.criticalLow,
-            criticalHigh: formData.criticalHigh,
-            isActive: true,
-          }).catch(() => {});
-        }
-        showNotification(`Analyte "${formData.parameterName}" registered successfully!`);
+      if (!formData.testId) {
+        throw new Error("Please select a parent test profile");
       }
+      if (!formData.parameterName.trim()) {
+        throw new Error("Analyte parameter name is required");
+      }
+
+      const payload = {
+        parameterName: formData.parameterName.trim(),
+        shortName: formData.shortName.trim() || undefined,
+        unit: formData.unit,
+        dataType: formData.dataType,
+        loincCode: formData.loincCode.trim() || undefined,
+        displayOrder: Number(formData.displayOrder) || 1,
+        isRequired: formData.isRequired,
+        deltaCheckPercentage: Number(formData.deltaCheckPercentage) || undefined,
+        maleLow: Number(formData.maleLow),
+        maleHigh: Number(formData.maleHigh),
+        femaleLow: Number(formData.femaleLow),
+        femaleHigh: Number(formData.femaleHigh),
+        criticalLow: formData.criticalLow !== undefined ? Number(formData.criticalLow) : undefined,
+        criticalHigh: formData.criticalHigh !== undefined ? Number(formData.criticalHigh) : undefined,
+      };
+
+      if (editingParam) {
+        await testApi.updateParameter(editingParam.id, payload);
+        showNotification(`Analyte "${payload.parameterName}" updated successfully!`);
+      } else {
+        await testApi.addParameter(formData.testId, payload);
+        showNotification(`Analyte "${payload.parameterName}" created successfully!`);
+      }
+
       setShowModal(false);
       await fetchData();
     } catch (err) {
@@ -381,19 +348,12 @@ export default function TestParametersPage() {
     }
   };
 
-  // 1-Click Import Multi-Analyte Bundle
   const handleImportBundle = async (bundle: MultiAnalyteBundle) => {
-    // Find or prompt target test
-    let targetTest = tests.find(
-      (t) =>
-        t.testCode?.toUpperCase() === bundle.targetTestCode.toUpperCase() ||
-        t.testName?.toLowerCase().includes(bundle.targetTestCode.toLowerCase())
-    );
-
-    const targetTestId = targetTest?.id || (selectedTest ? selectedTest : tests[0]?.id);
+    const targetTest = tests.find((t) => t.testCode?.toUpperCase() === bundle.targetTestCode || t.code?.toUpperCase() === bundle.targetTestCode);
+    const targetTestId = targetTest?.id || selectedTest || tests[0]?.id;
 
     if (!targetTestId) {
-      alert(`Please create an investigation with code "${bundle.targetTestCode}" first or select an investigation.`);
+      alert("Please select a parent test or create a matching test first (e.g. CBC, LFT, KFT).");
       return;
     }
 
@@ -481,23 +441,23 @@ export default function TestParametersPage() {
       <div className="space-y-6 pb-24">
         {/* Floating Success Notification */}
         {successMessage && (
-          <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl border border-emerald-500/40 bg-emerald-950/90 px-5 py-3 text-xs font-black text-emerald-300 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+          <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-xs font-bold text-emerald-800 shadow-lg animate-in fade-in slide-in-from-top-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             <span>{successMessage}</span>
           </div>
         )}
 
         {/* Master Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/90 pb-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-blue-400 mb-1">
+            <div className="flex items-center gap-2 text-xs font-bold text-blue-600 mb-1">
               <Sliders className="h-3.5 w-3.5" />
               <span>Diagnostic Taxonomy / Analyte Parameters Master</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              <span>Pathology Analyte Parameters & Biological Bounds</span>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+              <span>Pathology Analyte Parameters &amp; Biological Bounds</span>
             </h1>
-            <p className="text-xs font-medium text-slate-400 mt-1">
+            <p className="text-xs font-medium text-slate-500 mt-1">
               Manage discrete analytes, LOINC codes, reference intervals, critical panic triggers, and delta-check variance %
             </p>
           </div>
@@ -506,7 +466,7 @@ export default function TestParametersPage() {
             <button
               type="button"
               onClick={() => handleOpenAddModal()}
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4.5 py-2.5 text-xs font-black text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-lg shadow-blue-500/25"
+              className="flex items-center gap-2 rounded-xl bg-blue-600 px-4.5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-xs cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>Add Analyte Parameter</span>
@@ -516,56 +476,56 @@ export default function TestParametersPage() {
 
         {/* Clinical KPI Cards Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 backdrop-blur-xl shadow-xl">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-xs">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-semibold mb-1">
               <span>Total Analytes</span>
-              <Sliders className="h-4 w-4 text-blue-400" />
+              <Sliders className="h-4 w-4 text-blue-600" />
             </div>
-            <div className="text-2xl font-black text-white">{totalAnalytes}</div>
-            <div className="text-[11px] font-semibold text-slate-400 mt-0.5">Configured parameters</div>
+            <div className="text-2xl font-black text-slate-900">{totalAnalytes}</div>
+            <div className="text-[11px] font-semibold text-slate-500 mt-0.5">Configured parameters</div>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 backdrop-blur-xl shadow-xl">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-xs">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-semibold mb-1">
               <span>Mapped Investigations</span>
-              <FlaskConical className="h-4 w-4 text-purple-400" />
+              <FlaskConical className="h-4 w-4 text-purple-600" />
             </div>
-            <div className="text-2xl font-black text-purple-400">{uniqueTestsCount}</div>
-            <div className="text-[11px] font-semibold text-slate-400 mt-0.5">Parent test profiles</div>
+            <div className="text-2xl font-black text-purple-700">{uniqueTestsCount}</div>
+            <div className="text-[11px] font-semibold text-slate-500 mt-0.5">Parent test profiles</div>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 backdrop-blur-xl shadow-xl">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-xs">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-semibold mb-1">
               <span>Critical Panic Alarms</span>
-              <BellRing className="h-4 w-4 text-rose-400" />
+              <BellRing className="h-4 w-4 text-rose-600" />
             </div>
-            <div className="text-2xl font-black text-rose-400">{criticalCount}</div>
-            <div className="text-[11px] font-semibold text-slate-400 mt-0.5">Panic triggers active</div>
+            <div className="text-2xl font-black text-rose-700">{criticalCount}</div>
+            <div className="text-[11px] font-semibold text-slate-500 mt-0.5">Panic triggers active</div>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 backdrop-blur-xl shadow-xl">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-xs">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-semibold mb-1">
               <span>NABL Delta-Check</span>
-              <ShieldCheck className="h-4 w-4 text-emerald-400" />
+              <ShieldCheck className="h-4 w-4 text-emerald-600" />
             </div>
-            <div className="text-2xl font-black text-emerald-400">48h Window</div>
-            <div className="text-[11px] font-semibold text-slate-400 mt-0.5">Automatic delta verification</div>
+            <div className="text-2xl font-black text-emerald-700">48h Window</div>
+            <div className="text-[11px] font-semibold text-slate-500 mt-0.5">Automatic delta verification</div>
           </div>
         </div>
 
         {/* 1-Click Multi-Analyte Quick Bundles Importer Bar */}
-        <div className="rounded-2xl border border-blue-500/30 bg-gradient-to-r from-blue-950/70 via-indigo-950/40 to-slate-950/90 p-4.5 backdrop-blur-xl shadow-xl space-y-3">
+        <div className="rounded-2xl border border-blue-200/80 bg-blue-50/40 p-4.5 shadow-xs space-y-3">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-400/20 text-amber-300">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white shadow-xs">
                 <Zap className="h-3.5 w-3.5" />
               </span>
-              <span className="text-xs font-black uppercase tracking-wider text-blue-200">
+              <span className="text-xs font-black uppercase tracking-wider text-blue-900">
                 1-Click Standard Multi-Analyte Panels Importer
               </span>
             </div>
-            <span className="text-[11px] font-semibold text-blue-300">
-              Auto-inject standardized hospital reference intervals & critical bounds
+            <span className="text-[11px] font-semibold text-blue-700">
+              Auto-inject standardized hospital reference intervals &amp; critical bounds
             </span>
           </div>
 
@@ -576,21 +536,21 @@ export default function TestParametersPage() {
                 key={bundle.bundleName}
                 onClick={() => handleImportBundle(bundle)}
                 disabled={importingBundle}
-                className="group flex flex-col text-left rounded-2xl border border-slate-800 bg-slate-900/80 p-3.5 hover:border-blue-500/60 hover:bg-slate-900 transition-all shadow-md active:scale-98 disabled:opacity-50"
+                className="group flex flex-col text-left rounded-2xl border border-slate-200 bg-white p-3.5 hover:border-blue-400 hover:bg-blue-50/50 transition-all shadow-xs active:scale-98 disabled:opacity-50 cursor-pointer"
               >
                 <div className="flex items-center justify-between mb-1.5">
                   <span className="text-xl">{bundle.icon}</span>
-                  <span className="text-[10px] font-mono font-black text-blue-400 bg-blue-950 px-2 py-0.5 rounded border border-blue-800/60">
+                  <span className="text-[10px] font-mono font-black text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                     {bundle.targetTestCode}
                   </span>
                 </div>
-                <div className="text-xs font-black text-white group-hover:text-blue-300 transition">
+                <div className="text-xs font-black text-slate-900 group-hover:text-blue-700 transition">
                   {bundle.bundleName}
                 </div>
-                <div className="text-[11px] text-slate-400 mt-1 line-clamp-2">
+                <div className="text-[11px] text-slate-500 mt-1 line-clamp-2">
                   {bundle.description}
                 </div>
-                <div className="mt-2.5 flex items-center gap-1 text-[10px] font-bold text-blue-400 group-hover:translate-x-0.5 transition">
+                <div className="mt-2.5 flex items-center gap-1 text-[10px] font-bold text-blue-600 group-hover:translate-x-0.5 transition">
                   <span>+ Import {bundle.analytes.length} Analytes</span>
                   <ChevronRight className="h-3 w-3" />
                 </div>
@@ -600,7 +560,7 @@ export default function TestParametersPage() {
         </div>
 
         {/* Filter & View Switcher Bar */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-3 shadow-xl flex flex-col lg:flex-row items-center justify-between gap-3">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-3 shadow-xs flex flex-col lg:flex-row items-center justify-between gap-3">
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full lg:w-auto">
             <div className="relative w-full sm:w-80">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
@@ -609,18 +569,18 @@ export default function TestParametersPage() {
                 placeholder="Search by analyte name, unit, code, or LOINC..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full rounded-xl border border-slate-700 bg-slate-900 pl-10 pr-4 py-2 text-xs font-semibold text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+                className="w-full rounded-xl border border-slate-300 bg-slate-50/60 pl-10 pr-4 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
               />
             </div>
 
             <select
               value={selectedTest}
               onChange={(e) => setSelectedTest(e.target.value)}
-              className="w-full sm:w-60 rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
+              className="w-full sm:w-60 rounded-xl border border-slate-300 bg-slate-50/60 px-3.5 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
             >
               <option value="">All Investigations ({tests.length})</option>
               {tests.map((t) => (
-                <option key={t.id} value={t.id} className="bg-slate-900">
+                <option key={t.id} value={t.id}>
                   {t.testCode || t.code} - {t.testName || t.name}
                 </option>
               ))}
@@ -631,23 +591,23 @@ export default function TestParametersPage() {
             <button
               type="button"
               onClick={() => setFilterCriticalOnly(!filterCriticalOnly)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border cursor-pointer ${
                 filterCriticalOnly
-                  ? "bg-rose-950/70 border-rose-500/50 text-rose-300 shadow-md shadow-rose-500/10"
-                  : "bg-slate-900 border-slate-700 text-slate-400 hover:text-white"
+                  ? "bg-rose-50 border-rose-300 text-rose-800 shadow-xs"
+                  : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
               }`}
             >
-              <BellRing className="h-3.5 w-3.5 text-rose-400" />
+              <BellRing className="h-3.5 w-3.5 text-rose-600" />
               <span>Panic Values Only</span>
             </button>
 
             {/* View Mode Switcher */}
-            <div className="flex items-center gap-1 rounded-xl bg-slate-900 p-1 border border-slate-800">
+            <div className="flex items-center gap-1 rounded-xl bg-slate-100 p-1 border border-slate-200">
               <button
                 type="button"
                 onClick={() => setViewMode("table")}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                  viewMode === "table" ? "bg-blue-600 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  viewMode === "table" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 Table View
@@ -655,8 +615,8 @@ export default function TestParametersPage() {
               <button
                 type="button"
                 onClick={() => setViewMode("matrix")}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                  viewMode === "matrix" ? "bg-blue-600 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  viewMode === "matrix" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 Interval Gauges
@@ -664,8 +624,8 @@ export default function TestParametersPage() {
               <button
                 type="button"
                 onClick={() => setViewMode("grouped")}
-                className={`px-3 py-1 rounded-lg text-xs font-bold transition ${
-                  viewMode === "grouped" ? "bg-blue-600 text-white shadow-sm" : "text-slate-400 hover:text-white"
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition cursor-pointer ${
+                  viewMode === "grouped" ? "bg-white text-slate-900 shadow-xs" : "text-slate-600 hover:text-slate-900"
                 }`}
               >
                 Grouped View
@@ -675,7 +635,7 @@ export default function TestParametersPage() {
         </div>
 
         {error && (
-          <div className="rounded-2xl bg-rose-950/60 border border-rose-500/40 p-4 text-xs font-bold text-rose-300">
+          <div className="rounded-2xl bg-rose-50 border border-rose-300 p-4 text-xs font-bold text-rose-800 shadow-xs">
             {error}
           </div>
         )}
@@ -683,29 +643,29 @@ export default function TestParametersPage() {
         {/* MAIN DISPLAY: TABLE VIEW / GAUGES / GROUPED */}
         {loading ? (
           <div className="py-20 text-center space-y-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-3 border-blue-500 border-t-transparent mx-auto" />
-            <div className="text-xs font-bold text-slate-400">Loading Analyte Parameters Matrix...</div>
+            <div className="h-8 w-8 animate-spin rounded-full border-3 border-blue-600 border-t-transparent mx-auto" />
+            <div className="text-xs font-bold text-slate-500">Loading Analyte Parameters Matrix...</div>
           </div>
         ) : filteredParameters.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-800 bg-slate-900/40 p-12 text-center space-y-4">
-            <Sliders className="h-10 w-10 text-slate-600 mx-auto" />
-            <h3 className="text-base font-black text-white">No analyte parameters found</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center space-y-4 shadow-xs">
+            <Sliders className="h-10 w-10 text-slate-400 mx-auto" />
+            <h3 className="text-base font-black text-slate-900">No analyte parameters found</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
               Configure analyte parameters for pathology investigations or auto-import standard multi-analyte bundles above.
             </p>
             <button
               onClick={() => handleOpenAddModal()}
-              className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-xs font-bold text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-lg shadow-blue-500/25"
+              className="rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-xs cursor-pointer"
             >
               + Add First Analyte
             </button>
           </div>
         ) : viewMode === "table" ? (
-          /* TABLE VIEW */
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/70 backdrop-blur-xl overflow-hidden shadow-2xl">
+          /* TABLE VIEW (LIGHT WHITE) */
+          <div className="rounded-2xl border border-slate-200/90 bg-white overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-slate-950/90 border-b border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-400">
+                <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-black uppercase tracking-wider text-slate-600">
                   <tr>
                     <th className="px-4 py-3.5">Analyte Parameter</th>
                     <th className="px-4 py-3.5">Parent Investigation</th>
@@ -717,7 +677,7 @@ export default function TestParametersPage() {
                     <th className="px-4 py-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 text-xs font-medium text-slate-300">
+                <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
                   {filteredParameters.map((param) => {
                     const hasCritical = param.criticalLow !== undefined || param.criticalHigh !== undefined;
 
@@ -725,26 +685,26 @@ export default function TestParametersPage() {
                       <tr
                         key={param.id}
                         onClick={() => setInspectingParam(param)}
-                        className="hover:bg-slate-800/40 cursor-pointer transition"
+                        className="hover:bg-slate-50/80 cursor-pointer transition"
                       >
                         <td className="px-4 py-3.5">
-                          <div className="font-bold text-white flex items-center gap-2">
+                          <div className="font-bold text-slate-900 flex items-center gap-2">
                             <span>{param.parameterName}</span>
                             {param.shortName && (
-                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-blue-300 border border-slate-700">
+                              <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-bold">
                                 {param.shortName}
                               </span>
                             )}
                           </div>
                           {param.loincCode && (
-                            <span className="text-[10px] font-mono text-slate-500">
+                            <span className="text-[10px] font-mono text-slate-400">
                               LOINC: {param.loincCode}
                             </span>
                           )}
                         </td>
 
                         <td className="px-4 py-3.5">
-                          <span className="font-semibold text-slate-200">
+                          <span className="font-semibold text-slate-900">
                             {param.test?.testName || "—"}
                           </span>
                           {param.test?.testCode && (
@@ -755,7 +715,7 @@ export default function TestParametersPage() {
                         </td>
 
                         <td className="px-4 py-3.5">
-                          <span className="font-mono font-bold text-blue-400 bg-blue-950/60 px-2 py-0.5 rounded border border-blue-800/40">
+                          <span className="font-mono font-bold text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
                             {param.unit || "—"}
                           </span>
                         </td>
@@ -763,19 +723,19 @@ export default function TestParametersPage() {
                         <td className="px-4 py-3.5">
                           <div className="space-y-0.5 text-[11px]">
                             {param.maleLow !== undefined && param.maleHigh !== undefined ? (
-                              <div className="text-slate-300">
-                                <span className="text-blue-400 font-bold">M: </span>
+                              <div className="text-slate-700">
+                                <span className="text-blue-700 font-bold">M: </span>
                                 <span>{param.maleLow} - {param.maleHigh} {param.unit}</span>
                               </div>
                             ) : null}
                             {param.femaleLow !== undefined && param.femaleHigh !== undefined ? (
-                              <div className="text-slate-300">
-                                <span className="text-pink-400 font-bold">F: </span>
+                              <div className="text-slate-700">
+                                <span className="text-pink-700 font-bold">F: </span>
                                 <span>{param.femaleLow} - {param.femaleHigh} {param.unit}</span>
                               </div>
                             ) : null}
                             {!param.maleLow && !param.femaleLow && (
-                              <span className="text-slate-500">Standard range defined in report</span>
+                              <span className="text-slate-400 italic">Standard range in report</span>
                             )}
                           </div>
                         </td>
@@ -784,50 +744,58 @@ export default function TestParametersPage() {
                           {hasCritical ? (
                             <div className="space-y-0.5">
                               {param.criticalLow !== undefined && (
-                                <span className="inline-flex items-center gap-1 rounded bg-rose-950/80 px-2 py-0.5 text-[10px] font-bold text-rose-400 border border-rose-800/40 mr-1">
+                                <span className="inline-flex items-center gap-1 rounded bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200 mr-1">
                                   <span>&lt; {param.criticalLow}</span>
                                 </span>
                               )}
                               {param.criticalHigh !== undefined && (
-                                <span className="inline-flex items-center gap-1 rounded bg-rose-950/80 px-2 py-0.5 text-[10px] font-bold text-rose-400 border border-rose-800/40">
+                                <span className="inline-flex items-center gap-1 rounded bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200">
                                   <span>&gt; {param.criticalHigh}</span>
                                 </span>
                               )}
                             </div>
                           ) : (
-                            <span className="text-slate-500 text-[11px]">None</span>
+                            <span className="text-slate-400 text-[11px]">None</span>
                           )}
                         </td>
 
-                        <td className="px-4 py-3.5 font-mono text-slate-300">
-                          ±{param.deltaCheckPercentage ?? 25}%
+                        <td className="px-4 py-3.5">
+                          {param.deltaCheckPercentage ? (
+                            <span className="font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 text-[10px]">
+                              ±{param.deltaCheckPercentage}%
+                            </span>
+                          ) : (
+                            <span className="text-slate-400">—</span>
+                          )}
                         </td>
 
                         <td className="px-4 py-3.5">
-                          <span className={`inline-flex px-2 py-0.5 rounded text-[10px] font-black ${
-                            param.isRequired
-                              ? "bg-amber-500/10 text-amber-400 border border-amber-500/30"
-                              : "bg-slate-800 text-slate-400"
-                          }`}>
-                            {param.isRequired ? "REQUIRED" : "OPTIONAL"}
+                          <span
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-black ${
+                              param.isRequired !== false
+                                ? "bg-amber-50 text-amber-800 border border-amber-200"
+                                : "bg-slate-100 text-slate-600 border border-slate-200"
+                            }`}
+                          >
+                            {param.isRequired !== false ? "REQUIRED" : "OPTIONAL"}
                           </span>
                         </td>
 
-                        <td className="px-4 py-3.5 text-right" onClick={(e) => e.stopPropagation()}>
-                          <div className="flex items-center justify-end gap-1.5">
+                        <td className="px-4 py-3.5 text-right">
+                          <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                             <button
                               type="button"
-                              onClick={() => handleEditParameter(param)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition"
-                              title="Edit Parameter"
+                              onClick={() => handleOpenEditModal(param)}
+                              className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer"
+                              title="Edit Analyte"
                             >
                               <Edit className="h-3.5 w-3.5" />
                             </button>
                             <button
                               type="button"
-                              onClick={() => handleDeleteParameter(param.id, param.parameterName)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:bg-rose-950/50 hover:text-rose-400 transition"
-                              title="Delete Parameter"
+                              onClick={() => handleDeleteParam(param.id, param.parameterName)}
+                              className="p-1.5 rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-700 transition cursor-pointer"
+                              title="Delete Analyte"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </button>
@@ -841,316 +809,324 @@ export default function TestParametersPage() {
             </div>
           </div>
         ) : viewMode === "matrix" ? (
-          /* INTERVAL GAUGES MATRIX */
+          /* INTERVAL GAUGES MATRIX (LIGHT WHITE) */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredParameters.map((param) => {
-              const maleLow = param.maleLow ?? 0;
-              const maleHigh = param.maleHigh ?? 100;
-              const hasCritical = param.criticalLow !== undefined || param.criticalHigh !== undefined;
+            {filteredParameters.map((p) => {
+              const maleLow = p.maleLow ?? 0;
+              const maleHigh = p.maleHigh ?? 100;
+              const hasPanic = p.criticalLow !== undefined || p.criticalHigh !== undefined;
 
               return (
                 <div
-                  key={param.id}
-                  onClick={() => setInspectingParam(param)}
-                  className="rounded-2xl border border-slate-800 bg-slate-900/70 p-4.5 backdrop-blur-xl hover:border-slate-700 hover:shadow-xl transition cursor-pointer space-y-3"
+                  key={p.id}
+                  onClick={() => setInspectingParam(p)}
+                  className="rounded-2xl border border-slate-200/90 bg-white p-5 hover:border-blue-400 hover:shadow-md transition cursor-pointer space-y-3.5 shadow-xs"
                 >
-                  <div className="flex items-start justify-between gap-2">
+                  <div className="flex items-start justify-between">
                     <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-sm font-black text-white leading-tight">
-                          {param.parameterName}
-                        </h3>
-                        {param.shortName && (
-                          <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-blue-300">
-                            {param.shortName}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-[11px] text-slate-400 block mt-0.5">
-                        {param.test?.testName || "Parent Test"}
+                      <h4 className="text-sm font-black text-slate-900">{p.parameterName}</h4>
+                      <span className="text-[11px] font-semibold text-slate-500">
+                        {p.test?.testName || "Diagnostic Test"}
                       </span>
                     </div>
-
-                    <span className="font-mono text-xs font-bold text-blue-400 bg-blue-950 px-2 py-0.5 rounded border border-blue-800/50">
-                      {param.unit}
+                    <span className="font-mono font-bold text-xs text-blue-700 bg-blue-50 px-2 py-0.5 rounded border border-blue-200">
+                      {p.unit}
                     </span>
                   </div>
 
-                  {/* Biological Reference Gauge Bar */}
-                  <div className="space-y-1.5 rounded-xl bg-slate-950/80 p-3 border border-slate-800">
-                    <div className="flex justify-between text-[10px] font-bold text-slate-400">
-                      <span>Crit Low: {param.criticalLow ?? "—"}</span>
-                      <span className="text-emerald-400">Normal: {maleLow} - {maleHigh}</span>
-                      <span>Crit High: {param.criticalHigh ?? "—"}</span>
+                  {/* Biological Gauge Visual */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between text-[10px] font-bold text-slate-500">
+                      <span className="text-rose-600 font-mono">Panic &lt; {p.criticalLow ?? "—"}</span>
+                      <span className="text-emerald-700 font-mono">Normal: {maleLow} - {maleHigh}</span>
+                      <span className="text-rose-600 font-mono">Panic &gt; {p.criticalHigh ?? "—"}</span>
                     </div>
 
-                    {/* Gradient Gauge Line */}
-                    <div className="h-2 w-full rounded-full bg-slate-800 overflow-hidden flex">
-                      <div className="w-1/4 bg-rose-500/80" title="Critical Low Zone" />
-                      <div className="w-1/2 bg-emerald-500" title="Normal Physiological Interval" />
-                      <div className="w-1/4 bg-rose-500/80" title="Critical High Zone" />
+                    <div className="h-3 w-full rounded-full bg-slate-100 flex overflow-hidden border border-slate-200">
+                      <div className="h-full bg-rose-200/80 w-1/5" title="Critical Low Zone" />
+                      <div className="h-full bg-emerald-400/90 w-3/5" title="Biological Reference Interval" />
+                      <div className="h-full bg-rose-200/80 w-1/5" title="Critical High Zone" />
                     </div>
                   </div>
 
-                  {hasCritical && (
-                    <div className="flex items-center gap-1.5 text-[10px] font-bold text-rose-400 bg-rose-950/40 p-2 rounded-lg border border-rose-900/40">
-                      <BellRing className="h-3 w-3 flex-shrink-0" />
-                      <span className="truncate">
-                        {param.panicLowAlert || param.panicHighAlert || "Immediate Doctor Panic Alert Configured"}
-                      </span>
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px]">
+                    <span className="font-mono text-slate-500">LOINC: {p.loincCode || "N/A"}</span>
+                    <span className="font-bold text-blue-600 hover:underline">Inspect Details →</span>
+                  </div>
                 </div>
               );
             })}
           </div>
         ) : (
-          /* GROUPED BY PARENT INVESTIGATION */
+          /* GROUPED BY PARENT TEST VIEW (LIGHT WHITE) */
           <div className="space-y-6">
-            {Object.entries(groupedParameters).map(([testId, group]) => (
-              <div
-                key={testId}
-                className="rounded-2xl border border-slate-800 bg-slate-900/70 backdrop-blur-xl p-5 shadow-xl space-y-4"
-              >
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <div className="flex items-center gap-2.5">
-                    <FlaskConical className="h-5 w-5 text-blue-400" />
-                    <h3 className="text-base font-black text-white">
-                      {group.testName}
-                    </h3>
-                    <span className="text-xs font-mono text-slate-400 bg-slate-800 px-2 py-0.5 rounded">
-                      [{group.testCode}]
+            {Object.keys(groupedParameters).map((testKey) => {
+              const group = groupedParameters[testKey];
+
+              return (
+                <div key={testKey} className="rounded-2xl border border-slate-200/90 bg-white overflow-hidden shadow-xs">
+                  <div className="bg-slate-50 p-4 border-b border-slate-200 flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <span className="font-mono font-black text-xs text-blue-700 bg-blue-50 px-2.5 py-1 rounded border border-blue-200">
+                        {group.testCode}
+                      </span>
+                      <h3 className="text-sm font-black text-slate-900">{group.testName}</h3>
+                    </div>
+                    <span className="text-xs font-bold text-slate-500">
+                      {group.params.length} Analytes
                     </span>
                   </div>
 
-                  <span className="text-xs font-bold text-blue-400">
-                    {group.params.length} Analyte Parameters
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {group.params.map((p) => (
-                    <div
-                      key={p.id}
-                      onClick={() => setInspectingParam(p)}
-                      className="rounded-xl border border-slate-800/80 bg-slate-950/60 p-3 hover:border-slate-700 transition cursor-pointer flex items-center justify-between"
-                    >
-                      <div>
-                        <div className="text-xs font-black text-white">{p.parameterName}</div>
-                        <div className="text-[10px] text-slate-400 mt-0.5">
-                          {p.maleLow !== undefined ? `${p.maleLow} - ${p.maleHigh} ` : ""}{p.unit}
+                  <div className="p-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    {group.params.map((p) => (
+                      <div
+                        key={p.id}
+                        onClick={() => setInspectingParam(p)}
+                        className="rounded-xl border border-slate-200 bg-white p-3 hover:border-blue-400 transition cursor-pointer flex items-center justify-between shadow-xs"
+                      >
+                        <div>
+                          <div className="text-xs font-bold text-slate-900">{p.parameterName}</div>
+                          <div className="text-[10px] font-mono text-slate-500 mt-0.5">
+                            Unit: {p.unit} | M: {p.maleLow ?? "—"} - {p.maleHigh ?? "—"}
+                          </div>
                         </div>
+                        <ChevronRight className="h-4 w-4 text-slate-400" />
                       </div>
-                      <span className="text-[10px] font-mono text-blue-400 font-bold">
-                        #{p.displayOrder}
-                      </span>
-                    </div>
-                  ))}
+                    ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
 
-        {/* DRAWER: INSPECT ANALYTE PARAMETER */}
+        {/* INSPECTION DRAWER MODAL (LIGHT WHITE) */}
         {inspectingParam && (
-          <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-            <div className="h-full w-full max-w-md bg-slate-900 border-l border-slate-800 p-6 overflow-y-auto space-y-6 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
-                <div className="flex items-center gap-2">
-                  <Sliders className="h-5 w-5 text-blue-400" />
-                  <span className="text-xs font-black uppercase tracking-wider text-blue-400">
-                    Analyte Dossier
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs animate-in fade-in">
+            <div className="relative w-full max-w-xl rounded-3xl border border-slate-200/90 bg-white p-6 shadow-2xl space-y-6">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
+                    <Sliders className="h-5 w-5" />
                   </span>
+                  <div>
+                    <h3 className="text-base font-black text-slate-900">{inspectingParam.parameterName}</h3>
+                    <p className="text-[11px] text-slate-500">
+                      Parent Test: {inspectingParam.test?.testName} ({inspectingParam.test?.testCode})
+                    </p>
+                  </div>
                 </div>
                 <button
                   type="button"
                   onClick={() => setInspectingParam(null)}
-                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
-              <div>
-                <h2 className="text-xl font-black text-white">
-                  {inspectingParam.parameterName}
-                </h2>
-                <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs font-mono text-blue-400">{inspectingParam.shortName || "NO_ALIAS"}</span>
-                  <span className="text-slate-600">•</span>
-                  <span className="text-xs text-slate-400">{inspectingParam.test?.testName || "Parent Test"}</span>
+              {/* Analytical & Clinical Parameters */}
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                <div className="rounded-xl bg-slate-50 p-3 border border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-500 block">Reporting Unit</span>
+                  <span className="text-sm font-mono font-bold text-blue-700 block mt-0.5">
+                    {inspectingParam.unit}
+                  </span>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-3 border border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-500 block">Data Type</span>
+                  <span className="text-sm font-bold text-slate-900 block mt-0.5">
+                    {inspectingParam.dataType}
+                  </span>
+                </div>
+                <div className="rounded-xl bg-slate-50 p-3 border border-slate-200">
+                  <span className="text-[10px] font-bold text-slate-500 block">LOINC Standard</span>
+                  <span className="text-sm font-mono font-bold text-slate-900 block mt-0.5">
+                    {inspectingParam.loincCode || "N/A"}
+                  </span>
                 </div>
               </div>
 
-              {/* Reference Intervals Card */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 space-y-3">
-                <h3 className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                  <Scale className="h-4 w-4" />
-                  <span>Biological Reference Intervals</span>
-                </h3>
-
-                <div className="space-y-2 text-xs">
-                  <div className="flex justify-between py-1 border-b border-slate-800">
-                    <span className="text-slate-400">Male Adult (18-60y):</span>
-                    <span className="font-bold text-white">
-                      {inspectingParam.maleLow ?? 0} - {inspectingParam.maleHigh ?? 100} {inspectingParam.unit}
+              {/* Biological Reference Intervals Matrix */}
+              <div className="rounded-2xl border border-slate-200 bg-white p-4 space-y-2.5 shadow-xs">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-900 block">
+                  Biological Normative Reference Intervals
+                </span>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="rounded-xl bg-blue-50/70 p-3 border border-blue-200">
+                    <span className="text-[10px] font-bold text-blue-700 block">Adult Male</span>
+                    <span className="text-base font-bold text-blue-900 block mt-0.5">
+                      {inspectingParam.maleLow ?? "—"} - {inspectingParam.maleHigh ?? "—"} {inspectingParam.unit}
                     </span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-slate-800">
-                    <span className="text-slate-400">Female Adult (18-60y):</span>
-                    <span className="font-bold text-white">
-                      {inspectingParam.femaleLow ?? 0} - {inspectingParam.femaleHigh ?? 100} {inspectingParam.unit}
+                  <div className="rounded-xl bg-pink-50/70 p-3 border border-pink-200">
+                    <span className="text-[10px] font-bold text-pink-700 block">Adult Female</span>
+                    <span className="text-base font-bold text-pink-900 block mt-0.5">
+                      {inspectingParam.femaleLow ?? "—"} - {inspectingParam.femaleHigh ?? "—"} {inspectingParam.unit}
                     </span>
-                  </div>
-                  <div className="flex justify-between py-1">
-                    <span className="text-slate-400">Reporting Unit:</span>
-                    <span className="font-mono font-bold text-blue-400">{inspectingParam.unit}</span>
                   </div>
                 </div>
               </div>
 
               {/* Critical Panic Thresholds */}
-              <div className="rounded-2xl border border-rose-500/30 bg-rose-950/20 p-4 space-y-2">
-                <h3 className="text-xs font-black uppercase tracking-wider text-rose-400 flex items-center gap-1.5">
-                  <BellRing className="h-4 w-4" />
-                  <span>Critical Panic Alert Alarm Limits</span>
-                </h3>
-                <div className="text-xs space-y-1.5 text-slate-300">
-                  {inspectingParam.criticalLow !== undefined && (
-                    <div>
-                      <span className="text-rose-400 font-bold">Panic Low: </span>
-                      <span>&lt; {inspectingParam.criticalLow} {inspectingParam.unit}</span>
-                    </div>
-                  )}
-                  {inspectingParam.criticalHigh !== undefined && (
-                    <div>
-                      <span className="text-rose-400 font-bold">Panic High: </span>
-                      <span>&gt; {inspectingParam.criticalHigh} {inspectingParam.unit}</span>
-                    </div>
-                  )}
-                  {!inspectingParam.criticalLow && !inspectingParam.criticalHigh && (
-                    <div className="text-slate-500">No panic critical alert limits configured.</div>
-                  )}
+              <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-4 space-y-2">
+                <span className="text-xs font-black uppercase tracking-wider text-rose-800 flex items-center gap-1.5">
+                  <BellRing className="h-3.5 w-3.5" />
+                  <span>Immediate Pathologist Alert Thresholds</span>
+                </span>
+                <div className="grid grid-cols-2 gap-3 text-xs">
+                  <div className="rounded-xl bg-white p-2.5 border border-rose-200">
+                    <span className="text-[10px] font-bold text-rose-700 block">Critical Low Panic</span>
+                    <span className="text-sm font-black text-rose-800 font-mono block mt-0.5">
+                      {inspectingParam.criticalLow !== undefined ? `< ${inspectingParam.criticalLow} ${inspectingParam.unit}` : "None"}
+                    </span>
+                  </div>
+                  <div className="rounded-xl bg-white p-2.5 border border-rose-200">
+                    <span className="text-[10px] font-bold text-rose-700 block">Critical High Panic</span>
+                    <span className="text-sm font-black text-rose-800 font-mono block mt-0.5">
+                      {inspectingParam.criticalHigh !== undefined ? `> ${inspectingParam.criticalHigh} ${inspectingParam.unit}` : "None"}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              {/* Actions */}
-              <div className="flex items-center gap-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => {
-                    handleEditParameter(inspectingParam);
+                    const p = inspectingParam;
                     setInspectingParam(null);
+                    handleOpenEditModal(p);
                   }}
-                  className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white hover:bg-blue-500 transition text-center shadow-lg shadow-blue-500/20"
+                  className="rounded-xl bg-blue-600 px-5 py-2 text-xs font-bold text-white hover:bg-blue-700 transition shadow-xs cursor-pointer"
                 >
-                  Edit Analyte
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    handleDeleteParameter(inspectingParam.id, inspectingParam.parameterName);
-                  }}
-                  className="rounded-xl border border-rose-500/40 bg-rose-950/40 px-4 py-2.5 text-xs font-bold text-rose-400 hover:bg-rose-900/60"
-                >
-                  Delete
+                  Edit Analyte Parameters
                 </button>
               </div>
             </div>
           </div>
         )}
 
-        {/* MODAL: ADD / EDIT PARAMETER */}
+        {/* MODAL: ADD / EDIT PARAMETER (LIGHT WHITE) */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md animate-in fade-in">
-            <div className="relative w-full max-w-2xl rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs animate-in fade-in">
+            <div className="relative w-full max-w-2xl rounded-3xl border border-slate-200/90 bg-white p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="p-2 rounded-xl bg-blue-600/20 text-blue-400">
+                  <span className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
                     <Sliders className="h-5 w-5" />
                   </span>
                   <div>
-                    <h2 className="text-base font-black text-white">
-                      {editingParam ? "Edit Analyte Parameter" : "Create New Analyte Parameter"}
+                    <h2 className="text-base font-black text-slate-900">
+                      {editingParam ? "Edit Analyte Parameter" : "Add Discrete Analyte Parameter"}
                     </h2>
-                    <p className="text-[11px] text-slate-400">
-                      Configure biological intervals, reporting units, and critical panic alarm bounds
+                    <p className="text-[11px] text-slate-500">
+                      Configure reporting units, biological intervals, and critical panic alarm triggers
                     </p>
                   </div>
                 </div>
-
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition"
+                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               <form onSubmit={handleSaveParameter} className="space-y-4">
-                {/* Parent Test */}
-                <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
-                    Parent Diagnostic Investigation <span className="text-rose-400">*</span>
-                  </label>
-                  <select
-                    required
-                    value={formData.testId}
-                    onChange={(e) => setFormData({ ...formData, testId: e.target.value })}
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500"
-                  >
-                    <option value="">Select Investigation</option>
-                    {tests.map((t) => (
-                      <option key={t.id} value={t.id} className="bg-slate-900">
-                        {t.testCode || t.code} - {t.testName || t.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Parent Test */}
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                      Parent Diagnostic Test <span className="text-rose-600">*</span>
+                    </label>
+                    <select
+                      required
+                      value={formData.testId}
+                      onChange={(e) => setFormData({ ...formData, testId: e.target.value })}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    >
+                      <option value="">Select Test Profile</option>
+                      {tests.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.testCode || t.code} - {t.testName || t.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                  <div className="sm:col-span-2">
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
-                      Analyte Parameter Name <span className="text-rose-400">*</span>
+                  {/* Parameter Name */}
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                      Analyte Name <span className="text-rose-600">*</span>
                     </label>
                     <input
                       type="text"
                       required
-                      placeholder="e.g. Hemoglobin (Hb), SGPT, Fasting Glucose"
+                      placeholder="e.g. Hemoglobin, Serum Creatinine"
                       value={formData.parameterName}
                       onChange={(e) => setFormData({ ...formData, parameterName: e.target.value })}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
-                      Short Code / Alias
-                    </label>
-                    <input
-                      type="text"
-                      placeholder="e.g. Hb, SGPT"
-                      value={formData.shortName}
-                      onChange={(e) => setFormData({ ...formData, shortName: e.target.value })}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Short Name */}
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                      Short Abbreviation
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. Hb, CREAT"
+                      value={formData.shortName}
+                      onChange={(e) => setFormData({ ...formData, shortName: e.target.value })}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-mono font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+
+                  {/* LOINC Code */}
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                      LOINC Universal Code
+                    </label>
+                    <input
+                      type="text"
+                      placeholder="e.g. 718-7"
+                      value={formData.loincCode}
+                      onChange={(e) => setFormData({ ...formData, loincCode: e.target.value })}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-mono font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+
+                  {/* Display Order */}
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                      Display Order
+                    </label>
+                    <input
+                      type="number"
+                      value={formData.displayOrder}
+                      onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 1 })}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                       Reporting Unit
                     </label>
                     <select
                       value={formData.unit}
                       onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     >
                       {COMMON_UNITS.map((u) => (
-                        <option key={u} value={u} className="bg-slate-900">
+                        <option key={u} value={u}>
                           {u}
                         </option>
                       ))}
@@ -1158,22 +1134,22 @@ export default function TestParametersPage() {
                   </div>
 
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                       Data Type
                     </label>
                     <select
                       value={formData.dataType}
                       onChange={(e) => setFormData({ ...formData, dataType: e.target.value })}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     >
-                      <option value="NUMERIC" className="bg-slate-900">NUMERIC (Decimal)</option>
-                      <option value="TEXT" className="bg-slate-900">TEXT / Observation</option>
-                      <option value="DROPDOWN" className="bg-slate-900">DROPDOWN (Positive/Negative)</option>
+                      <option value="NUMERIC">NUMERIC (Decimal)</option>
+                      <option value="TEXT">TEXT / Observation</option>
+                      <option value="DROPDOWN">DROPDOWN (Positive/Negative)</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                       Delta Check Variance %
                     </label>
                     <input
@@ -1182,68 +1158,68 @@ export default function TestParametersPage() {
                       max="100"
                       value={formData.deltaCheckPercentage}
                       onChange={(e) => setFormData({ ...formData, deltaCheckPercentage: parseInt(e.target.value) || 25 })}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
                 </div>
 
                 {/* Biological Reference Bounds */}
-                <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 space-y-3">
-                  <span className="text-xs font-black uppercase tracking-wider text-emerald-400 block">
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-emerald-800 block">
                     Adult Biological Reference Bounds ({formData.unit})
                   </span>
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold text-blue-400 mb-1">Male Low</label>
+                      <label className="block text-[10px] font-bold text-blue-700 mb-1">Male Low</label>
                       <input
                         type="number"
                         step="any"
                         value={formData.maleLow}
                         onChange={(e) => setFormData({ ...formData, maleLow: parseFloat(e.target.value) || 0 })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-900"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-blue-400 mb-1">Male High</label>
+                      <label className="block text-[10px] font-bold text-blue-700 mb-1">Male High</label>
                       <input
                         type="number"
                         step="any"
                         value={formData.maleHigh}
                         onChange={(e) => setFormData({ ...formData, maleHigh: parseFloat(e.target.value) || 0 })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-900"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-pink-400 mb-1">Female Low</label>
+                      <label className="block text-[10px] font-bold text-pink-700 mb-1">Female Low</label>
                       <input
                         type="number"
                         step="any"
                         value={formData.femaleLow}
                         onChange={(e) => setFormData({ ...formData, femaleLow: parseFloat(e.target.value) || 0 })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-900"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-pink-400 mb-1">Female High</label>
+                      <label className="block text-[10px] font-bold text-pink-700 mb-1">Female High</label>
                       <input
                         type="number"
                         step="any"
                         value={formData.femaleHigh}
                         onChange={(e) => setFormData({ ...formData, femaleHigh: parseFloat(e.target.value) || 0 })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-900"
                       />
                     </div>
                   </div>
                 </div>
 
                 {/* Critical Panic Triggers */}
-                <div className="rounded-2xl border border-rose-500/30 bg-rose-950/20 p-4 space-y-3">
-                  <span className="text-xs font-black uppercase tracking-wider text-rose-400 block">
+                <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-4 space-y-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-rose-800 block">
                     Critical Panic Alert Alarms (Immediate Pathologist Callout)
                   </span>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold text-rose-300 mb-1">
+                      <label className="block text-[10px] font-bold text-rose-800 mb-1">
                         Critical Panic Low Value
                       </label>
                       <input
@@ -1252,11 +1228,11 @@ export default function TestParametersPage() {
                         placeholder="e.g. 7.0 for Severe Anemia"
                         value={formData.criticalLow ?? ""}
                         onChange={(e) => setFormData({ ...formData, criticalLow: parseFloat(e.target.value) || undefined })}
-                        className="w-full rounded-xl border border-rose-500/30 bg-slate-900 px-3 py-2 text-xs font-bold text-rose-300 placeholder-rose-700"
+                        className="w-full rounded-xl border border-rose-300 bg-white px-3 py-2 text-xs font-bold text-rose-900 placeholder-rose-400"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-rose-300 mb-1">
+                      <label className="block text-[10px] font-bold text-rose-800 mb-1">
                         Critical Panic High Value
                       </label>
                       <input
@@ -1265,24 +1241,24 @@ export default function TestParametersPage() {
                         placeholder="e.g. 20.0 or 500 for ALT"
                         value={formData.criticalHigh ?? ""}
                         onChange={(e) => setFormData({ ...formData, criticalHigh: parseFloat(e.target.value) || undefined })}
-                        className="w-full rounded-xl border border-rose-500/30 bg-slate-900 px-3 py-2 text-xs font-bold text-rose-300 placeholder-rose-700"
+                        className="w-full rounded-xl border border-rose-300 bg-white px-3 py-2 text-xs font-bold text-rose-900 placeholder-rose-400"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="rounded-xl border border-slate-700 bg-slate-800 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-700"
+                    className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-xs font-black text-white hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/25 disabled:opacity-50"
+                    className="rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-xs disabled:opacity-50 cursor-pointer"
                   >
                     {saving ? "Saving Analyte..." : editingParam ? "Update Analyte" : "Save Analyte Parameter"}
                   </button>

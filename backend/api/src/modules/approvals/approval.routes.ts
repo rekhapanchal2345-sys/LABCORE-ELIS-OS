@@ -47,6 +47,18 @@ router.get(
 // =======================================================
 
 router.get(
+  "/",
+  authorize(
+    UserRole.ADMIN,
+    UserRole.PATHOLOGIST
+  ),
+  validate({
+    query: approvalQuerySchema,
+  }),
+  pending
+);
+
+router.get(
   "/pending",
   authorize(
     UserRole.ADMIN,

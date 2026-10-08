@@ -61,6 +61,10 @@ function authenticateUser(req, res, next) {
   try {
     const authHeader = req.headers['authorization'];
     
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ success: false, message: 'Authentication token required' });
+    }
+    
     // Default active user matching the live system banner (DR. amit shah - ADMIN)
     let currentUser = {
       userId: 'USR-ADMIN-01',

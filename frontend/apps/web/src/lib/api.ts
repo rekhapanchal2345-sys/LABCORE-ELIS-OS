@@ -187,9 +187,9 @@ const apiCall = async (endpoint: string, options: RequestInit = {}): Promise<any
     if (error instanceof ApiError) throw error;
 
     // Backend unreachable / request aborted.
-    if (!isAuthEndpoint(endpoint)) {
-      return getFallbackData(endpoint);
-    }
+    // if (!isAuthEndpoint(endpoint)) {
+    //   return getFallbackData(endpoint);
+    // }
 
     throw new ApiError(
       'Cannot reach the server. Please check that the backend is running and try again.',
@@ -232,9 +232,9 @@ const apiCall = async (endpoint: string, options: RequestInit = {}): Promise<any
     }
 
     // Network/server failures must never be masked with fake data for auth.
-    if ((status === 500 || status === 503) && !isAuthEndpoint(endpoint)) {
-      return getFallbackData(endpoint);
-    }
+    // if ((status === 500 || status === 503) && !isAuthEndpoint(endpoint)) {
+    //   return getFallbackData(endpoint);
+    // }
 
     throw new ApiError(
       message || 'API request failed. Please try again.',
@@ -4677,6 +4677,69 @@ export const testApi = {
       console.error('Import catalog API error:', error);
       throw error;
     }
+  },
+
+  // Advanced & Clinical Operations
+  cloneTest: async (id: string, data: { testCode: string; suffix?: string }) => {
+    return apiCall(`/api/tests/${id}/clone`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  checkDuplicate: async (data: { testCode?: string; testName?: string }) => {
+    return apiCall('/api/tests/premium/check-duplicate', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  bulkUpdatePrices: async (data: {
+    testIds?: string[];
+    categoryId?: string;
+    sampleType?: string;
+    adjustmentType: 'PERCENTAGE' | 'FIXED';
+    adjustmentValue: number;
+    applyToB2bRate?: boolean;
+    roundTo?: number;
+  }) => {
+    return apiCall('/api/tests/premium/bulk-price-update', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  bulkToggleActive: async (data: { testIds: string[]; isActive: boolean }) => {
+    return apiCall('/api/tests/premium/bulk-toggle-active', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  bulkDelete: async (data: { testIds: string[] }) => {
+    return apiCall('/api/tests/premium/bulk-delete', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  reorderTests: async (data: { items: Array<{ id: string; displayOrder: number }> }) => {
+    return apiCall('/api/tests/premium/reorder', {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  },
+
+  getAnalytics: async (params = '') => {
+    const queryString = params ? `?${params}` : '';
+    return apiCall(`/api/tests/premium/analytics${queryString}`);
+  },
+
+  recalculatePackagePricing: async (packageId: string, data = {}) => {
+    return apiCall(`/api/tests/packages/${packageId}/recalculate-pricing`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
   },
 };
 

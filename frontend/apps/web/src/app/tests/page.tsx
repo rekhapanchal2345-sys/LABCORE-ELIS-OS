@@ -9,6 +9,12 @@ import TariffPrintModal from "@/components/tests/TariffPrintModal";
 import TestDrawer from "@/components/tests/TestDrawer";
 import PackageMatrixView from "@/components/tests/PackageMatrixView";
 import ParameterMatrixView from "@/components/tests/ParameterMatrixView";
+import ClinicalFormulaEngine from "@/components/tests/ClinicalFormulaEngine";
+import AnalyzerQCTracker from "@/components/tests/AnalyzerQCTracker";
+import BulkPriceModal from "@/components/tests/BulkPriceModal";
+import CloneTestModal from "@/components/tests/CloneTestModal";
+import QuickOrderRequisitionModal from "@/components/tests/QuickOrderRequisitionModal";
+import ClinicalTrainingEngine from "@/components/tests/ClinicalTrainingEngine";
 import {
   FlaskConical,
   Search,
@@ -40,7 +46,14 @@ import {
   ChevronRight,
   DollarSign,
   Loader2,
-  FileText
+  FileText,
+  Calculator,
+  Shield,
+  TrendingUp,
+  X,
+  Sliders,
+  Check,
+  Brain,
 } from "lucide-react";
 
 export default function TestsPage() {
@@ -52,13 +65,18 @@ export default function TestsPage() {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   // Master Workstation Tabs
-  const [workstationTab, setWorkstationTab] = useState<"catalog" | "packages" | "parameters" | "tubes" | "tariff">("catalog");
+  const [workstationTab, setWorkstationTab] = useState<
+    "catalog" | "packages" | "parameters" | "formulas" | "qc" | "training"
+  >("catalog");
+
+  // View Mode: Table vs Grid Cards
+  const [viewMode, setViewMode] = useState<"table" | "grid">("table");
 
   // Filters & Controls
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [selectedSampleType, setSelectedSampleType] = useState("");
-  const [selectedStatus, setSelectedStatus] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState<"all" | "active" | "inactive">("all");
   const [selectedFasting, setSelectedFasting] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "code" | "price_asc" | "price_desc" | "tat">("name");
 
@@ -66,10 +84,13 @@ export default function TestsPage() {
   const [selectedTestIds, setSelectedTestIds] = useState<string[]>([]);
   const [bulkLoading, setBulkLoading] = useState(false);
 
-  // Modals & Drawer
+  // Modals & Drawer State
   const [inspectingTest, setInspectingTest] = useState<any | null>(null);
+  const [cloningTest, setCloningTest] = useState<any | null>(null);
   const [isTubeGuideOpen, setIsTubeGuideOpen] = useState(false);
   const [isTariffModalOpen, setIsTariffModalOpen] = useState(false);
+  const [isBulkPriceModalOpen, setIsBulkPriceModalOpen] = useState(false);
+  const [isRequisitionModalOpen, setIsRequisitionModalOpen] = useState(false);
 
   useEffect(() => {
     fetchInitialData();
@@ -112,6 +133,7 @@ export default function TestsPage() {
     e.stopPropagation();
     navigator.clipboard.writeText(text);
     setCopiedCode(text);
+    showNotification(`Copied investigation code "${text}" to clipboard`);
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
@@ -121,9 +143,7 @@ export default function TestsPage() {
     const prevTests = [...tests];
 
     setTests(
-      tests.map((t) =>
-        t.id === test.id ? { ...t, isActive: newStatus } : t
-      )
+      tests.map((t) => (t.id === test.id ? { ...t, isActive: newStatus } : t))
     );
 
     if (inspectingTest && inspectingTest.id === test.id) {
@@ -133,7 +153,11 @@ export default function TestsPage() {
     try {
       const res = await testApi.update(String(test.id), { isActive: newStatus });
       if (res.success) {
-        showNotification(`Test "${test.testName || test.name}" marked as ${newStatus ? "Active" : "Inactive"}`);
+        showNotification(
+          `Investigation "${test.testName || test.name}" marked as ${
+            newStatus ? "Active Operational" : "Paused / Inactive"
+          }`
+        );
       } else {
         throw new Error(res.message || "Update failed");
       }
@@ -143,76 +167,55 @@ export default function TestsPage() {
     }
   };
 
-  // Quick Duplicate / Clone Test
-  const handleDuplicateTest = async (test: any) => {
-    const newCode = `${test.testCode || test.code || 'TEST'}_COPY`;
-    const newName = `${test.testName || test.name} (Copy)`;
-
-    if (!confirm(`Create a clone of "${test.testName || test.name}" with code ${newCode}?`)) {
-      return;
-    }
-
+  // Bulk active/inactive toggle
+  const handleBulkToggleActive = async (isActive: boolean) => {
+    if (selectedTestIds.length === 0) return;
+    setBulkLoading(true);
     try {
-      const cloneData = {
-        testCode: newCode,
-        testName: newName,
-        shortName: test.shortName ? `${test.shortName}_C` : undefined,
-        categoryId: test.categoryId || undefined,
-        sampleType: test.sampleType || "BLOOD",
-        sampleContainer: test.sampleContainer || undefined,
-        sampleVolume: test.sampleVolume || undefined,
-        processingDepartment: test.processingDepartment || undefined,
-        method: test.method || undefined,
-        description: test.description || undefined,
-        clinicalSignificance: test.clinicalSignificance || undefined,
-        patientPreparation: test.patientPreparation || undefined,
-        price: Number(test.price) || 0,
-        offerPrice: test.offerPrice ? Number(test.offerPrice) : undefined,
-        b2bRate: test.b2bRate ? Number(test.b2bRate) : undefined,
-        gstPercentage: Number(test.gstPercentage) || 0,
-        tatHours: Number(test.tatHours) || 24,
-        tatDisplay: test.tatDisplay || undefined,
-        isActive: true,
-      };
-
-      const res = await testApi.create(cloneData);
-      if (res.success && res.data) {
-        setTests([res.data, ...tests]);
-        showNotification(`Test duplicated successfully as ${newCode}!`);
-      } else {
-        alert(res.message || "Failed to duplicate test");
-      }
-    } catch (err) {
-      console.error("Duplicate test error:", err);
-      alert(err instanceof Error ? err.message : "Failed to duplicate test");
+      await testApi.bulkToggleActive({ testIds: selectedTestIds, isActive });
+      showNotification(
+        `Updated status for ${selectedTestIds.length} investigations to ${
+          isActive ? "Active" : "Paused"
+        }`
+      );
+      setTests((prev) =>
+        prev.map((t) =>
+          selectedTestIds.includes(t.id) ? { ...t, isActive } : t
+        )
+      );
+      setSelectedTestIds([]);
+    } catch (err: any) {
+      alert(err?.message || "Bulk update failed");
+    } finally {
+      setBulkLoading(false);
     }
   };
 
-  // Vacutainer Cap Info
+  // Vacutainer Cap Info & Visual Styling
   const getTubeInfo = (container?: string, sampleType?: string) => {
-    const text = `${container || ''} ${sampleType || ''}`.toLowerCase();
+    const text = `${container || ""} ${sampleType || ""}`.toLowerCase();
     if (text.includes("edta") || text.includes("purple") || text.includes("lavender")) {
-      return { label: "EDTA Purple", color: "#9333EA", cap: "bg-purple-600", bg: "bg-purple-500/10 text-purple-300 border-purple-500/40" };
+      return { label: "EDTA Purple", color: "#9333EA", cap: "bg-purple-600", bg: "bg-purple-50 text-purple-700 border-purple-200" };
     }
     if (text.includes("fluoride") || text.includes("oxalate") || text.includes("grey") || text.includes("gray")) {
-      return { label: "Fluoride Grey", color: "#64748B", cap: "bg-slate-500", bg: "bg-slate-500/10 text-slate-300 border-slate-500/40" };
+      return { label: "Fluoride Grey", color: "#64748B", cap: "bg-slate-500", bg: "bg-slate-100 text-slate-700 border-slate-300" };
     }
     if (text.includes("sst") || text.includes("gold") || text.includes("gel") || text.includes("yellow")) {
-      return { label: "SST Gold", color: "#D97706", cap: "bg-amber-500", bg: "bg-amber-500/10 text-amber-300 border-amber-500/40" };
+      return { label: "SST Gold", color: "#D97706", cap: "bg-amber-500", bg: "bg-amber-50 text-amber-800 border-amber-200" };
     }
     if (text.includes("red") || text.includes("plain") || text.includes("serum")) {
-      return { label: "Plain Red", color: "#DC2626", cap: "bg-red-600", bg: "bg-red-500/10 text-red-300 border-red-500/40" };
+      return { label: "Plain Red", color: "#DC2626", cap: "bg-red-600", bg: "bg-red-50 text-red-700 border-red-200" };
     }
     if (text.includes("citrate") || text.includes("blue")) {
-      return { label: "Citrate Blue", color: "#0284C7", cap: "bg-sky-500", bg: "bg-sky-500/10 text-sky-300 border-sky-500/40" };
+      return { label: "Citrate Blue", color: "#0284C7", cap: "bg-sky-500", bg: "bg-sky-50 text-sky-700 border-sky-200" };
     }
     if (text.includes("heparin") || text.includes("green")) {
-      return { label: "Heparin Green", color: "#16A34A", cap: "bg-emerald-600", bg: "bg-emerald-500/10 text-emerald-300 border-emerald-500/40" };
+      return { label: "Heparin Green", color: "#16A34A", cap: "bg-emerald-600", bg: "bg-emerald-50 text-emerald-700 border-emerald-200" };
     }
     if (text.includes("urine") || text.includes("stool") || text.includes("swab") || text.includes("sputum")) {
-      return { label: container || sampleType || "Sterile Cup", color: "#CA8A04", cap: "bg-yellow-500", bg: "bg-yellow-500/10 text-yellow-300 border-yellow-500/40" };
+      return { label: container || sampleType || "Sterile Cup", color: "#CA8A04", cap: "bg-yellow-500", bg: "bg-yellow-50 text-yellow-800 border-yellow-200" };
     }
-    return { label: container || sampleType || "Standard Vial", color: "#475569", cap: "bg-slate-600", bg: "bg-slate-500/10 text-slate-300 border-slate-500/40" };
+    return { label: container || sampleType || "Standard Vial", color: "#475569", cap: "bg-slate-600", bg: "bg-slate-100 text-slate-700 border-slate-200" };
   };
 
   // Filtered and Sorted Tests
@@ -281,200 +284,317 @@ export default function TestsPage() {
   }, [tests, searchTerm, selectedCategory, selectedSampleType, selectedStatus, selectedFasting, sortBy]);
 
   const totalActive = tests.filter((t) => t.isActive !== false).length;
-  const statAvailableCount = tests.filter((t) => (t.tatHours && Number(t.tatHours) <= 4) || (t.tatDisplay && t.tatDisplay.toLowerCase().includes("stat"))).length;
+  const statAvailableCount = tests.filter(
+    (t) => (t.tatHours && Number(t.tatHours) <= 4) || (t.tatDisplay && t.tatDisplay.toLowerCase().includes("stat"))
+  ).length;
   const totalCategoriesCount = categories.length || new Set(tests.map((t) => t.categoryId || t.category?.name)).size;
+
+  // Selected Tests for Requisition / Actions
+  const selectedTestsList = useMemo(() => {
+    return tests.filter((t) => selectedTestIds.includes(t.id));
+  }, [tests, selectedTestIds]);
+
+  const handleSelectAll = () => {
+    if (selectedTestIds.length === filteredTests.length) {
+      setSelectedTestIds([]);
+    } else {
+      setSelectedTestIds(filteredTests.map((t) => t.id));
+    }
+  };
+
+  const handleToggleSelectTest = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSelectedTestIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
 
   return (
     <ProtectedRoute requiredRoles={["ADMIN", "FRONT_DESK", "LAB_TECH", "PATHOLOGIST", "DOCTOR"]}>
-      <div className="space-y-6 pb-12">
-        {/* Floating Notification */}
+      <div className="space-y-6 pb-20">
+        {/* Floating Success Notification */}
         {successMessage && (
-          <div className="fixed top-5 right-5 z-50 flex items-center gap-3 rounded-2xl border border-emerald-400 bg-emerald-950 text-white px-5 py-3.5 text-xs font-semibold shadow-2xl animate-in slide-in-from-top-3 duration-300">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-500 text-slate-950 text-[11px] font-black">✓</span>
+          <div className="fixed top-5 right-5 z-50 flex items-center gap-3 rounded-2xl border border-emerald-300 bg-emerald-50 text-emerald-900 px-5 py-3.5 text-xs font-bold shadow-xl animate-in slide-in-from-top-3 duration-300">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-600 text-white text-[11px] font-black">
+              ✓
+            </span>
             <span>{successMessage}</span>
           </div>
         )}
 
-        {/* Copy Feedback */}
-        {copiedCode && (
-          <div className="fixed bottom-6 right-6 z-50 rounded-xl bg-slate-900 border border-slate-700 px-4 py-2 text-xs font-bold text-white shadow-xl animate-in fade-in duration-200 flex items-center gap-2">
-            <span>📋</span> Copied &quot;{copiedCode}&quot; to clipboard!
-          </div>
-        )}
-
-        {/* Top Diagnostic Master Command Header */}
-        <div className="relative overflow-hidden rounded-3xl border border-indigo-500/40 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 text-white shadow-2xl sm:p-8">
-          <div className="pointer-events-none absolute -right-20 -top-24 h-72 w-72 rounded-full bg-gradient-to-br from-cyan-400/20 to-blue-500/20 blur-3xl animate-pulse" />
-          <div className="pointer-events-none absolute -bottom-28 left-1/4 h-64 w-64 rounded-full bg-gradient-to-br from-violet-400/20 to-purple-500/20 blur-3xl" />
+        {/* =========================================================================
+            1. LIGHT WHITE CLINICAL COMMAND HEADER & KPI SECTION
+        ========================================================================= */}
+        <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-white p-6 sm:p-7 text-slate-900 shadow-xs">
+          {/* Subtle Ambient Clinical Glows */}
+          <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-blue-50/80 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-28 left-1/3 h-64 w-64 rounded-full bg-indigo-50/60 blur-3xl" />
 
           <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-            <div className="space-y-3">
-              {/* Accreditation & Quality Badges */}
-              <div className="flex flex-wrap items-center gap-2 text-[11px] font-bold uppercase tracking-wider">
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-cyan-400/40 bg-cyan-400/10 px-3 py-1 text-cyan-200 backdrop-blur-md">
-                  <FlaskConical className="h-3.5 w-3.5 text-cyan-300" /> Clinical Test Catalog Master
+            <div className="space-y-2.5">
+              {/* Quality & Accreditation Badges */}
+              <div className="flex flex-wrap items-center gap-2 text-xs font-bold">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-blue-200 bg-blue-50 px-3 py-1 text-blue-800">
+                  <FlaskConical className="h-3.5 w-3.5 text-blue-600" /> Diagnostic Test Master Directory
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-400/10 px-3 py-1 text-emerald-200 backdrop-blur-md">
-                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-300" /> NABL &amp; CAP / ISO 15189 Validated
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-emerald-800">
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" /> NABL &amp; ISO 15189:2022
                 </span>
-                <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-400/40 bg-indigo-400/10 px-3 py-1 text-indigo-200 backdrop-blur-md">
-                  <Activity className="h-3.5 w-3.5 text-indigo-300" /> LOINC &amp; SNOMED Coded
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-indigo-800">
+                  <Activity className="h-3.5 w-3.5 text-indigo-600" /> LOINC &amp; ABDM Interoperable
                 </span>
               </div>
 
-              <h1 className="text-3xl font-black tracking-tight text-white sm:text-4xl bg-gradient-to-r from-white via-slate-100 via-cyan-100 to-indigo-100 bg-clip-text text-transparent">
+              <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
                 Diagnostic Test Directory &amp; Tariff Master
               </h1>
-              <p className="text-sm text-slate-300 max-w-2xl">
-                Comprehensive pathology test catalog with multi-tier pricing, age/gender reference intervals, vacutainer tube SOPs, and health package bundles.
+              <p className="text-xs sm:text-sm text-slate-600 max-w-2xl leading-relaxed">
+                Hospital-grade pathology test catalog with multi-tier pricing, age- and gender-stratified biological intervals, vacutainer tube SOPs, automated calculation formulas, and health packages.
               </p>
             </div>
 
-            {/* Action Hub */}
-            <div className="flex flex-wrap items-center gap-3">
+            {/* Quick Actions Header Hub */}
+            <div className="flex flex-wrap items-center gap-2.5">
               <button
+                type="button"
                 onClick={() => setIsTubeGuideOpen(true)}
-                className="inline-flex items-center gap-2 rounded-2xl border border-purple-500/40 bg-purple-950/40 px-4 py-3 text-xs font-bold text-purple-300 hover:bg-purple-900/50 transition-all backdrop-blur-md"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3.5 py-2.5 text-xs font-bold text-slate-700 transition shadow-xs cursor-pointer"
               >
-                🧪 Vacutainer Tube SOP
+                <span>🧪</span>
+                <span>Vacutainer SOP</span>
               </button>
 
               <button
+                type="button"
                 onClick={() => setIsTariffModalOpen(true)}
-                className="inline-flex items-center gap-2 rounded-2xl border border-slate-700 bg-slate-800/90 px-4 py-3 text-xs font-bold text-slate-200 hover:border-slate-600 hover:text-white transition-all backdrop-blur-md"
+                className="inline-flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 px-3.5 py-2.5 text-xs font-bold text-slate-700 transition shadow-xs cursor-pointer"
               >
-                <Printer className="h-4 w-4 text-cyan-400" /> Print Rate Card
+                <Printer className="h-4 w-4 text-blue-600" />
+                <span>Print Rate Card</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsBulkPriceModalOpen(true)}
+                className="inline-flex items-center gap-2 rounded-xl border border-blue-200 bg-blue-50 hover:bg-blue-100 px-3.5 py-2.5 text-xs font-bold text-blue-700 transition shadow-xs cursor-pointer"
+              >
+                <TrendingUp className="h-4 w-4 text-blue-600" />
+                <span>Bulk Pricing</span>
               </button>
 
               <Link
                 href="/tests/new"
-                className="inline-flex items-center gap-2 rounded-2xl border border-cyan-400/60 bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-xs font-black text-slate-950 shadow-xl shadow-cyan-950/50 hover:from-cyan-400 hover:to-blue-500 hover:scale-105 transition-all duration-300"
+                className="inline-flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 text-xs font-bold shadow-xs transition cursor-pointer"
               >
                 <Plus className="h-4 w-4" />
-                <span>Add Diagnostic Test</span>
+                <span>Add Investigation</span>
               </Link>
             </div>
           </div>
 
-          {/* Real-Time KPI Strip */}
-          <div className="mt-8 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 border-t border-white/10 pt-6">
-            <div className="rounded-2xl border border-cyan-500/30 bg-gradient-to-br from-cyan-950/40 to-slate-900/60 p-3.5 backdrop-blur-md">
+          {/* Real-Time Clinical KPI Strip in Light White Aesthetics */}
+          <div className="mt-7 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6 border-t border-slate-100 pt-5">
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-300">Catalog Menu</span>
-                <span className="h-2 w-2 rounded-full bg-cyan-400 animate-pulse" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Total Directory</span>
+                <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
               </div>
-              <p className="mt-1 text-2xl font-black text-white">{tests.length}</p>
-              <p className="text-[10px] text-slate-400 mt-0.5">{totalActive} Active Tests</p>
+              <p className="mt-1 text-2xl font-black text-slate-900">{tests.length}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">{totalActive} Operational</p>
             </div>
 
-            <div className="rounded-2xl border border-indigo-500/30 bg-gradient-to-br from-indigo-950/40 to-slate-900/60 p-3.5 backdrop-blur-md">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-300">Departments</span>
-              <p className="mt-1 text-2xl font-black text-white">{totalCategoriesCount}</p>
-              <p className="text-[10px] text-indigo-200/80 mt-0.5">Biochem, Hema, Micro</p>
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Departments</span>
+              <p className="mt-1 text-2xl font-black text-slate-900">{totalCategoriesCount}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Biochem, Hema, Micro</p>
             </div>
 
-            <div className="rounded-2xl border border-rose-500/30 bg-gradient-to-br from-rose-950/40 to-slate-900/60 p-3.5 backdrop-blur-md">
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-300">STAT / Rapid</span>
-                <Flame className="h-3.5 w-3.5 text-rose-400 fill-rose-400" />
+                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700">STAT / Rapid</span>
+                <Flame className="h-3.5 w-3.5 text-rose-500 fill-rose-500" />
               </div>
-              <p className="mt-1 text-2xl font-black text-white">{statAvailableCount}</p>
-              <p className="text-[10px] text-rose-200/80 mt-0.5">Sub-4h Turnaround</p>
+              <p className="mt-1 text-2xl font-black text-slate-900">{statAvailableCount}</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Sub-4h Turnaround</p>
             </div>
 
-            <div className="rounded-2xl border border-purple-500/30 bg-gradient-to-br from-purple-950/40 to-slate-900/60 p-3.5 backdrop-blur-md">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-purple-300">Health Packages</span>
-              <p className="mt-1 text-2xl font-black text-white">4</p>
-              <p className="text-[10px] text-purple-200/80 mt-0.5">Full Body &amp; Profiles</p>
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Health Packages</span>
+              <p className="mt-1 text-2xl font-black text-slate-900">4</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Profiles &amp; Full Body</p>
             </div>
 
-            <div className="rounded-2xl border border-emerald-500/30 bg-gradient-to-br from-emerald-950/40 to-slate-900/60 p-3.5 backdrop-blur-md">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300">Quality Standard</span>
-              <p className="mt-1 text-xl font-black text-white">ISO 15189</p>
-              <p className="text-[10px] text-emerald-300/80 mt-0.5">NABL Compliant</p>
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Quality Standard</span>
+              <p className="mt-1 text-xl font-black text-slate-900">ISO 15189</p>
+              <p className="text-[10px] text-emerald-600 font-semibold mt-0.5">NABL Compliant</p>
             </div>
 
-            <div className="rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-950/40 to-slate-900/60 p-3.5 backdrop-blur-md">
-              <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300">Price Tiers</span>
-              <p className="mt-1 text-xl font-black text-white">OPD / IPD</p>
-              <p className="text-[10px] text-amber-200/80 mt-0.5">B2B Rate Card Mapped</p>
+            <div className="rounded-2xl border border-slate-200/80 bg-slate-50/70 p-3.5">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Tariff Tiers</span>
+              <p className="mt-1 text-xl font-black text-slate-900">OPD / B2B</p>
+              <p className="text-[10px] text-slate-500 mt-0.5">Dual Rate Structure</p>
             </div>
           </div>
         </div>
 
-        {/* Master Workstation Mode Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 pb-4">
+        {/* =========================================================================
+            2. MASTER WORKSTATION TABS (Light White Professional Tabs)
+        ========================================================================= */}
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 pb-3">
           <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={() => setWorkstationTab("catalog")}
-              className={`flex items-center gap-2 rounded-2xl px-5 py-3 text-xs font-black transition-all duration-300 ${
+              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer ${
                 workstationTab === "catalog"
-                  ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-xl shadow-cyan-950/50 scale-105"
-                  : "border border-slate-800 bg-slate-900/80 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
-              <TableIcon className="h-4 w-4" />
+              <TableIcon className="h-3.5 w-3.5" />
               <span>1. Diagnostic Test Menu</span>
-              <span className={`rounded-full px-2 py-0.5 text-[10px] font-mono ${workstationTab === "catalog" ? "bg-slate-950 text-white" : "bg-slate-800 text-slate-300"}`}>
+              <span
+                className={`rounded-full px-2 py-0.2 text-[10px] font-mono font-bold ${
+                  workstationTab === "catalog" ? "bg-white text-blue-700" : "bg-slate-100 text-slate-700"
+                }`}
+              >
                 {filteredTests.length}
               </span>
             </button>
 
             <button
               onClick={() => setWorkstationTab("packages")}
-              className={`flex items-center gap-2 rounded-2xl px-5 py-3 text-xs font-black transition-all duration-300 ${
+              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer ${
                 workstationTab === "packages"
-                  ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-xl shadow-cyan-950/50 scale-105"
-                  : "border border-slate-800 bg-slate-900/80 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
-              <Package className="h-4 w-4" />
-              <span>2. Health Packages &amp; Profiles</span>
+              <Package className="h-3.5 w-3.5" />
+              <span>2. Health Packages &amp; Bundles</span>
             </button>
 
             <button
               onClick={() => setWorkstationTab("parameters")}
-              className={`flex items-center gap-2 rounded-2xl px-5 py-3 text-xs font-black transition-all duration-300 ${
+              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer ${
                 workstationTab === "parameters"
-                  ? "bg-gradient-to-r from-cyan-500 to-blue-600 text-slate-950 shadow-xl shadow-cyan-950/50 scale-105"
-                  : "border border-slate-800 bg-slate-900/80 text-slate-300 hover:bg-slate-800 hover:text-white"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
               }`}
             >
-              <SlidersHorizontal className="h-4 w-4" />
-              <span>3. Clinical Parameters &amp; Ref Matrix</span>
+              <SlidersHorizontal className="h-3.5 w-3.5" />
+              <span>3. Analyte Reference Matrix</span>
+            </button>
+
+            <button
+              onClick={() => setWorkstationTab("formulas")}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer ${
+                workstationTab === "formulas"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+              }`}
+            >
+              <Calculator className="h-3.5 w-3.5" />
+              <span>4. Clinical Formulas &amp; Derivations</span>
+              <span className="rounded-full bg-emerald-100 text-emerald-800 text-[9px] font-bold px-1.5 py-0.2">
+                NEW
+              </span>
+            </button>
+
+            <button
+              onClick={() => setWorkstationTab("qc")}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer ${
+                workstationTab === "qc"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+              }`}
+            >
+              <ShieldCheck className="h-3.5 w-3.5" />
+              <span>5. Analyzer QC &amp; Instruments</span>
+              <span className="rounded-full bg-blue-100 text-blue-800 text-[9px] font-bold px-1.5 py-0.2">
+                NABL
+              </span>
+            </button>
+
+            <button
+              onClick={() => setWorkstationTab("training")}
+              className={`flex items-center gap-2 rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer ${
+                workstationTab === "training"
+                  ? "bg-blue-600 text-white shadow-xs"
+                  : "bg-white border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+              }`}
+            >
+              <Brain className="h-3.5 w-3.5" />
+              <span>6. Clinical AI &amp; Training</span>
+              <span className="rounded-full bg-indigo-100 text-indigo-800 text-[9px] font-bold px-1.5 py-0.2">
+                AI
+              </span>
             </button>
           </div>
+
+          {/* Table / Grid Mode Toggle */}
+          {workstationTab === "catalog" && (
+            <div className="flex items-center rounded-xl border border-slate-200 bg-white p-1 shadow-xs">
+              <button
+                type="button"
+                onClick={() => setViewMode("table")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  viewMode === "table" ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                <Layers className="h-3.5 w-3.5" />
+                <span>Table</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode("grid")}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition ${
+                  viewMode === "grid" ? "bg-blue-50 text-blue-700" : "text-slate-500 hover:text-slate-900"
+                }`}
+              >
+                <LayoutGrid className="h-3.5 w-3.5" />
+                <span>Cards</span>
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* TAB 1: MASTER DIAGNOSTIC TEST DIRECTORY */}
+        {/* =========================================================================
+            TAB 1: MASTER DIAGNOSTIC TEST DIRECTORY
+        ========================================================================= */}
         {workstationTab === "catalog" && (
-          <div className="space-y-5">
-            {/* Filter Toolbar */}
-            <div className="rounded-3xl border border-slate-800 bg-slate-950/90 p-5 shadow-2xl backdrop-blur-xl space-y-4">
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="space-y-4">
+            {/* Search, Department & Specimen Filter Toolbar */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-4 shadow-xs space-y-3">
+              <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 lg:grid-cols-5">
+                {/* Search Bar */}
                 <div className="relative lg:col-span-2">
-                  <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-cyan-400" />
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
                   <input
                     type="text"
-                    placeholder="Search test name, code, method, department..."
+                    placeholder="Search investigation name, code (e.g. CBC), method, department..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-800 bg-slate-900/90 pl-10 pr-4 py-2.5 text-xs text-slate-200 outline-none placeholder:text-slate-500 focus:border-cyan-500/50"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 pl-10 pr-8 py-2.5 text-xs font-semibold text-slate-900 placeholder:text-slate-400 focus:bg-white focus:border-blue-500 focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition"
                   />
                   {searchTerm && (
-                    <button onClick={() => setSearchTerm("")} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-white">
-                      ✕
+                    <button
+                      onClick={() => setSearchTerm("")}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                    >
+                      <X className="h-3.5 w-3.5" />
                     </button>
                   )}
                 </div>
 
+                {/* Department Filter */}
                 <div>
                   <select
                     value={selectedCategory}
                     onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-800 bg-slate-900/90 px-3.5 py-2.5 text-xs text-slate-200 outline-none focus:border-cyan-500/50"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2.5 text-xs font-bold text-slate-800 focus:bg-white focus:border-blue-500 focus:outline-none"
                   >
-                    <option value="">All Departments</option>
+                    <option value="">All Departments ({totalCategoriesCount})</option>
                     {categories.map((c) => (
                       <option key={c.id || c.name} value={c.id || c.name}>
                         {c.name}
@@ -483,11 +603,12 @@ export default function TestsPage() {
                   </select>
                 </div>
 
+                {/* Specimen Matrix Filter */}
                 <div>
                   <select
                     value={selectedSampleType}
                     onChange={(e) => setSelectedSampleType(e.target.value)}
-                    className="w-full rounded-2xl border border-slate-800 bg-slate-900/90 px-3.5 py-2.5 text-xs text-slate-200 outline-none focus:border-cyan-500/50"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2.5 text-xs font-bold text-slate-800 focus:bg-white focus:border-blue-500 focus:outline-none"
                   >
                     <option value="">All Specimen Matrices</option>
                     <option value="BLOOD">Whole Blood / Plasma</option>
@@ -498,232 +619,492 @@ export default function TestsPage() {
                   </select>
                 </div>
 
+                {/* Sort Order */}
                 <div>
                   <select
                     value={sortBy}
                     onChange={(e) => setSortBy(e.target.value as any)}
-                    className="w-full rounded-2xl border border-slate-800 bg-slate-900/90 px-3.5 py-2.5 text-xs text-slate-200 outline-none focus:border-cyan-500/50"
+                    className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3 py-2.5 text-xs font-bold text-slate-800 focus:bg-white focus:border-blue-500 focus:outline-none"
                   >
-                    <option value="name">Sort: Test Name (A-Z)</option>
-                    <option value="code">Sort: Test Code</option>
+                    <option value="name">Sort: Name (A-Z)</option>
+                    <option value="code">Sort: Investigation Code</option>
                     <option value="price_asc">Sort: Price (Low to High)</option>
                     <option value="price_desc">Sort: Price (High to Low)</option>
                     <option value="tat">Sort: Turnaround Time (TAT)</option>
                   </select>
                 </div>
               </div>
+
+              {/* Status and Fasting Quick Chips */}
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-slate-400 font-semibold mr-1">Status:</span>
+                  {(["all", "active", "inactive"] as const).map((st) => (
+                    <button
+                      key={st}
+                      type="button"
+                      onClick={() => setSelectedStatus(st)}
+                      className={`px-2.5 py-1 rounded-lg font-bold capitalize transition cursor-pointer ${
+                        selectedStatus === st
+                          ? "bg-blue-600 text-white"
+                          : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                      }`}
+                    >
+                      {st}
+                    </button>
+                  ))}
+
+                  <span className="text-slate-400 font-semibold ml-3 mr-1">Fasting:</span>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedFasting(selectedFasting === "fasting" ? "" : "fasting")}
+                    className={`px-2.5 py-1 rounded-lg font-bold transition cursor-pointer ${
+                      selectedFasting === "fasting"
+                        ? "bg-amber-600 text-white"
+                        : "bg-slate-100 text-slate-600 hover:bg-slate-200"
+                    }`}
+                  >
+                    Fasting Required
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-500 text-xs">
+                    Showing <strong className="text-slate-900">{filteredTests.length}</strong> of {tests.length} tests
+                  </span>
+                  {(searchTerm || selectedCategory || selectedSampleType || selectedStatus !== "all" || selectedFasting) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSearchTerm("");
+                        setSelectedCategory("");
+                        setSelectedSampleType("");
+                        setSelectedStatus("all");
+                        setSelectedFasting("");
+                      }}
+                      className="text-blue-600 hover:text-blue-800 font-bold ml-2 underline text-xs"
+                    >
+                      Clear Filters
+                    </button>
+                  )}
+                </div>
+              </div>
             </div>
 
-            {/* Test Catalog Table */}
-            <div className="overflow-hidden rounded-3xl border border-slate-800/90 bg-slate-950 shadow-2xl">
-              {loading ? (
-                <div className="flex flex-col items-center justify-center p-16 text-slate-500 space-y-3">
-                  <Loader2 className="h-8 w-8 animate-spin text-cyan-400" />
-                  <p className="text-xs font-bold text-slate-400">Loading diagnostic test directory...</p>
+            {/* Bulk Selection Action Floating Ribbon (When Tests Checked) */}
+            {selectedTestIds.length > 0 && (
+              <div className="rounded-2xl border border-blue-200 bg-blue-50/90 p-3.5 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs animate-in slide-in-from-top-2 duration-200">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white font-bold text-xs">
+                    {selectedTestIds.length}
+                  </span>
+                  <span className="font-bold text-blue-900">
+                    Investigations Selected for Bulk Action
+                  </span>
                 </div>
-              ) : filteredTests.length === 0 ? (
-                <div className="flex flex-col items-center justify-center p-16 text-slate-500 space-y-3">
-                  <FlaskConical className="h-10 w-10 text-slate-700" />
-                  <p className="text-sm font-bold text-slate-300">No matching diagnostic tests</p>
-                  <p className="text-xs text-slate-600">Try adjusting search parameters or clear filters</p>
-                </div>
-              ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full text-left">
-                    <thead className="border-b border-slate-800 bg-slate-900/80 text-[10px] font-black uppercase tracking-widest text-slate-400">
-                      <tr>
-                        <th className="px-5 py-4">Test Profile &amp; Code</th>
-                        <th className="px-5 py-4">Department &amp; Method</th>
-                        <th className="px-5 py-4">Specimen Tube SOP</th>
-                        <th className="px-5 py-4">Preparation &amp; TAT</th>
-                        <th className="px-5 py-4">Tariff &amp; Price</th>
-                        <th className="px-5 py-4">Status</th>
-                        <th className="px-5 py-4 text-right">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-800/70 text-xs text-slate-300">
-                      {filteredTests.map((test) => {
-                        const tube = getTubeInfo(test.sampleContainer, test.sampleType);
-                        const isStat = test.tatHours && Number(test.tatHours) <= 4;
-                        const price = Number(test.price) || 0;
-                        const offer = test.offerPrice ? Number(test.offerPrice) : null;
-                        const hasDiscount = offer !== null && offer < price && offer > 0;
 
-                        return (
-                          <tr key={test.id} className="group hover:bg-slate-900/60 transition-colors">
-                            {/* Test Name & Code */}
-                            <td className="px-5 py-4">
-                              <div className="space-y-1">
-                                <button
-                                  onClick={() => setInspectingTest(test)}
-                                  className="font-bold text-slate-100 text-sm hover:text-cyan-300 text-left transition-colors flex items-center gap-1.5"
-                                >
-                                  {test.testName || test.name}
-                                  <ChevronRight className="h-3.5 w-3.5 text-slate-500 group-hover:translate-x-0.5 transition-transform" />
-                                </button>
-                                <div className="flex items-center gap-1.5 font-mono text-[10px]">
-                                  <span className="bg-slate-800 text-cyan-300 px-2 py-0.5 rounded font-bold">
-                                    {test.testCode || test.code}
-                                  </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setIsRequisitionModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-blue-300 text-blue-700 font-bold hover:bg-blue-50 transition shadow-xs cursor-pointer"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    <span>Create Requisition Slip</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setIsBulkPriceModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white border border-blue-300 text-blue-700 font-bold hover:bg-blue-50 transition shadow-xs cursor-pointer"
+                  >
+                    <TrendingUp className="h-3.5 w-3.5" />
+                    <span>Bulk Price Revision</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={bulkLoading}
+                    onClick={() => handleBulkToggleActive(true)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold transition shadow-xs cursor-pointer disabled:opacity-50"
+                  >
+                    <span>Mark Active</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    disabled={bulkLoading}
+                    onClick={() => handleBulkToggleActive(false)}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-600 hover:bg-amber-700 text-white font-bold transition shadow-xs cursor-pointer disabled:opacity-50"
+                  >
+                    <span>Pause Selected</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setSelectedTestIds([])}
+                    className="p-1.5 rounded-lg text-slate-500 hover:bg-blue-100 transition"
+                    title="Clear selection"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Test Catalog Table View */}
+            {viewMode === "table" ? (
+              <div className="overflow-hidden rounded-3xl border border-slate-200/90 bg-white shadow-xs">
+                {loading ? (
+                  <div className="flex flex-col items-center justify-center p-16 text-slate-400 space-y-3">
+                    <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+                    <p className="text-xs font-bold text-slate-600">Loading diagnostic test directory...</p>
+                  </div>
+                ) : filteredTests.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center p-16 text-slate-400 space-y-3">
+                    <FlaskConical className="h-10 w-10 text-slate-300" />
+                    <p className="text-sm font-bold text-slate-700">No matching diagnostic investigations found</p>
+                    <p className="text-xs text-slate-500">Try adjusting your search query or clear active filters</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs">
+                      <thead className="border-b border-slate-200 bg-slate-50/90 text-[10px] font-black uppercase tracking-wider text-slate-600">
+                        <tr>
+                          <th className="px-4 py-3.5 w-10">
+                            <input
+                              type="checkbox"
+                              checked={selectedTestIds.length === filteredTests.length && filteredTests.length > 0}
+                              onChange={handleSelectAll}
+                              className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                            />
+                          </th>
+                          <th className="px-4 py-3.5">Investigation Profile &amp; Code</th>
+                          <th className="px-4 py-3.5">Department &amp; Methodology</th>
+                          <th className="px-4 py-3.5">Specimen Tube SOP</th>
+                          <th className="px-4 py-3.5">Preparation &amp; TAT</th>
+                          <th className="px-4 py-3.5">Tariff &amp; B2B Rate</th>
+                          <th className="px-4 py-3.5">Status</th>
+                          <th className="px-4 py-3.5 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 text-slate-700">
+                        {filteredTests.map((test) => {
+                          const tube = getTubeInfo(test.sampleContainer, test.sampleType);
+                          const isStat = test.tatHours && Number(test.tatHours) <= 4;
+                          const price = Number(test.price) || 0;
+                          const offer = test.offerPrice ? Number(test.offerPrice) : null;
+                          const hasDiscount = offer !== null && offer < price && offer > 0;
+                          const isSelected = selectedTestIds.includes(test.id);
+
+                          return (
+                            <tr
+                              key={test.id}
+                              className={`group transition-colors ${
+                                isSelected ? "bg-blue-50/40" : "hover:bg-slate-50/70"
+                              }`}
+                            >
+                              {/* Checkbox */}
+                              <td className="px-4 py-3.5" onClick={(e) => handleToggleSelectTest(test.id, e)}>
+                                <input
+                                  type="checkbox"
+                                  checked={isSelected}
+                                  onChange={() => {}}
+                                  className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                                />
+                              </td>
+
+                              {/* Test Name & Code */}
+                              <td className="px-4 py-3.5">
+                                <div className="space-y-1">
                                   <button
-                                    onClick={(e) => copyToClipboard(test.testCode || test.code, e)}
-                                    className="text-slate-500 hover:text-white"
-                                    title="Copy code"
+                                    onClick={() => setInspectingTest(test)}
+                                    className="font-bold text-slate-900 text-sm hover:text-blue-600 text-left transition-colors flex items-center gap-1.5 cursor-pointer"
                                   >
-                                    <Copy className="h-3 w-3" />
+                                    <span>{test.testName || test.name}</span>
+                                    <ChevronRight className="h-3.5 w-3.5 text-slate-400 group-hover:translate-x-0.5 transition-transform" />
                                   </button>
+                                  <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                                    <span className="bg-blue-50 border border-blue-200 text-blue-700 px-2 py-0.5 rounded font-bold">
+                                      {test.testCode || test.code}
+                                    </span>
+                                    <button
+                                      onClick={(e) => copyToClipboard(test.testCode || test.code, e)}
+                                      className="text-slate-400 hover:text-slate-700 p-0.5 cursor-pointer"
+                                      title="Copy investigation code"
+                                    >
+                                      <Copy className="h-3 w-3" />
+                                    </button>
+                                  </div>
                                 </div>
-                              </div>
-                            </td>
+                              </td>
 
-                            {/* Department & Method */}
-                            <td className="px-5 py-4">
-                              <div className="space-y-0.5">
-                                <p className="font-semibold text-slate-200">
-                                  {test.category?.name || test.processingDepartment || "Core Pathology"}
-                                </p>
-                                <p className="text-[10px] text-slate-500">
-                                  {test.method || "Automated Clinical Chemistry"}
-                                </p>
-                              </div>
-                            </td>
-
-                            {/* Specimen Tube SOP */}
-                            <td className="px-5 py-4">
-                              <div className="space-y-1.5">
-                                <div
-                                  className="inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-[10px] font-bold shadow-sm"
-                                  style={{
-                                    borderColor: `${tube.color}55`,
-                                    backgroundColor: `${tube.color}15`,
-                                    color: tube.color,
-                                  }}
-                                >
-                                  <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tube.color }} />
-                                  <span>{test.sampleContainer || tube.label}</span>
+                              {/* Department & Method */}
+                              <td className="px-4 py-3.5">
+                                <div className="space-y-0.5">
+                                  <p className="font-semibold text-slate-900">
+                                    {test.category?.name || test.processingDepartment || "Core Pathology"}
+                                  </p>
+                                  <p className="text-[10px] text-slate-500 font-medium">
+                                    {test.method || "Automated Analyzer"}
+                                  </p>
                                 </div>
-                                <p className="text-[10px] text-slate-400">
-                                  {test.sampleVolume || "3.0 mL"} · {test.sampleType || "BLOOD"}
-                                </p>
-                              </div>
-                            </td>
+                              </td>
 
-                            {/* Preparation & TAT */}
-                            <td className="px-5 py-4">
-                              <div className="space-y-1 text-[10px]">
-                                <span className={`inline-block font-semibold ${
-                                  (test.patientPreparation || "").toLowerCase().includes("fast")
-                                    ? "text-amber-300"
-                                    : "text-slate-400"
-                                }`}>
-                                  {test.patientPreparation || "No special preparation"}
-                                </span>
-                                <p className="font-mono text-cyan-300 font-bold flex items-center gap-1">
-                                  <Clock3 className="h-3 w-3 text-cyan-400" />
-                                  TAT: {test.tatHours || 24}h {isStat && <span className="text-rose-400 font-black">(STAT)</span>}
-                                </p>
-                              </div>
-                            </td>
+                              {/* Specimen Tube SOP */}
+                              <td className="px-4 py-3.5">
+                                <div className="space-y-1">
+                                  <div className={`inline-flex items-center gap-1.5 rounded-lg border px-2 py-0.5 text-[10px] font-bold ${tube.bg}`}>
+                                    <span className="h-2 w-2 rounded-full shadow-xs" style={{ backgroundColor: tube.color }} />
+                                    <span>{test.sampleContainer || tube.label}</span>
+                                  </div>
+                                  <p className="text-[10px] text-slate-500 font-medium">
+                                    {test.sampleVolume || "2.5 mL"} · {test.sampleType || "BLOOD"}
+                                  </p>
+                                </div>
+                              </td>
 
-                            {/* Tariff & Price */}
-                            <td className="px-5 py-4">
-                              <div className="space-y-0.5">
-                                <div className="flex items-baseline gap-1.5 font-mono">
-                                  <span className="text-sm font-black text-white">₹{hasDiscount ? offer : price}</span>
-                                  {hasDiscount && (
-                                    <span className="text-[10px] text-slate-500 line-through">₹{price}</span>
+                              {/* Preparation & TAT */}
+                              <td className="px-4 py-3.5">
+                                <div className="space-y-0.5 text-[10px]">
+                                  <span
+                                    className={`inline-block font-semibold ${
+                                      (test.patientPreparation || "").toLowerCase().includes("fast")
+                                        ? "text-amber-700 font-bold"
+                                        : "text-slate-500"
+                                    }`}
+                                  >
+                                    {test.patientPreparation ? test.patientPreparation.slice(0, 32) : "Routine"}
+                                  </span>
+                                  <p className="font-mono text-slate-700 font-bold flex items-center gap-1">
+                                    <Clock3 className="h-3 w-3 text-slate-400" />
+                                    <span>TAT: {test.tatHours || 24}h</span>
+                                    {isStat && <span className="text-rose-600 font-extrabold">(STAT)</span>}
+                                  </p>
+                                </div>
+                              </td>
+
+                              {/* Tariff & B2B Price */}
+                              <td className="px-4 py-3.5">
+                                <div className="space-y-0.5 font-mono">
+                                  <div className="flex items-baseline gap-1.5">
+                                    <span className="text-sm font-extrabold text-slate-900">
+                                      ₹{hasDiscount ? offer : price}
+                                    </span>
+                                    {hasDiscount && (
+                                      <span className="text-[10px] text-slate-400 line-through">₹{price}</span>
+                                    )}
+                                  </div>
+                                  {test.b2bRate && (
+                                    <span className="block text-[9px] text-slate-500">
+                                      B2B: ₹{test.b2bRate}
+                                    </span>
                                   )}
                                 </div>
-                                {test.b2bRate && (
-                                  <span className="block text-[9px] text-slate-400 font-mono">
-                                    B2B: ₹{test.b2bRate}
-                                  </span>
-                                )}
-                              </div>
-                            </td>
+                              </td>
 
-                            {/* Status Switch */}
-                            <td className="px-5 py-4">
-                              <button
-                                onClick={() => handleToggleStatus(test)}
-                                className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase transition-all ${
-                                  test.isActive !== false
-                                    ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                                    : "bg-slate-800 text-slate-500 border border-slate-700"
-                                }`}
-                              >
-                                {test.isActive !== false ? "Active" : "Inactive"}
-                              </button>
-                            </td>
+                              {/* Operational Status Switch */}
+                              <td className="px-4 py-3.5">
+                                <button
+                                  onClick={() => handleToggleStatus(test)}
+                                  className={`rounded-full px-2.5 py-1 text-[10px] font-black uppercase transition-all cursor-pointer ${
+                                    test.isActive !== false
+                                      ? "bg-emerald-50 text-emerald-700 border border-emerald-200 hover:bg-emerald-100"
+                                      : "bg-slate-100 text-slate-500 border border-slate-200 hover:bg-slate-200"
+                                  }`}
+                                >
+                                  {test.isActive !== false ? "● Active" : "○ Paused"}
+                                </button>
+                              </td>
 
-                            {/* Actions */}
-                            <td className="px-5 py-4 text-right">
-                              <div className="flex items-center justify-end gap-1.5">
-                                <button
-                                  onClick={() => setInspectingTest(test)}
-                                  className="rounded-xl border border-slate-700 bg-slate-800/80 px-2.5 py-1.5 text-slate-300 hover:text-white transition-colors"
-                                  title="Inspect Test Dossier"
-                                >
-                                  <Eye className="h-3.5 w-3.5" />
-                                </button>
-                                <button
-                                  onClick={() => handleDuplicateTest(test)}
-                                  className="rounded-xl border border-slate-700 bg-slate-800/80 px-2.5 py-1.5 text-slate-300 hover:text-cyan-300 transition-colors"
-                                  title="Clone / Duplicate Test"
-                                >
-                                  <Copy className="h-3.5 w-3.5" />
-                                </button>
-                                <Link
-                                  href={`/tests/${test.id}/edit`}
-                                  className="rounded-xl border border-slate-700 bg-slate-800/80 px-2.5 py-1.5 text-slate-300 hover:text-indigo-300 transition-colors"
-                                  title="Edit Test Master"
-                                >
-                                  <Edit className="h-3.5 w-3.5" />
-                                </Link>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-              )}
-            </div>
+                              {/* Action Buttons */}
+                              <td className="px-4 py-3.5 text-right">
+                                <div className="flex items-center justify-end gap-1.5">
+                                  <button
+                                    onClick={() => setInspectingTest(test)}
+                                    className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-blue-600 transition shadow-xs cursor-pointer"
+                                    title="View Investigation Dossier"
+                                  >
+                                    <Eye className="h-3.5 w-3.5" />
+                                  </button>
+
+                                  <button
+                                    onClick={() => setCloningTest(test)}
+                                    className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-indigo-600 transition shadow-xs cursor-pointer"
+                                    title="Clone / Duplicate Investigation"
+                                  >
+                                    <Copy className="h-3.5 w-3.5" />
+                                  </button>
+
+                                  <Link
+                                    href={`/tests/${test.id}?edit=true`}
+                                    className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition shadow-xs"
+                                    title="Edit Investigation Setup"
+                                  >
+                                    <Edit className="h-3.5 w-3.5" />
+                                  </Link>
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            ) : (
+              /* Grid Cards View */
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {filteredTests.map((test) => {
+                  const tube = getTubeInfo(test.sampleContainer, test.sampleType);
+                  const price = Number(test.price) || 0;
+                  const offer = test.offerPrice ? Number(test.offerPrice) : null;
+                  const hasDiscount = offer !== null && offer < price && offer > 0;
+
+                  return (
+                    <div
+                      key={test.id}
+                      className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs hover:shadow-md hover:border-blue-300 transition-all duration-200 space-y-4 cursor-pointer"
+                      onClick={() => setInspectingTest(test)}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
+                            {test.testCode || test.code}
+                          </span>
+                          <h3 className="text-base font-bold text-slate-900 leading-snug">
+                            {test.testName || test.name}
+                          </h3>
+                          <p className="text-xs text-slate-500 font-medium">
+                            {test.category?.name || "General Pathology"}
+                          </p>
+                        </div>
+
+                        <span
+                          className={`rounded-full px-2.5 py-0.5 text-[10px] font-black uppercase ${
+                            test.isActive !== false
+                              ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                              : "bg-slate-100 text-slate-500 border border-slate-200"
+                          }`}
+                        >
+                          {test.isActive !== false ? "Active" : "Paused"}
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-2 text-xs pt-1 border-t border-slate-100">
+                        <div className="space-y-0.5">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">Specimen:</span>
+                          <div className={`inline-flex items-center gap-1.5 rounded-md px-2 py-0.5 text-[10px] font-bold border ${tube.bg}`}>
+                            <span className="h-2 w-2 rounded-full" style={{ backgroundColor: tube.color }} />
+                            <span className="truncate">{tube.label}</span>
+                          </div>
+                        </div>
+
+                        <div className="space-y-0.5 text-right font-mono">
+                          <span className="text-[10px] font-bold text-slate-400 uppercase block">Tariff:</span>
+                          <span className="text-base font-black text-slate-900">
+                            ₹{hasDiscount ? offer : price}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                        <span className="flex items-center gap-1 font-semibold text-slate-700">
+                          <Clock3 className="h-3.5 w-3.5 text-slate-400" /> {test.tatHours || 24}h Turnaround
+                        </span>
+                        <span className="font-bold text-blue-600 hover:text-blue-800 flex items-center gap-1">
+                          View Dossier <ChevronRight className="h-3 w-3" />
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
         )}
 
-        {/* TAB 2: HEALTH PACKAGES & PROFILES */}
-        {workstationTab === "packages" && (
-          <PackageMatrixView />
-        )}
+        {/* =========================================================================
+            TAB 2: HEALTH PACKAGES & PROFILES MATRIX
+        ========================================================================= */}
+        {workstationTab === "packages" && <PackageMatrixView />}
 
-        {/* TAB 3: CLINICAL PARAMETERS & REFERENCE RANGES */}
-        {workstationTab === "parameters" && (
-          <ParameterMatrixView />
-        )}
+        {/* =========================================================================
+            TAB 3: ANALYTE PARAMETERS & BIOLOGICAL INTERVALS
+        ========================================================================= */}
+        {workstationTab === "parameters" && <ParameterMatrixView />}
 
-        {/* Test Slide-Over Inspection Drawer */}
+        {/* =========================================================================
+            TAB 4: CLINICAL FORMULAS & DERIVATION ENGINE (NEW REAL-WORLD FEATURE)
+        ========================================================================= */}
+        {workstationTab === "formulas" && <ClinicalFormulaEngine />}
+
+        {/* =========================================================================
+            TAB 5: ANALYZER QC & INSTRUMENTS TRACKER (NEW REAL-WORLD FEATURE)
+        ========================================================================= */}
+        {workstationTab === "qc" && <AnalyzerQCTracker />}
+
+        {/* =========================================================================
+            TAB 6: CLINICAL AI DIAGNOSTIC TRAINING & REFLEX ENGINE (ADVANCED TRAINING)
+        ========================================================================= */}
+        {workstationTab === "training" && <ClinicalTrainingEngine />}
+
+        {/* =========================================================================
+            MODALS & DRAWERS
+        ========================================================================= */}
+        {/* Slide-over Investigation Dossier */}
         <TestDrawer
           test={inspectingTest}
-          isOpen={!!inspectingTest}
+          isOpen={Boolean(inspectingTest)}
           onClose={() => setInspectingTest(null)}
           onToggleStatus={handleToggleStatus}
-          onDuplicate={handleDuplicateTest}
+          onDuplicate={(t) => setCloningTest(t)}
         />
 
-        {/* Vacutainer Tube Guide Modal */}
+        {/* Vacutainer SOP Guide Modal */}
         <TubeGuideModal
           isOpen={isTubeGuideOpen}
           onClose={() => setIsTubeGuideOpen(false)}
         />
 
-        {/* Tariff Print Rate Card Modal */}
+        {/* Rate Sheet & Tariff Print Modal */}
         <TariffPrintModal
           isOpen={isTariffModalOpen}
           onClose={() => setIsTariffModalOpen(false)}
           tests={tests}
           categories={categories}
+        />
+
+        {/* Bulk Pricing Revision Studio */}
+        <BulkPriceModal
+          isOpen={isBulkPriceModalOpen}
+          onClose={() => setIsBulkPriceModalOpen(false)}
+          selectedTestIds={selectedTestIds}
+          totalTestsCount={tests.length}
+          categories={categories}
+          onSuccess={(msg) => {
+            showNotification(msg);
+            fetchInitialData();
+          }}
+        />
+
+        {/* Test Cloning Studio */}
+        <CloneTestModal
+          isOpen={Boolean(cloningTest)}
+          onClose={() => setCloningTest(null)}
+          test={cloningTest}
+          onSuccess={(newTest) => {
+            setTests((prev) => [newTest, ...prev]);
+            showNotification(`Investigation cloned successfully as ${newTest.testCode}!`);
+          }}
+        />
+
+        {/* Quick Order Requisition Slip Modal */}
+        <QuickOrderRequisitionModal
+          isOpen={isRequisitionModalOpen}
+          onClose={() => setIsRequisitionModalOpen(false)}
+          selectedTests={selectedTestsList}
         />
       </div>
     </ProtectedRoute>

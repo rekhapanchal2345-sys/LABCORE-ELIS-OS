@@ -77,22 +77,6 @@ router.get(
   summary
 );
 
-// =======================================================
-// GET RECEIVABLE BY ID
-// =======================================================
-
-router.get(
-  "/:id",
-  authorize(
-    UserRole.ADMIN,
-    UserRole.FRONT_DESK,
-    UserRole.ACCOUNTANT
-  ),
-  validate({
-    params: receivableIdSchema,
-  }),
-  getOne
-);
 
 // =======================================================
 // UPDATE RECEIVABLE PAYMENT
@@ -169,6 +153,23 @@ router.post(
     body: updateCorporateBalanceSchema,
   }),
   updateBalance
+);
+
+// =======================================================
+// GET RECEIVABLE BY ID
+// =======================================================
+
+router.get(
+  "/:id",
+  authorize(
+    UserRole.ADMIN,
+    UserRole.FRONT_DESK,
+    UserRole.ACCOUNTANT
+  ),
+  validate({
+    params: receivableIdSchema,
+  }),
+  getOne
 );
 
 export default router;

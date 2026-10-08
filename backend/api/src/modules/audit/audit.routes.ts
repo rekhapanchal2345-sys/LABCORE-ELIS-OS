@@ -75,22 +75,6 @@ router.get(
 );
 
 // =======================================================
-// GET AUDIT LOG
-// =======================================================
-
-router.get(
-  "/:id",
-  authorize(
-    UserRole.ADMIN
-  ),
-  validate({
-    params:
-      auditIdSchema,
-  }),
-  getOne
-);
-
-// =======================================================
 // RECORD HISTORY
 // =======================================================
 
@@ -112,6 +96,22 @@ router.get(
     UserRole.ADMIN
   ),
   userActivity
+);
+
+// =======================================================
+// GET AUDIT LOG
+// =======================================================
+
+router.get(
+  "/:id",
+  authorize(
+    UserRole.ADMIN
+  ),
+  validate({
+    params:
+      auditIdSchema,
+  }),
+  getOne
 );
 
 export default router;

@@ -471,6 +471,11 @@ const selectForList: any = {
     select: { id: true, name: true, code: true, organizationType: true },
   },
   createdAt: true,
+  consultationFee: true,
+  licenseNumber: true,
+  licenseExpiry: true,
+  availableDays: true,
+  availableTime: true,
 };
 
 export const getDoctors = async (filters: DoctorListFilters) => {

@@ -73,7 +73,7 @@ const router = Router();
 // emailed link and only carries the token, never a bearer token.
 router.post(
   "/verify/email",
-  validate(verifyPatientEmailSchema),
+  validate({ body: verifyPatientEmailSchema }),
   verifyEmail
 );
 
@@ -98,7 +98,7 @@ const PATIENT_STAFF_ROLES = [
 router.post(
   "/drafts",
   authorize(...PATIENT_STAFF_ROLES),
-  validate(saveDraftSchema),
+  validate({ body: saveDraftSchema }),
   saveDraft
 );
 
@@ -106,7 +106,7 @@ router.post(
 router.get(
   "/drafts",
   authorize(...PATIENT_STAFF_ROLES),
-  validate(draftQuerySchema),
+  validate({ query: draftQuerySchema }),
   listDrafts
 );
 
@@ -128,7 +128,7 @@ router.post(
 router.get(
   "/drafts/:id",
   authorize(...PATIENT_STAFF_ROLES),
-  validate(draftIdSchema),
+  validate({ params: draftIdSchema }),
   getDraft
 );
 
@@ -136,7 +136,7 @@ router.get(
 router.post(
   "/drafts/:id/finalize",
   authorize(...PATIENT_STAFF_ROLES),
-  validate(finalizeDraftSchema),
+  validate({ body: finalizeDraftSchema }),
   completeDraft
 );
 
@@ -144,7 +144,7 @@ router.post(
 router.post(
   "/drafts/:id/duplicate",
   authorize(...PATIENT_STAFF_ROLES),
-  validate(draftIdSchema),
+  validate({ params: draftIdSchema }),
   copyDraft
 );
 
@@ -152,7 +152,7 @@ router.post(
 router.delete(
   "/drafts/:id",
   authorize(...PATIENT_STAFF_ROLES),
-  validate(draftIdSchema),
+  validate({ params: draftIdSchema }),
   removeDraft
 );
 
@@ -164,7 +164,7 @@ router.delete(
 router.post(
   "/",
   authorize(...PATIENT_STAFF_ROLES),
-  validate(createPatientSchema),
+  validate({ body: createPatientSchema }),
   create
 );
 
@@ -172,7 +172,7 @@ router.post(
 router.post(
   "/with-order",
   authorize(...PATIENT_STAFF_ROLES),
-  validate(createPatientWithOrderSchema),
+  validate({ body: createPatientWithOrderSchema }),
   createWithOrder
 );
 
@@ -180,7 +180,7 @@ router.post(
 router.get(
   "/check-duplicate",
   authorize(...PATIENT_STAFF_ROLES),
-  validate(checkDuplicateSchema),
+  validate({ query: checkDuplicateSchema }),
   checkDuplicate
 );
 
@@ -192,7 +192,7 @@ router.get(
 router.get(
   "/analytics/registrations",
   authorize(UserRole.ADMIN),
-  validate(patientAnalyticsSchema),
+  validate({ query: patientAnalyticsSchema }),
   getAnalytics
 );
 
@@ -207,7 +207,7 @@ router.get(
 router.get(
   "/analytics/top-patients",
   authorize(UserRole.ADMIN, UserRole.FRONT_DESK),
-  validate(topPatientsQuerySchema),
+  validate({ query: topPatientsQuerySchema }),
   getTopPatients
 );
 
@@ -219,14 +219,14 @@ router.get(
 // Count Patients - All authenticated users
 router.get(
   "/count",
-  validate(patientCountQuerySchema),
+  validate({ query: patientCountQuerySchema }),
   count
 );
 
 // List Patients - All authenticated users
 router.get(
   "/",
-  validate(patientQuerySchema),
+  validate({ query: patientQuerySchema }),
   list
 );
 
@@ -237,7 +237,7 @@ router.get(
 // Get Patient - All authenticated users
 router.get(
   "/:id",
-  validate(patientIdSchema),
+  validate({ params: patientIdSchema }),
   getOne
 );
 
@@ -245,7 +245,7 @@ router.get(
 router.patch(
   "/:id",
   authorize(...PATIENT_STAFF_ROLES),
-  validate(updatePatientSchema),
+  validate({ body: updatePatientSchema }),
   update
 );
 
@@ -253,7 +253,7 @@ router.patch(
 router.delete(
   "/:id",
   authorize(UserRole.ADMIN),
-  validate(patientIdSchema),
+  validate({ params: patientIdSchema }),
   remove
 );
 
@@ -265,7 +265,7 @@ router.delete(
 router.post(
   "/:id/verify/phone/send",
   authorize(UserRole.ADMIN, UserRole.FRONT_DESK),
-  validate(patientIdSchema),
+  validate({ params: patientIdSchema }),
   sendPhoneOTP
 );
 
@@ -273,7 +273,7 @@ router.post(
 router.post(
   "/:id/verify/phone",
   authorize(UserRole.ADMIN, UserRole.FRONT_DESK),
-  validate(verifyPatientPhoneSchema),
+  validate({ body: verifyPatientPhoneSchema }),
   verifyPhone
 );
 
@@ -281,7 +281,7 @@ router.post(
 router.post(
   "/:id/verify/email/send",
   authorize(UserRole.ADMIN, UserRole.FRONT_DESK),
-  validate(patientIdSchema),
+  validate({ params: patientIdSchema }),
   sendEmailVerificationLink
 );
 
@@ -289,7 +289,7 @@ router.post(
 router.post(
   "/:id/verify/kyc",
   authorize(UserRole.ADMIN),
-  validate(patientIdSchema),
+  validate({ params: patientIdSchema }),
   verifyKYC
 );
 
@@ -300,7 +300,7 @@ router.post(
 // Get family members
 router.get(
   "/:id/family",
-  validate(patientIdSchema),
+  validate({ params: patientIdSchema }),
   getFamily
 );
 
@@ -308,7 +308,7 @@ router.get(
 router.post(
   "/:id/family",
   authorize(UserRole.ADMIN, UserRole.FRONT_DESK),
-  validate(linkFamilySchema),
+  validate({ body: linkFamilySchema }),
   addToFamily
 );
 
@@ -316,7 +316,7 @@ router.post(
 router.delete(
   "/:id/family",
   authorize(UserRole.ADMIN, UserRole.FRONT_DESK),
-  validate(patientIdSchema),
+  validate({ params: patientIdSchema }),
   removeFromFamily
 );
 
@@ -327,7 +327,7 @@ router.delete(
 // Get medical history
 router.get(
   "/:id/history",
-  validate(patientIdSchema),
+  validate({ params: patientIdSchema }),
   getHistory
 );
 
@@ -335,7 +335,7 @@ router.get(
 router.post(
   "/:id/history",
   authorize(UserRole.ADMIN, UserRole.DOCTOR, UserRole.LAB_TECH),
-  validate(medicalHistoryCreateSchema),
+  validate({ body: medicalHistoryCreateSchema }),
   addHistory
 );
 
@@ -343,7 +343,7 @@ router.post(
 router.patch(
   "/:id/history/:historyId",
   authorize(UserRole.ADMIN, UserRole.DOCTOR, UserRole.LAB_TECH),
-  validate(medicalHistoryUpdateSchema),
+  validate({ body: medicalHistoryUpdateSchema }),
   updateHistory
 );
 
@@ -351,7 +351,7 @@ router.patch(
 router.delete(
   "/:id/history/:historyId",
   authorize(UserRole.ADMIN),
-  validate(patientHistoryParamsSchema),
+  validate({ params: patientHistoryParamsSchema }),
   deleteHistory
 );
 
@@ -362,7 +362,7 @@ router.delete(
 // Get patient consents
 router.get(
   "/:id/consents",
-  validate(patientIdSchema),
+  validate({ params: patientIdSchema }),
   getConsents
 );
 
@@ -370,7 +370,7 @@ router.get(
 router.post(
   "/:id/consents",
   authorize(UserRole.ADMIN, UserRole.FRONT_DESK, UserRole.DOCTOR),
-  validate(consentCreateSchema),
+  validate({ body: consentCreateSchema }),
   addConsent
 );
 
@@ -378,7 +378,7 @@ router.post(
 router.delete(
   "/:id/consents/:consentId",
   authorize(UserRole.ADMIN),
-  validate(patientConsentParamsSchema),
+  validate({ params: patientConsentParamsSchema }),
   revokePatientConsent
 );
 

@@ -282,23 +282,23 @@ export default function ReferenceRangesPage() {
       <div className="space-y-6 pb-24">
         {/* Success Toast */}
         {successMessage && (
-          <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl border border-emerald-500/40 bg-emerald-950/90 px-5 py-3 text-xs font-black text-emerald-300 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+          <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-xs font-bold text-emerald-800 shadow-lg animate-in fade-in slide-in-from-top-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             <span>{successMessage}</span>
           </div>
         )}
 
         {/* Master Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/90 pb-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-blue-400 mb-1">
+            <div className="flex items-center gap-2 text-xs font-bold text-blue-600 mb-1">
               <Scale className="h-3.5 w-3.5" />
-              <span>NABL & CAP Biological Normal Limits / Decision Thresholds</span>
+              <span>NABL &amp; CAP Biological Normal Limits / Decision Thresholds</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
               <span>Biological Reference Intervals Matrix</span>
             </h1>
-            <p className="text-xs font-medium text-slate-400 mt-1">
+            <p className="text-xs font-medium text-slate-500 mt-1">
               Configure gender, age-stratified reference ranges, panic critical values, and interpretation guidelines
             </p>
           </div>
@@ -307,7 +307,7 @@ export default function ReferenceRangesPage() {
             <button
               type="button"
               onClick={() => handleOpenAddModal()}
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4.5 py-2.5 text-xs font-black text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-lg shadow-blue-500/25"
+              className="flex items-center gap-2 rounded-xl bg-blue-600 px-4.5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-xs cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>Add Reference Interval</span>
@@ -316,7 +316,7 @@ export default function ReferenceRangesPage() {
         </div>
 
         {/* Search & Filter Bar */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-3 shadow-xl flex flex-col lg:flex-row items-center justify-between gap-3">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-3 shadow-xs flex flex-col lg:flex-row items-center justify-between gap-3">
           <div className="relative w-full lg:w-96">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
@@ -324,7 +324,7 @@ export default function ReferenceRangesPage() {
               placeholder="Search by analyte name, unit, or investigation..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 pl-10 pr-4 py-2 text-xs font-semibold text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50/60 pl-10 pr-4 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
             />
           </div>
 
@@ -332,7 +332,7 @@ export default function ReferenceRangesPage() {
             <select
               value={selectedGender}
               onChange={(e) => setSelectedGender(e.target.value)}
-              className="rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
+              className="rounded-xl border border-slate-300 bg-slate-50/60 px-3.5 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
             >
               <option value="">All Genders</option>
               <option value="MALE">Male Only</option>
@@ -343,11 +343,11 @@ export default function ReferenceRangesPage() {
             <select
               value={selectedTest}
               onChange={(e) => setSelectedTest(e.target.value)}
-              className="rounded-xl border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
+              className="rounded-xl border border-slate-300 bg-slate-50/60 px-3.5 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
             >
               <option value="">All Investigations ({tests.length})</option>
               {tests.map((t) => (
-                <option key={t.id} value={t.id} className="bg-slate-900">
+                <option key={t.id} value={t.id}>
                   {t.testCode || t.code} - {t.testName || t.name}
                 </option>
               ))}
@@ -356,36 +356,36 @@ export default function ReferenceRangesPage() {
         </div>
 
         {error && (
-          <div className="rounded-2xl bg-rose-950/60 border border-rose-500/40 p-4 text-xs font-bold text-rose-300">
+          <div className="rounded-2xl bg-rose-50 border border-rose-300 p-4 text-xs font-bold text-rose-800 shadow-xs">
             {error}
           </div>
         )}
 
-        {/* Intervals Table View */}
+        {/* Intervals Table View (LIGHT WHITE) */}
         {loading ? (
           <div className="py-20 text-center space-y-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-3 border-blue-500 border-t-transparent mx-auto" />
-            <div className="text-xs font-bold text-slate-400">Loading Biological Intervals...</div>
+            <div className="h-8 w-8 animate-spin rounded-full border-3 border-blue-600 border-t-transparent mx-auto" />
+            <div className="text-xs font-bold text-slate-500">Loading Biological Intervals...</div>
           </div>
         ) : filteredRanges.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-800 bg-slate-900/40 p-12 text-center space-y-4">
-            <Scale className="h-10 w-10 text-slate-600 mx-auto" />
-            <h3 className="text-base font-black text-white">No reference intervals configured</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center space-y-4 shadow-xs">
+            <Scale className="h-10 w-10 text-slate-400 mx-auto" />
+            <h3 className="text-base font-black text-slate-900">No reference intervals configured</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
               Configure physiological reference ranges (Male, Female, Pediatric, Geriatric) with panic critical thresholds.
             </p>
             <button
               onClick={() => handleOpenAddModal()}
-              className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-xs font-bold text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-lg shadow-blue-500/25"
+              className="rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-xs cursor-pointer"
             >
               + Add First Interval
             </button>
           </div>
         ) : (
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/70 backdrop-blur-xl overflow-hidden shadow-2xl">
+          <div className="rounded-2xl border border-slate-200/90 bg-white overflow-hidden shadow-xs">
             <div className="overflow-x-auto">
               <table className="w-full text-left">
-                <thead className="bg-slate-950/90 border-b border-slate-800 text-[11px] font-black uppercase tracking-wider text-slate-400">
+                <thead className="bg-slate-50 border-b border-slate-200 text-[11px] font-black uppercase tracking-wider text-slate-600">
                   <tr>
                     <th className="px-4 py-3.5">Analyte Parameter</th>
                     <th className="px-4 py-3.5">Investigation</th>
@@ -395,64 +395,64 @@ export default function ReferenceRangesPage() {
                     <th className="px-4 py-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-800/60 text-xs font-medium text-slate-300">
+                <tbody className="divide-y divide-slate-100 text-xs font-medium text-slate-700">
                   {filteredRanges.map((range) => {
                     const hasCritical = range.criticalLow !== undefined || range.criticalHigh !== undefined;
 
                     return (
-                      <tr key={range.id} className="hover:bg-slate-800/40 transition">
+                      <tr key={range.id} className="hover:bg-slate-50/80 transition">
                         <td className="px-4 py-3.5">
-                          <span className="font-bold text-white">
+                          <span className="font-bold text-slate-900">
                             {range.parameter?.parameterName || "Parameter"}
                           </span>
-                          <span className="ml-2 font-mono text-[10px] text-blue-400 bg-blue-950/60 px-1.5 py-0.5 rounded border border-blue-800/40">
+                          <span className="ml-2 font-mono text-[10px] text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200 font-bold">
                             {range.parameter?.unit || "—"}
                           </span>
                         </td>
 
-                        <td className="px-4 py-3.5 text-slate-300">
+                        <td className="px-4 py-3.5 text-slate-600">
                           {range.parameter?.test?.testName || "—"}
                         </td>
 
                         <td className="px-4 py-3.5">
                           <div className="flex items-center gap-2">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-black ${
+                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-black border ${
                               range.gender === "MALE"
-                                ? "bg-blue-500/10 text-blue-400 border border-blue-500/30"
+                                ? "bg-blue-50 text-blue-700 border-blue-200"
                                 : range.gender === "FEMALE"
-                                ? "bg-pink-500/10 text-pink-400 border border-pink-500/30"
-                                : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                                ? "bg-pink-50 text-pink-700 border-pink-200"
+                                : "bg-emerald-50 text-emerald-700 border-emerald-200"
                             }`}>
                               {range.gender}
                             </span>
-                            <span className="text-[11px] text-slate-400">
+                            <span className="text-[11px] text-slate-500 font-medium">
                               {range.minAge ?? 0} - {range.maxAge ?? 100} {range.minAgeUnit || "YEARS"}
                             </span>
                           </div>
                         </td>
 
-                        <td className="px-4 py-3.5 font-bold text-emerald-400 font-mono">
+                        <td className="px-4 py-3.5 font-bold text-emerald-700 font-mono">
                           {range.normalLow !== undefined && range.normalHigh !== undefined
                             ? `${range.normalLow} - ${range.normalHigh} ${range.parameter?.unit || ""}`
-                            : range.normalValueText || "Qualitative"}
+                            : range.normalValueText || "Qualitative Impression"}
                         </td>
 
                         <td className="px-4 py-3.5">
                           {hasCritical ? (
                             <div className="space-y-0.5">
                               {range.criticalLow !== undefined && (
-                                <span className="inline-flex items-center gap-1 rounded bg-rose-950/80 px-2 py-0.5 text-[10px] font-bold text-rose-400 border border-rose-800/40 mr-1">
+                                <span className="inline-flex items-center gap-1 rounded bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200 mr-1">
                                   <span>&lt; {range.criticalLow}</span>
                                 </span>
                               )}
                               {range.criticalHigh !== undefined && (
-                                <span className="inline-flex items-center gap-1 rounded bg-rose-950/80 px-2 py-0.5 text-[10px] font-bold text-rose-400 border border-rose-800/40">
+                                <span className="inline-flex items-center gap-1 rounded bg-rose-50 px-2 py-0.5 text-[10px] font-bold text-rose-700 border border-rose-200">
                                   <span>&gt; {range.criticalHigh}</span>
                                 </span>
                               )}
                             </div>
                           ) : (
-                            <span className="text-slate-500 text-[11px]">None</span>
+                            <span className="text-slate-400 text-[11px]">None</span>
                           )}
                         </td>
 
@@ -461,7 +461,7 @@ export default function ReferenceRangesPage() {
                             <button
                               type="button"
                               onClick={() => handleEditRange(range)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition"
+                              className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer"
                               title="Edit Range"
                             >
                               <Edit className="h-3.5 w-3.5" />
@@ -469,7 +469,7 @@ export default function ReferenceRangesPage() {
                             <button
                               type="button"
                               onClick={() => handleDeleteRange(range.id)}
-                              className="p-1.5 rounded-lg text-slate-400 hover:bg-rose-950/50 hover:text-rose-400 transition"
+                              className="p-1.5 rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-700 transition cursor-pointer"
                               title="Delete Range"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
@@ -485,20 +485,20 @@ export default function ReferenceRangesPage() {
           </div>
         )}
 
-        {/* MODAL: ADD / EDIT REFERENCE RANGE */}
+        {/* MODAL: ADD / EDIT REFERENCE RANGE (LIGHT WHITE) */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md animate-in fade-in">
-            <div className="relative w-full max-w-2xl rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs animate-in fade-in">
+            <div className="relative w-full max-w-2xl rounded-3xl border border-slate-200/90 bg-white p-6 shadow-2xl space-y-5 max-h-[90vh] overflow-y-auto">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="p-2 rounded-xl bg-blue-600/20 text-blue-400">
+                  <span className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
                     <Scale className="h-5 w-5" />
                   </span>
                   <div>
-                    <h2 className="text-base font-black text-white">
+                    <h2 className="text-base font-black text-slate-900">
                       {editingRange ? "Edit Biological Reference Range" : "Add Biological Reference Interval"}
                     </h2>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-slate-500">
                       Configure gender, age thresholds, and panic alert triggers
                     </p>
                   </div>
@@ -507,7 +507,7 @@ export default function ReferenceRangesPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition"
+                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -517,7 +517,7 @@ export default function ReferenceRangesPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {/* Parent Test */}
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                       Investigation
                     </label>
                     <select
@@ -528,11 +528,11 @@ export default function ReferenceRangesPage() {
                         const firstP = tObj?.parameters?.[0]?.id || "";
                         setFormData({ ...formData, testId: newTestId, parameterId: firstP });
                       }}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     >
                       <option value="">Select Investigation</option>
                       {tests.map((t) => (
-                        <option key={t.id} value={t.id} className="bg-slate-900">
+                        <option key={t.id} value={t.id}>
                           {t.testCode || t.code} - {t.testName || t.name}
                         </option>
                       ))}
@@ -541,18 +541,18 @@ export default function ReferenceRangesPage() {
 
                   {/* Target Parameter */}
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
-                      Analyte Parameter <span className="text-rose-400">*</span>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                      Analyte Parameter <span className="text-rose-600">*</span>
                     </label>
                     <select
                       required
                       value={formData.parameterId}
                       onChange={(e) => setFormData({ ...formData, parameterId: e.target.value })}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     >
                       <option value="">Select Parameter</option>
                       {activeTestParameters.map((p: any) => (
-                        <option key={p.id} value={p.id} className="bg-slate-900">
+                        <option key={p.id} value={p.id}>
                           {p.parameterName} ({p.unit || "—"})
                         </option>
                       ))}
@@ -563,125 +563,162 @@ export default function ReferenceRangesPage() {
                 {/* Gender & Demographic */}
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                       Gender Demographic
                     </label>
                     <select
                       value={formData.gender}
                       onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     >
-                      <option value="MALE" className="bg-slate-900">Male Only</option>
-                      <option value="FEMALE" className="bg-slate-900">Female Only</option>
-                      <option value="BOTH" className="bg-slate-900">Universal (Both)</option>
+                      <option value="MALE">Male Only</option>
+                      <option value="FEMALE">Female Only</option>
+                      <option value="BOTH">Universal (Both)</option>
                     </select>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                       Min Age ({formData.minAgeUnit})
                     </label>
                     <input
                       type="number"
                       value={formData.minAge}
                       onChange={(e) => setFormData({ ...formData, minAge: parseInt(e.target.value) || 0 })}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
 
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                       Max Age ({formData.maxAgeUnit})
                     </label>
                     <input
                       type="number"
                       value={formData.maxAge}
                       onChange={(e) => setFormData({ ...formData, maxAge: parseInt(e.target.value) || 120 })}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs font-bold text-white focus:border-blue-500"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
                 </div>
 
-                {/* Normal Bounds */}
-                <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 space-y-3">
-                  <span className="text-xs font-black uppercase tracking-wider text-emerald-400 block">
-                    Normal Reference Bounds
+                {/* Age Group Presets */}
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-600 mb-1.5">
+                    Quick Age Presets:
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {AGE_GROUP_PRESETS.map((preset) => (
+                      <button
+                        type="button"
+                        key={preset.label}
+                        onClick={() =>
+                          setFormData({
+                            ...formData,
+                            minAge: preset.minAge,
+                            maxAge: preset.maxAge,
+                            minAgeUnit: preset.unit,
+                            maxAgeUnit: preset.unit,
+                          })
+                        }
+                        className="rounded-lg border border-slate-200 bg-slate-50 px-2.5 py-1 text-[10px] font-bold text-slate-700 hover:border-blue-300 hover:bg-blue-50 transition cursor-pointer"
+                      >
+                        {preset.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Physiological Normal Range */}
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-emerald-800 block">
+                    Normative Physiological Range
                   </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold text-emerald-400 mb-1">
-                        Normal Low Value
-                      </label>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-1">Normal Low</label>
                       <input
                         type="number"
                         step="any"
+                        placeholder="e.g. 13.5"
                         value={formData.normalLow}
                         onChange={(e) => setFormData({ ...formData, normalLow: e.target.value })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-900"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-emerald-400 mb-1">
-                        Normal High Value
-                      </label>
+                      <label className="block text-[10px] font-bold text-slate-600 mb-1">Normal High</label>
                       <input
                         type="number"
                         step="any"
+                        placeholder="e.g. 17.5"
                         value={formData.normalHigh}
                         onChange={(e) => setFormData({ ...formData, normalHigh: e.target.value })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white"
+                        className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2 text-xs font-bold text-slate-900"
                       />
                     </div>
                   </div>
                 </div>
 
-                {/* Panic Bounds */}
-                <div className="rounded-2xl border border-rose-500/30 bg-rose-950/20 p-4 space-y-3">
-                  <span className="text-xs font-black uppercase tracking-wider text-rose-400 block">
-                    Panic Critical Value Alert Triggers
+                {/* Critical Panic Thresholds */}
+                <div className="rounded-2xl border border-rose-200 bg-rose-50/50 p-4 space-y-2">
+                  <span className="text-xs font-black uppercase tracking-wider text-rose-800 block">
+                    Critical Panic Thresholds (Emergency Callout)
                   </span>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-[10px] font-bold text-rose-300 mb-1">
-                        Critical Panic Low (Doctor Immediate Alert)
-                      </label>
+                      <label className="block text-[10px] font-bold text-rose-800 mb-1">Panic Low (&lt;)</label>
                       <input
                         type="number"
                         step="any"
+                        placeholder="e.g. 7.0"
                         value={formData.criticalLow}
                         onChange={(e) => setFormData({ ...formData, criticalLow: e.target.value })}
-                        className="w-full rounded-xl border border-rose-500/30 bg-slate-900 px-3 py-2 text-xs font-bold text-rose-300 placeholder-rose-700"
+                        className="w-full rounded-xl border border-rose-300 bg-white px-3 py-2 text-xs font-bold text-rose-900 placeholder-rose-400"
                       />
                     </div>
                     <div>
-                      <label className="block text-[10px] font-bold text-rose-300 mb-1">
-                        Critical Panic High (Doctor Immediate Alert)
-                      </label>
+                      <label className="block text-[10px] font-bold text-rose-800 mb-1">Panic High (&gt;)</label>
                       <input
                         type="number"
                         step="any"
+                        placeholder="e.g. 20.0"
                         value={formData.criticalHigh}
                         onChange={(e) => setFormData({ ...formData, criticalHigh: e.target.value })}
-                        className="w-full rounded-xl border border-rose-500/30 bg-slate-900 px-3 py-2 text-xs font-bold text-rose-300 placeholder-rose-700"
+                        className="w-full rounded-xl border border-rose-300 bg-white px-3 py-2 text-xs font-bold text-rose-900 placeholder-rose-400"
                       />
                     </div>
                   </div>
                 </div>
 
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                {/* Interpretation */}
+                <div>
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                    Clinical Interpretation Note
+                  </label>
+                  <textarea
+                    rows={2}
+                    value={formData.interpretation}
+                    onChange={(e) => setFormData({ ...formData, interpretation: e.target.value })}
+                    placeholder="Medical interpretation guidelines, diagnostic flags, clinical notes..."
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="rounded-xl border border-slate-700 bg-slate-800 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-700"
+                    className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-xs font-black text-white hover:from-blue-500 hover:to-indigo-500 shadow-lg shadow-blue-500/25 disabled:opacity-50"
+                    className="rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-xs disabled:opacity-50 cursor-pointer"
                   >
-                    {saving ? "Saving..." : editingRange ? "Update Interval" : "Add Interval"}
+                    {saving ? "Saving..." : editingRange ? "Update Interval" : "Save Interval"}
                   </button>
                 </div>
               </form>

@@ -49,7 +49,7 @@ const STANDARD_DEPARTMENTS = [
     code: "HEMA",
     department: "Hematology",
     description: "Complete blood count, coagulation profiles, hemoglobinopathies, ESR, and bone marrow cytology.",
-    color: "#8B5CF6",
+    color: "#7c3aed",
     icon: "🩸",
   },
   {
@@ -57,7 +57,7 @@ const STANDARD_DEPARTMENTS = [
     code: "BIO",
     department: "Biochemistry",
     description: "Metabolic panels, liver/kidney function, cardiac enzymes, lipid profiles, therapeutic drug monitoring, and electrolytes.",
-    color: "#3B82F6",
+    color: "#2563eb",
     icon: "🧪",
   },
   {
@@ -65,7 +65,7 @@ const STANDARD_DEPARTMENTS = [
     code: "MICRO",
     department: "Microbiology",
     description: "Aerobic/anaerobic cultures, antibiotic susceptibility testing (AST), fungal stains, mycobacteriology, and parasitology.",
-    color: "#10B981",
+    color: "#059669",
     icon: "🧫",
   },
   {
@@ -73,7 +73,7 @@ const STANDARD_DEPARTMENTS = [
     code: "IMMUNO",
     department: "Immunology",
     description: "Autoimmune disease screening, infectious disease serology, viral hepatitis (HBV/HCV/HIV), and syphilis VDRL.",
-    color: "#EC4899",
+    color: "#db2777",
     icon: "🧬",
   },
   {
@@ -81,7 +81,7 @@ const STANDARD_DEPARTMENTS = [
     code: "ENDO",
     department: "Endocrinology",
     description: "Thyroid hormones (TSH/FT3/FT4), reproductive fertility panels, cortisol, vitamin D/B12 assays, and oncology tumor markers.",
-    color: "#F59E0B",
+    color: "#d97706",
     icon: "🔬",
   },
   {
@@ -89,7 +89,7 @@ const STANDARD_DEPARTMENTS = [
     code: "CPATH",
     department: "Clinical Pathology",
     description: "Automated routine urine microscopy, 24-hr urine chemistry, body fluid examinations, semen analysis, and stool routine.",
-    color: "#14B8A6",
+    color: "#0d9488",
     icon: "🟡",
   },
   {
@@ -97,37 +97,38 @@ const STANDARD_DEPARTMENTS = [
     code: "HISTO",
     department: "Histopathology",
     description: "Biopsy tissue processing, surgical pathology, frozen sections, FNAC, and cervical Liquid-Based Cytology (Pap smears).",
-    color: "#EF4444",
-    icon: "🩻",
+    color: "#e11d48",
+    icon: "🧫",
   },
   {
-    name: "Molecular Diagnostics & Genetics / PCR",
+    name: "Molecular Diagnostics & Genetics",
     code: "MOL",
-    department: "Molecular",
-    description: "Real-time RT-PCR viral load assays, genetic mutation profiling, HLA typing, and oncology NGS panels.",
-    color: "#6366F1",
-    icon: "⚡",
+    department: "Molecular Biology",
+    description: "Real-time PCR, viral loads (HIV/HCV RNA), COVID-19 RT-PCR, HLA typing, and genetic mutation screens.",
+    color: "#4f46e5",
+    icon: "🧬",
   },
 ];
 
 const COLOR_OPTIONS = [
-  { value: "#3B82F6", label: "Sapphire Blue", bg: "bg-blue-500", glow: "shadow-blue-500/30" },
-  { value: "#8B5CF6", label: "Purple Lavender", bg: "bg-purple-500", glow: "shadow-purple-500/30" },
-  { value: "#10B981", label: "Emerald Green", bg: "bg-emerald-500", glow: "shadow-emerald-500/30" },
-  { value: "#F59E0B", label: "Amber Gold", bg: "bg-amber-500", glow: "shadow-amber-500/30" },
-  { value: "#EF4444", label: "Crimson Red", bg: "bg-red-500", glow: "shadow-red-500/30" },
-  { value: "#EC4899", label: "Rose Pink", bg: "bg-pink-500", glow: "shadow-pink-500/30" },
-  { value: "#6366F1", label: "Indigo", bg: "bg-indigo-500", glow: "shadow-indigo-500/30" },
-  { value: "#14B8A6", label: "Cyan Teal", bg: "bg-teal-500", glow: "shadow-teal-500/30" },
+  { label: "Purple", value: "#7c3aed" },
+  { label: "Blue", value: "#2563eb" },
+  { label: "Emerald", value: "#059669" },
+  { label: "Pink", value: "#db2777" },
+  { label: "Amber", value: "#d97706" },
+  { label: "Teal", value: "#0d9488" },
+  { label: "Rose", value: "#e11d48" },
+  { label: "Indigo", value: "#4f46e5" },
 ];
 
-const ICON_PRESETS = ["🩸", "🧪", "🧫", "🧬", "🔬", "🟡", "🩻", "⚡", "💊", "🏥", "💡", "🩺"];
+const ICON_PRESETS = ["🩸", "🧪", "🧫", "🧬", "🔬", "🟡", "❤️", "⚡"];
 
 export default function TestCategoriesPage() {
   const [categories, setCategories] = useState<TestCategory[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
   const [searchTerm, setSearchTerm] = useState("");
   const [filterStatus, setFilterStatus] = useState<"ALL" | "ACTIVE" | "INACTIVE">("ALL");
 
@@ -136,12 +137,13 @@ export default function TestCategoriesPage() {
   const [saving, setSaving] = useState(false);
   const [seeding, setSeeding] = useState(false);
 
+  // Form state
   const [formData, setFormData] = useState({
-    name: "",
     code: "",
-    description: "",
+    name: "",
     department: "",
-    color: "#3B82F6",
+    description: "",
+    color: "#2563eb",
     icon: "🧪",
     displayOrder: 0,
     isActive: true,
@@ -158,9 +160,12 @@ export default function TestCategoriesPage() {
       const response = await testApi.getCategories();
       if (response.success && response.data) {
         setCategories(response.data);
+      } else {
+        setError(response.message || "Failed to fetch categories");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to fetch departments");
+      console.error("Error fetching categories:", err);
+      setError(err instanceof Error ? err.message : "Failed to fetch categories");
     } finally {
       setLoading(false);
     }
@@ -168,17 +173,17 @@ export default function TestCategoriesPage() {
 
   const showNotification = (msg: string) => {
     setSuccessMessage(msg);
-    setTimeout(() => setSuccessMessage(null), 3500);
+    setTimeout(() => setSuccessMessage(null), 4000);
   };
 
   const handleAddCategory = () => {
     setEditingCategory(null);
     setFormData({
-      name: "",
       code: "",
-      description: "",
+      name: "",
       department: "",
-      color: "#3B82F6",
+      description: "",
+      color: "#2563eb",
       icon: "🧪",
       displayOrder: categories.length + 1,
       isActive: true,
@@ -186,17 +191,17 @@ export default function TestCategoriesPage() {
     setShowModal(true);
   };
 
-  const handleEditCategory = (category: TestCategory) => {
-    setEditingCategory(category);
+  const handleEditCategory = (cat: TestCategory) => {
+    setEditingCategory(cat);
     setFormData({
-      name: category.name,
-      code: category.code,
-      description: category.description || "",
-      department: category.department || "",
-      color: category.color || "#3B82F6",
-      icon: category.icon || "🧪",
-      displayOrder: category.displayOrder || 0,
-      isActive: category.isActive,
+      code: cat.code,
+      name: cat.name,
+      department: cat.department || "",
+      description: cat.description || "",
+      color: cat.color || "#2563eb",
+      icon: cat.icon || "🧪",
+      displayOrder: cat.displayOrder || 0,
+      isActive: cat.isActive,
     });
     setShowModal(true);
   };
@@ -300,19 +305,15 @@ export default function TestCategoriesPage() {
     const matchesSearch =
       cat.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       cat.code.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      (cat.department && cat.department.toLowerCase().includes(searchTerm.toLowerCase()));
+      (cat.department && cat.department.toLowerCase().includes(searchTerm.toLowerCase())) ||
+      (cat.description && cat.description.toLowerCase().includes(searchTerm.toLowerCase()));
 
     const matchesStatus =
-      filterStatus === "ALL"
-        ? true
-        : filterStatus === "ACTIVE"
-        ? cat.isActive
-        : !cat.isActive;
+      filterStatus === "ALL" ? true : filterStatus === "ACTIVE" ? cat.isActive : !cat.isActive;
 
     return matchesSearch && matchesStatus;
   });
 
-  // Department KPIs
   const totalCount = categories.length;
   const activeCount = categories.filter((c) => c.isActive).length;
   const totalTestsMapped = categories.reduce((acc, c) => acc + (c.tests?.length || c._count?.tests || 0), 0);
@@ -322,23 +323,23 @@ export default function TestCategoriesPage() {
       <div className="space-y-6 pb-20">
         {/* Floating Success Notification */}
         {successMessage && (
-          <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl border border-emerald-500/40 bg-emerald-950/90 px-5 py-3 text-xs font-black text-emerald-300 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+          <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-xs font-bold text-emerald-800 shadow-lg animate-in fade-in slide-in-from-top-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             <span>{successMessage}</span>
           </div>
         )}
 
         {/* Master Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/90 pb-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-blue-400 mb-1">
+            <div className="flex items-center gap-2 text-xs font-bold text-blue-600 mb-1">
               <FolderTree className="h-3.5 w-3.5" />
               <span>Laboratory Structure / Clinical Taxonomy</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
               <span>Pathology Departments & Disciplines</span>
             </h1>
-            <p className="text-xs font-medium text-slate-400 mt-1">
+            <p className="text-xs font-medium text-slate-500 mt-1">
               Organize tests into specialized clinical divisions with analyzer routing, department turnaround SLAs, and NABL oversight
             </p>
           </div>
@@ -347,15 +348,15 @@ export default function TestCategoriesPage() {
             <button
               onClick={handleSeedStandardDepartments}
               disabled={seeding}
-              className="flex items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-950/40 px-4 py-2.5 text-xs font-bold text-indigo-300 hover:bg-indigo-900/60 hover:text-white transition shadow-lg shadow-indigo-500/10 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition shadow-xs disabled:opacity-50 cursor-pointer"
             >
-              <Sparkles className="h-4 w-4 text-indigo-400" />
+              <Sparkles className="h-4 w-4 text-indigo-600" />
               <span>{seeding ? "Generating..." : "Generate 8 Standard Departments"}</span>
             </button>
 
             <button
               onClick={handleAddCategory}
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4.5 py-2.5 text-xs font-black text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-lg shadow-blue-500/25"
+              className="flex items-center gap-2 rounded-xl bg-blue-600 px-4.5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-xs cursor-pointer"
             >
               <Plus className="h-4 w-4" />
               <span>Add Department</span>
@@ -365,45 +366,45 @@ export default function TestCategoriesPage() {
 
         {/* Clinical KPI Cards Strip */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 backdrop-blur-xl shadow-xl">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-xs">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-semibold mb-1">
               <span>Total Departments</span>
-              <Building2 className="h-4 w-4 text-blue-400" />
+              <Building2 className="h-4 w-4 text-blue-600" />
             </div>
-            <div className="text-2xl font-black text-white">{totalCount}</div>
-            <div className="text-[11px] font-semibold text-slate-400 mt-0.5">Clinical sections</div>
+            <div className="text-2xl font-black text-slate-900">{totalCount}</div>
+            <div className="text-[11px] font-semibold text-slate-500 mt-0.5">Clinical sections</div>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 backdrop-blur-xl shadow-xl">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-xs">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-semibold mb-1">
               <span>Active Disciplines</span>
-              <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             </div>
-            <div className="text-2xl font-black text-emerald-400">{activeCount}</div>
-            <div className="text-[11px] font-semibold text-slate-400 mt-0.5">Operational in routing</div>
+            <div className="text-2xl font-black text-emerald-700">{activeCount}</div>
+            <div className="text-[11px] font-semibold text-slate-500 mt-0.5">Operational in routing</div>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 backdrop-blur-xl shadow-xl">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-xs">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-semibold mb-1">
               <span>Mapped Investigations</span>
-              <FlaskConical className="h-4 w-4 text-purple-400" />
+              <FlaskConical className="h-4 w-4 text-purple-600" />
             </div>
-            <div className="text-2xl font-black text-purple-400">{totalTestsMapped}</div>
-            <div className="text-[11px] font-semibold text-slate-400 mt-0.5">Tests assigned</div>
+            <div className="text-2xl font-black text-purple-700">{totalTestsMapped}</div>
+            <div className="text-[11px] font-semibold text-slate-500 mt-0.5">Tests assigned</div>
           </div>
 
-          <div className="rounded-2xl border border-slate-800 bg-slate-900/60 p-4 backdrop-blur-xl shadow-xl">
-            <div className="flex items-center justify-between text-slate-400 text-xs font-semibold mb-1">
+          <div className="rounded-2xl border border-slate-200/90 bg-white p-4.5 shadow-xs">
+            <div className="flex items-center justify-between text-slate-500 text-xs font-semibold mb-1">
               <span>NABL Quality Standard</span>
-              <ShieldCheck className="h-4 w-4 text-amber-400" />
+              <ShieldCheck className="h-4 w-4 text-amber-600" />
             </div>
-            <div className="text-2xl font-black text-amber-400">ISO 15189</div>
-            <div className="text-[11px] font-semibold text-slate-400 mt-0.5">Compliant routing</div>
+            <div className="text-2xl font-black text-amber-700">ISO 15189</div>
+            <div className="text-[11px] font-semibold text-slate-500 mt-0.5">Compliant routing</div>
           </div>
         </div>
 
         {/* Filter & Search Bar */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-3 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-3 shadow-xs flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="relative w-full sm:w-96">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
@@ -411,7 +412,7 @@ export default function TestCategoriesPage() {
               placeholder="Search by department name, code, or discipline..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 pl-10 pr-4 py-2 text-xs font-semibold text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50/60 pl-10 pr-4 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
             />
           </div>
 
@@ -421,10 +422,10 @@ export default function TestCategoriesPage() {
                 key={status}
                 type="button"
                 onClick={() => setFilterStatus(status)}
-                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition ${
+                className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition cursor-pointer ${
                   filterStatus === status
-                    ? "bg-blue-600 text-white shadow-md shadow-blue-500/20"
-                    : "bg-slate-900 text-slate-400 hover:text-white"
+                    ? "bg-blue-600 text-white shadow-xs"
+                    : "bg-slate-100 text-slate-600 hover:bg-slate-200"
                 }`}
               >
                 {status === "ALL" ? "All Sections" : status === "ACTIVE" ? "Active Only" : "Inactive"}
@@ -434,7 +435,7 @@ export default function TestCategoriesPage() {
         </div>
 
         {error && (
-          <div className="rounded-2xl bg-rose-950/60 border border-rose-500/40 p-4 text-xs font-bold text-rose-300">
+          <div className="rounded-2xl bg-rose-50 border border-rose-300 p-4 text-xs font-bold text-rose-800 shadow-xs">
             {error}
           </div>
         )}
@@ -442,19 +443,19 @@ export default function TestCategoriesPage() {
         {/* Department Cards Grid */}
         {loading ? (
           <div className="py-20 text-center space-y-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-3 border-blue-500 border-t-transparent mx-auto" />
-            <div className="text-xs font-bold text-slate-400">Loading Clinical Departments...</div>
+            <div className="h-8 w-8 animate-spin rounded-full border-3 border-blue-600 border-t-transparent mx-auto" />
+            <div className="text-xs font-bold text-slate-500">Loading Clinical Departments...</div>
           </div>
         ) : filteredCategories.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-800 bg-slate-900/40 p-12 text-center space-y-4">
+          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center space-y-4 shadow-xs">
             <span className="text-4xl">🏥</span>
-            <h3 className="text-base font-black text-white">No laboratory departments match your search</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+            <h3 className="text-base font-black text-slate-900">No laboratory departments match your search</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
               Click the button below to generate standard pathology departments or add a custom department.
             </p>
             <button
               onClick={handleSeedStandardDepartments}
-              className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-xs font-bold text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-lg shadow-blue-500/25"
+              className="rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-xs cursor-pointer"
             >
               ⚡ Generate Standard Hospital Departments
             </button>
@@ -462,22 +463,22 @@ export default function TestCategoriesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
             {filteredCategories.map((cat) => {
-              const deptColor = cat.color || "#3B82F6";
+              const deptColor = cat.color || "#2563eb";
               const testsCount = cat.tests?.length || cat._count?.tests || 0;
 
               return (
                 <div
                   key={cat.id}
-                  className={`group relative rounded-2xl border transition-all duration-200 overflow-hidden backdrop-blur-xl ${
+                  className={`group relative rounded-2xl border transition-all duration-200 overflow-hidden bg-white shadow-xs ${
                     cat.isActive
-                      ? "border-slate-800 bg-slate-900/70 hover:border-slate-700 hover:shadow-2xl hover:shadow-blue-500/5"
-                      : "border-slate-800/50 bg-slate-950/40 opacity-70"
+                      ? "border-slate-200/90 hover:border-slate-300 hover:shadow-md"
+                      : "border-slate-200/60 opacity-70"
                   }`}
                 >
                   {/* Top Glowing Color Stripe */}
                   <div
                     className="h-1.5 w-full transition-all group-hover:h-2"
-                    style={{ backgroundColor: deptColor, boxShadow: `0 0 12px ${deptColor}88` }}
+                    style={{ backgroundColor: deptColor }}
                   />
 
                   <div className="p-5 space-y-4">
@@ -485,14 +486,13 @@ export default function TestCategoriesPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div className="flex items-center gap-3">
                         <span
-                          className="flex h-11 w-11 items-center justify-center rounded-2xl text-xl shadow-lg border border-white/10"
-                          style={{ backgroundColor: `${deptColor}25` }}
+                          className="flex h-11 w-11 items-center justify-center rounded-2xl text-xl shadow-xs border border-slate-200/80 bg-slate-50"
                         >
                           {cat.icon || "🧪"}
                         </span>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-mono font-black text-slate-400">
+                            <span className="text-xs font-mono font-black text-slate-500">
                               {cat.code}
                             </span>
                             <span
@@ -500,7 +500,7 @@ export default function TestCategoriesPage() {
                               style={{ backgroundColor: deptColor }}
                             />
                           </div>
-                          <h3 className="text-base font-black text-white leading-tight mt-0.5">
+                          <h3 className="text-base font-black text-slate-900 leading-tight mt-0.5">
                             {cat.name}
                           </h3>
                         </div>
@@ -510,10 +510,10 @@ export default function TestCategoriesPage() {
                       <button
                         type="button"
                         onClick={() => handleToggleStatus(cat)}
-                        className={`px-2.5 py-1 rounded-full text-[10px] font-black border transition ${
+                        className={`px-2.5 py-1 rounded-full text-[10px] font-black border transition cursor-pointer ${
                           cat.isActive
-                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400 hover:bg-emerald-500/20"
-                            : "bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700"
+                            ? "bg-emerald-50 border-emerald-300 text-emerald-800 hover:bg-emerald-100"
+                            : "bg-slate-100 border-slate-300 text-slate-600 hover:bg-slate-200"
                         }`}
                         title="Click to toggle status"
                       >
@@ -522,32 +522,32 @@ export default function TestCategoriesPage() {
                     </div>
 
                     {/* Description */}
-                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed min-h-[36px]">
+                    <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed min-h-[36px]">
                       {cat.description || "Specialized clinical pathology department with automated analyzer routing."}
                     </p>
 
                     {/* Sub-metrics */}
-                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-800/80">
-                      <div className="rounded-xl bg-slate-950/60 p-2.5 border border-slate-800/60">
-                        <span className="text-[10px] font-bold text-slate-400 block">Discipline</span>
-                        <span className="text-xs font-bold text-white truncate block mt-0.5">
+                    <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
+                      <div className="rounded-xl bg-slate-50 p-2.5 border border-slate-100">
+                        <span className="text-[10px] font-bold text-slate-500 block">Discipline</span>
+                        <span className="text-xs font-bold text-slate-900 truncate block mt-0.5">
                           {cat.department || "General Lab"}
                         </span>
                       </div>
 
-                      <div className="rounded-xl bg-slate-950/60 p-2.5 border border-slate-800/60">
-                        <span className="text-[10px] font-bold text-slate-400 block">Active Tests</span>
-                        <span className="text-xs font-black text-blue-400 block mt-0.5">
+                      <div className="rounded-xl bg-blue-50/60 p-2.5 border border-blue-100">
+                        <span className="text-[10px] font-bold text-blue-700 block">Active Tests</span>
+                        <span className="text-xs font-black text-blue-900 block mt-0.5">
                           {testsCount} Investigations
                         </span>
                       </div>
                     </div>
 
                     {/* Card Actions */}
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-800/80">
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100">
                       <Link
                         href={`/tests/new?categoryId=${cat.id}`}
-                        className="flex items-center gap-1 text-[11px] font-bold text-blue-400 hover:text-blue-300 transition"
+                        className="flex items-center gap-1 text-[11px] font-bold text-blue-600 hover:text-blue-800 transition"
                       >
                         <span>+ Add Test</span>
                         <ChevronRight className="h-3 w-3" />
@@ -557,7 +557,7 @@ export default function TestCategoriesPage() {
                         <button
                           type="button"
                           onClick={() => handleEditCategory(cat)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition"
+                          className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100 hover:text-slate-900 transition cursor-pointer"
                           title="Edit Department"
                         >
                           <Edit className="h-3.5 w-3.5" />
@@ -565,7 +565,7 @@ export default function TestCategoriesPage() {
                         <button
                           type="button"
                           onClick={() => handleDeleteCategory(cat.id, cat.name)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:bg-rose-950/50 hover:text-rose-400 transition"
+                          className="p-1.5 rounded-lg text-slate-500 hover:bg-rose-50 hover:text-rose-700 transition cursor-pointer"
                           title="Delete Department"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -579,21 +579,21 @@ export default function TestCategoriesPage() {
           </div>
         )}
 
-        {/* MODAL: ADD / EDIT DEPARTMENT */}
+        {/* MODAL: ADD / EDIT DEPARTMENT (LIGHT WHITE) */}
         {showModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md animate-in fade-in">
-            <div className="relative w-full max-w-xl rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-2xl space-y-6">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4 backdrop-blur-xs animate-in fade-in">
+            <div className="relative w-full max-w-xl rounded-3xl border border-slate-200/90 bg-white p-6 shadow-2xl space-y-6">
               {/* Modal Header */}
-              <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="p-2 rounded-xl bg-blue-600/20 text-blue-400">
+                  <span className="p-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-200">
                     <Building2 className="h-5 w-5" />
                   </span>
                   <div>
-                    <h2 className="text-base font-black text-white">
+                    <h2 className="text-base font-black text-slate-900">
                       {editingCategory ? "Edit Department & Discipline" : "Create New Pathology Department"}
                     </h2>
-                    <p className="text-[11px] text-slate-400">
+                    <p className="text-[11px] text-slate-500">
                       Configure clinical taxonomy, department color badge, and routing details
                     </p>
                   </div>
@@ -602,7 +602,7 @@ export default function TestCategoriesPage() {
                 <button
                   type="button"
                   onClick={() => setShowModal(false)}
-                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition"
+                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                 </button>
@@ -613,8 +613,8 @@ export default function TestCategoriesPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {/* Code */}
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
-                      Code <span className="text-rose-400">*</span>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                      Code <span className="text-rose-600">*</span>
                     </label>
                     <input
                       type="text"
@@ -622,14 +622,14 @@ export default function TestCategoriesPage() {
                       placeholder="e.g. HEMA, BIO"
                       value={formData.code}
                       onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-mono font-black uppercase text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-mono font-black uppercase text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
 
                   {/* Name */}
                   <div className="sm:col-span-2">
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
-                      Department Name <span className="text-rose-400">*</span>
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                      Department Name <span className="text-rose-600">*</span>
                     </label>
                     <input
                       type="text"
@@ -637,7 +637,7 @@ export default function TestCategoriesPage() {
                       placeholder="e.g. Clinical Biochemistry & Metabolic"
                       value={formData.name}
                       onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
                 </div>
@@ -645,7 +645,7 @@ export default function TestCategoriesPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {/* Discipline */}
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                       Discipline Section
                     </label>
                     <input
@@ -653,27 +653,27 @@ export default function TestCategoriesPage() {
                       placeholder="e.g. Biochemistry, Hematology"
                       value={formData.department}
                       onChange={(e) => setFormData({ ...formData, department: e.target.value })}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
 
                   {/* Display Order */}
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                       Display Order Sequence
                     </label>
                     <input
                       type="number"
                       value={formData.displayOrder}
                       onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500"
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                     />
                   </div>
                 </div>
 
                 {/* Color Theme Selector */}
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-2">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-2">
                     Department Brand Color Tag:
                   </label>
                   <div className="grid grid-cols-4 sm:grid-cols-8 gap-2">
@@ -682,10 +682,10 @@ export default function TestCategoriesPage() {
                         type="button"
                         key={c.value}
                         onClick={() => setFormData({ ...formData, color: c.value })}
-                        className={`h-9 rounded-xl border flex items-center justify-center transition-all ${
+                        className={`h-9 rounded-xl border flex items-center justify-center transition-all cursor-pointer ${
                           formData.color === c.value
-                            ? "border-white ring-2 ring-blue-500 scale-110 shadow-lg"
-                            : "border-transparent opacity-80 hover:opacity-100"
+                            ? "border-slate-800 ring-2 ring-blue-500 scale-105 shadow-xs"
+                            : "border-slate-200 opacity-80 hover:opacity-100"
                         }`}
                         style={{ backgroundColor: c.value }}
                       >
@@ -697,7 +697,7 @@ export default function TestCategoriesPage() {
 
                 {/* Icon Preset Picker */}
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-2">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-2">
                     Discipline Icon:
                   </label>
                   <div className="flex flex-wrap gap-2">
@@ -706,10 +706,10 @@ export default function TestCategoriesPage() {
                         type="button"
                         key={icon}
                         onClick={() => setFormData({ ...formData, icon })}
-                        className={`h-9 w-9 rounded-xl border text-lg flex items-center justify-center transition ${
+                        className={`h-9 w-9 rounded-xl border text-lg flex items-center justify-center transition cursor-pointer ${
                           formData.icon === icon
-                            ? "border-blue-500 bg-blue-950/60 ring-2 ring-blue-500/30 scale-110 shadow-md"
-                            : "border-slate-700 bg-slate-950 hover:bg-slate-800"
+                            ? "border-blue-600 bg-blue-50 ring-2 ring-blue-200 scale-105 shadow-xs"
+                            : "border-slate-200 bg-white hover:bg-slate-100"
                         }`}
                       >
                         {icon}
@@ -720,7 +720,7 @@ export default function TestCategoriesPage() {
 
                 {/* Description */}
                 <div>
-                  <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                  <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                     Department Scope & Description
                   </label>
                   <textarea
@@ -728,7 +728,7 @@ export default function TestCategoriesPage() {
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                     placeholder="Analytical scope, clinical services, automated analyzer details..."
-                    className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2 text-xs text-white focus:border-blue-500"
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2 text-xs text-slate-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
                   />
                 </div>
 
@@ -739,26 +739,26 @@ export default function TestCategoriesPage() {
                     id="deptActive"
                     checked={formData.isActive}
                     onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                    className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-blue-600 focus:ring-blue-500/40"
+                    className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500"
                   />
-                  <label htmlFor="deptActive" className="text-xs font-bold text-slate-200 cursor-pointer">
-                    Publish Department as Active in Test Catalog & CPOE Routing
+                  <label htmlFor="deptActive" className="text-xs font-bold text-slate-800 cursor-pointer">
+                    Publish Department as Active in Test Catalog &amp; CPOE Routing
                   </label>
                 </div>
 
                 {/* Modal Footer */}
-                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-800">
+                <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
                   <button
                     type="button"
                     onClick={() => setShowModal(false)}
-                    className="rounded-xl border border-slate-700 bg-slate-800 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-700 transition"
+                    className="rounded-xl border border-slate-300 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={saving}
-                    className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-6 py-2.5 text-xs font-black text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-lg shadow-blue-500/25 disabled:opacity-50"
+                    className="rounded-xl bg-blue-600 px-6 py-2.5 text-xs font-black text-white hover:bg-blue-700 transition shadow-xs disabled:opacity-50 cursor-pointer"
                   >
                     {saving ? "Saving..." : editingCategory ? "Update Department" : "Create Department"}
                   </button>

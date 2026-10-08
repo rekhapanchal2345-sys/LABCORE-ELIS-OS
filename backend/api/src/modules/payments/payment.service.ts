@@ -84,8 +84,7 @@ export const createSplitPayment = async (
     const grandTotal =
       Number(order.invoice.grandTotal);
 
-    const remainingAmount =
-      grandTotal - alreadyPaid;
+    const remainingAmount = roundHalfUp(grandTotal - alreadyPaid);
 
     if (totalPaymentAmount > remainingAmount) {
       throw new Error(
@@ -261,8 +260,7 @@ export const createPayment = async (
     const grandTotal =
       Number(order.invoice.grandTotal);
 
-    const remainingAmount =
-      grandTotal - alreadyPaid;
+    const remainingAmount = roundHalfUp(grandTotal - alreadyPaid);
 
     if (amount > remainingAmount) {
       throw new Error(

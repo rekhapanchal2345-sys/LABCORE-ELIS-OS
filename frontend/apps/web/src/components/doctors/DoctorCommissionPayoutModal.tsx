@@ -194,17 +194,17 @@ export default function DoctorCommissionPayoutModal({
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4 overflow-y-auto">
         <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
           
-          {/* Header */}
-          <div className="bg-gradient-to-r from-purple-800 via-purple-900 to-indigo-950 px-6 py-4 text-white flex items-center justify-between">
+          {/* Header - Light White Professional UI */}
+          <div className="bg-white px-6 py-4 border-b border-slate-200 flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/30 border border-purple-400/30 flex items-center justify-center">
-                <CreditCard className="w-5 h-5 text-purple-200" />
+              <div className="w-10 h-10 rounded-xl bg-purple-50 border border-purple-100 flex items-center justify-center">
+                <CreditCard className="w-5 h-5 text-purple-600" />
               </div>
               <div>
-                <h3 className="text-base font-bold text-white leading-tight">
-                  Referral Commission Payout
+                <h3 className="text-base font-bold text-slate-900 leading-tight">
+                  Referral Commission Settlement
                 </h3>
-                <p className="text-xs text-purple-200">
+                <p className="text-xs text-slate-500">
                   {doctorName} ({doctor.doctorCode || `DOC-${doctor.id}`})
                 </p>
               </div>
@@ -212,7 +212,7 @@ export default function DoctorCommissionPayoutModal({
 
             <button
               onClick={onClose}
-              className="rounded-lg p-1.5 text-purple-300 hover:text-white hover:bg-white/10 transition-colors"
+              className="rounded-xl p-1.5 text-slate-400 hover:text-slate-700 hover:bg-slate-100 border border-slate-200 transition-colors"
             >
               <X className="w-5 h-5" />
             </button>

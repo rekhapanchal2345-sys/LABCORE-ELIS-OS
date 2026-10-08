@@ -168,6 +168,13 @@ const baseDoctorShape = {
   experience: z.coerce.number().min(0).max(100).optional(),
   experienceYears: z.coerce.number().min(0).max(70).optional(),
   consultationFee: z.coerce.number().min(0).optional(),
+  licenseNumber: optionalText(100),
+  licenseExpiry: z
+    .union([z.string(), z.null()])
+    .optional()
+    .transform((v) => (v ? new Date(v as string) : undefined))
+    .nullable()
+    .optional(),
   availableDays: optionalText(200),
   availableTime: optionalText(100),
   languages: optionalText(300),

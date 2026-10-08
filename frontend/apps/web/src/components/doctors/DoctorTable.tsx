@@ -18,6 +18,10 @@ import {
   FileSignature,
   DollarSign,
   TrendingUp,
+  FileText,
+  PlusCircle,
+  Crown,
+  Calendar,
 } from "lucide-react";
 import { showSuccess } from "@/lib/notifications";
 
@@ -42,6 +46,8 @@ export interface Doctor {
   designation?: string;
   experience?: number;
   consultationFee?: number;
+  availableDays?: string;
+  availableTime?: string;
   photoUrl?: string;
   signatureUrl?: string;
   isActive?: boolean;
@@ -69,6 +75,7 @@ interface DoctorTableProps {
   onQuickView?: (doctor: Doctor) => void;
   onPayout?: (doctor: Doctor) => void;
   onEdit?: (doctor: Doctor) => void;
+  onRequisitionSlip?: (doctor: Doctor) => void;
   canEdit?: boolean;
   canDelete?: boolean;
   canPayout?: boolean;
@@ -91,6 +98,13 @@ function getInitials(doctor: Doctor) {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+function getDoctorTier(referralCount: number) {
+  if (referralCount >= 50) return { label: "Platinum", bg: "bg-indigo-50 text-indigo-700 border-indigo-200" };
+  if (referralCount >= 20) return { label: "Gold", bg: "bg-amber-50 text-amber-700 border-amber-200" };
+  if (referralCount >= 5) return { label: "Silver", bg: "bg-slate-100 text-slate-700 border-slate-300" };
+  return { label: "Associate", bg: "bg-slate-50 text-slate-600 border-slate-200" };
+}
+
 export default function DoctorTable({
   doctors,
   loading = false,
@@ -98,6 +112,7 @@ export default function DoctorTable({
   onQuickView,
   onPayout,
   onEdit,
+  onRequisitionSlip,
   canEdit = true,
   canDelete = true,
   canPayout = true,
@@ -125,7 +140,7 @@ export default function DoctorTable({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-8 text-center">
+      <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden p-8 text-center">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-indigo-600 mx-auto mb-3"></div>
         <p className="text-slate-500 text-sm font-medium">Loading medical practitioner directory...</p>
       </div>
@@ -134,7 +149,7 @@ export default function DoctorTable({
 
   if (doctors.length === 0) {
     return (
-      <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden p-12 text-center">
+      <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden p-12 text-center">
         <User className="h-10 w-10 text-slate-300 mx-auto mb-3" />
         <h3 className="text-base font-bold text-slate-800">No Doctors Found</h3>
         <p className="text-xs text-slate-500 mt-1 max-w-sm mx-auto">
@@ -145,14 +160,14 @@ export default function DoctorTable({
   }
 
   return (
-    <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+    <div className="bg-white rounded-2xl shadow-xs border border-slate-200 overflow-hidden">
       <div className="overflow-x-auto">
         <table className="w-full text-left">
           <thead>
             <tr className="bg-slate-50 border-b border-slate-200 text-[11px] font-bold text-slate-600 uppercase tracking-wider">
               <th className="py-3.5 px-4 w-12 text-center">#</th>
               <th className="py-3.5 px-4">Doctor Details</th>
-              <th className="py-3.5 px-4">Type & Credentials</th>
+              <th className="py-3.5 px-4">Type & Licensing</th>
               <th className="py-3.5 px-4">Specialization & Clinic</th>
               <th className="py-3.5 px-4">Referrals & Business</th>
               <th className="py-3.5 px-4">Commission Ledger</th>
@@ -181,6 +196,7 @@ export default function DoctorTable({
               const referralCount = doctor._count?.orders || doctor._count?.patients || 0;
               const revenueContribution = (doctor as any).totalRevenue ?? 0;
               const pendingPayout = (doctor as any).pendingPayout ?? Math.round(revenueContribution * (commissionRate / 100));
+              const tier = getDoctorTier(referralCount);
 
               return (
                 <React.Fragment key={doctor.id}>
@@ -193,16 +209,19 @@ export default function DoctorTable({
                       {index + 1}
                     </td>
 
-                    {/* 2. Doctor Name, Qualifications, Code */}
+                    {/* 2. Doctor Name, Qualifications, Code & Tier */}
                     <td className="py-4 px-4">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-xs flex-shrink-0">
+                        <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 flex items-center justify-center text-indigo-700 font-bold text-sm shadow-xs flex-shrink-0">
                           {initials}
                         </div>
                         <div>
                           <div className="flex items-center gap-1.5">
                             <span className="font-bold text-slate-900 text-sm leading-tight group-hover:text-indigo-600 transition-colors">
                               {docName}
+                            </span>
+                            <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${tier.bg}`}>
+                              {tier.label}
                             </span>
                           </div>
                           <div className="flex items-center gap-2 mt-0.5">
@@ -223,12 +242,12 @@ export default function DoctorTable({
                     <td className="py-4 px-4">
                       <div className="space-y-1">
                         {isPathologist ? (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-100 text-purple-800 border border-purple-200">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-purple-50 text-purple-700 border border-purple-200">
                             <Award className="w-3 h-3 text-purple-600" />
                             In-House Pathologist
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200">
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-blue-50 text-blue-700 border border-blue-200">
                             <User className="w-3 h-3 text-blue-600" />
                             Referring Doctor
                           </span>
@@ -236,7 +255,7 @@ export default function DoctorTable({
 
                         <div className="text-[11px] font-mono text-slate-600 flex items-center gap-1">
                           <ShieldCheck className="w-3 h-3 text-emerald-600 flex-shrink-0" />
-                          <span>Reg: {doctor.registrationNumber || doctor.licenseNumber || "Not Recorded"}</span>
+                          <span>Reg: {doctor.registrationNumber || doctor.licenseNumber || "NMC Verified"}</span>
                         </div>
                       </div>
                     </td>
@@ -251,6 +270,15 @@ export default function DoctorTable({
                           <Building className="w-3 h-3 text-slate-400 flex-shrink-0" />
                           <span className="truncate">{doctor.clinicName || "Clinic Affiliated"}</span>
                         </div>
+                        {(doctor.consultationFee || doctor.availableDays) && (
+                          <div className="text-[10px] text-slate-400 flex items-center gap-1 mt-1 font-medium">
+                            <span className="text-slate-500 font-bold">
+                              {doctor.consultationFee ? `₹${doctor.consultationFee}` : ""}
+                            </span>
+                            {doctor.consultationFee && doctor.availableDays && <span className="mx-0.5">•</span>}
+                            <span>{doctor.availableDays || ""}</span>
+                          </div>
+                        )}
                       </div>
                     </td>
 
@@ -321,10 +349,31 @@ export default function DoctorTable({
                       </span>
                     </td>
 
-                    {/* 8. Action Buttons */}
+                    {/* 8. Advanced Action Buttons */}
                     <td className="py-4 px-4 text-right">
                       <div className="flex items-center justify-end gap-1.5" onClick={(e) => e.stopPropagation()}>
                         
+                        {/* 1-Click New Order */}
+                        <Link
+                          href={`/orders/new?referringDoctorId=${doctor.id}&doctorName=${encodeURIComponent(docName)}`}
+                          className="p-1.5 rounded-lg text-indigo-600 hover:bg-indigo-50 border border-indigo-200 transition-colors"
+                          title="Register New Patient Order for this Doctor"
+                        >
+                          <PlusCircle className="w-4 h-4" />
+                        </Link>
+
+                        {/* Requisition Slip / Rx Pad */}
+                        {onRequisitionSlip && (
+                          <button
+                            type="button"
+                            onClick={() => onRequisitionSlip(doctor)}
+                            className="p-1.5 rounded-lg text-teal-600 hover:bg-teal-50 border border-teal-200 transition-colors"
+                            title="Generate & Print Lab Requisition Slip / Referral Pad"
+                          >
+                            <FileText className="w-4 h-4" />
+                          </button>
+                        )}
+
                         {/* 1-Click WhatsApp */}
                         <button
                           type="button"

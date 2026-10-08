@@ -7,6 +7,10 @@ const prescriptionController = require('../controllers/prescriptionController');
 const referralController = require('../controllers/referralController');
 const emrController = require('../controllers/emrController');
 
+const { authenticateUser } = require('../middlewares/authMiddleware');
+
+router.use(authenticateUser);
+
 // 1. Doctor Management & Profiles
 router.get('/doctors', doctorController.getDoctors);
 router.get('/doctors/:id', doctorController.getDoctorById);

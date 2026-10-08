@@ -26,7 +26,7 @@ const router = Router();
  */
 router.post(
   "/login",
-  validate(loginSchema),
+  validate({ body: loginSchema }),
   login
 );
 

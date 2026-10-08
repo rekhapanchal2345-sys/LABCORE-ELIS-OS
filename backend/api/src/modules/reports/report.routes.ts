@@ -79,6 +79,33 @@ router.get(
   publishedReports
 );
 
+router.get(
+  "/",
+  authorize(
+    UserRole.ADMIN,
+    UserRole.FRONT_DESK,
+    UserRole.LAB_TECH,
+    UserRole.PATHOLOGIST,
+    UserRole.DOCTOR
+  ),
+  validate({
+    query: reportQuerySchema,
+  }),
+  publishedReports
+);
+
+router.get(
+  "/count",
+  authorize(
+    UserRole.ADMIN,
+    UserRole.FRONT_DESK,
+    UserRole.LAB_TECH,
+    UserRole.PATHOLOGIST,
+    UserRole.DOCTOR
+  ),
+  publishedReports
+);
+
 // =======================================================
 // ORDER REPORT
 // =======================================================
@@ -98,110 +125,7 @@ router.get(
   orderReport
 );
 
-// =======================================================
-// GET REPORT BY ID
-// =======================================================
-
-router.get(
-  "/:id",
-  authorize(
-    UserRole.ADMIN,
-    UserRole.FRONT_DESK,
-    UserRole.LAB_TECH,
-    UserRole.PATHOLOGIST,
-    UserRole.DOCTOR
-  ),
-  async (req: Request, res: Response, next: NextFunction) => {
-    try {
-      const id = pathParam(req, "id");
-      
-      // Fetch the report by ID
-      const report = await prisma.report.findUnique({
-        where: { id },
-        include: {
-          patient: true,
-          order: {
-            include: {
-              doctor: true,
-              items: {
-                include: {
-                  test: {
-                    include: {
-                      category: true,
-                      parameters: {
-                        include: {
-                          referenceRanges: true,
-                        },
-                      },
-                    },
-                  },
-                },
-              },
-              results: {
-                where: {
-                  status: "PUBLISHED",
-                },
-                include: {
-                  test: true,
-                  values: {
-                    include: {
-                      parameter: true,
-                    },
-                  },
-                  enteredBy: {
-                    select: {
-                      id: true,
-                      fullName: true,
-                      employeeCode: true,
-                    },
-                  },
-                  approvedBy: {
-                    select: {
-                      id: true,
-                      fullName: true,
-                      employeeCode: true,
-                    },
-                  },
-                },
-                orderBy: {
-                  createdAt: "asc",
-                },
-              },
-              invoice: true,
-              payments: {
-                orderBy: {
-                  paidAt: "desc",
-                },
-              },
-            },
-          },
-          publishedBy: {
-            select: {
-              id: true,
-              fullName: true,
-              employeeCode: true,
-            },
-          },
-        },
-      });
-
-      if (!report) {
-        return res.status(404).json({
-          success: false,
-          message: "Report not found",
-        });
-      }
-
-      res.status(200).json({
-        success: true,
-        message: "Report fetched successfully",
-        data: report,
-      });
-    } catch (error) {
-      next(error);
-    }
-  }
-);
+// (Moved GET /:id down below to avoid route conflict)
 
 // =======================================================
 // PATIENT REPORTS
@@ -375,6 +299,111 @@ router.post(
     body: sendDoctorSchema,
   }),
   sendReportToDoctorHandler
+);
+
+// =======================================================
+// GET REPORT BY ID (MUST BE AT THE END)
+// =======================================================
+
+router.get(
+  "/:id",
+  authorize(
+    UserRole.ADMIN,
+    UserRole.FRONT_DESK,
+    UserRole.LAB_TECH,
+    UserRole.PATHOLOGIST,
+    UserRole.DOCTOR
+  ),
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const id = pathParam(req, "id");
+      
+      // Fetch the report by ID
+      const report = await prisma.report.findUnique({
+        where: { id },
+        include: {
+          patient: true,
+          order: {
+            include: {
+              doctor: true,
+              items: {
+                include: {
+                  test: {
+                    include: {
+                      category: true,
+                      parameters: {
+                        include: {
+                          referenceRanges: true,
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+              results: {
+                where: {
+                  status: "PUBLISHED",
+                },
+                include: {
+                  test: true,
+                  values: {
+                    include: {
+                      parameter: true,
+                    },
+                  },
+                  enteredBy: {
+                    select: {
+                      id: true,
+                      fullName: true,
+                      employeeCode: true,
+                    },
+                  },
+                  approvedBy: {
+                    select: {
+                      id: true,
+                      fullName: true,
+                      employeeCode: true,
+                    },
+                  },
+                },
+                orderBy: {
+                  createdAt: "asc",
+                },
+              },
+              invoice: true,
+              payments: {
+                orderBy: {
+                  paidAt: "desc",
+                },
+              },
+            },
+          },
+          publishedBy: {
+            select: {
+              id: true,
+              fullName: true,
+              employeeCode: true,
+            },
+          },
+        },
+      });
+
+      if (!report) {
+        return res.status(404).json({
+          success: false,
+          message: "Report not found",
+        });
+      }
+
+      res.status(200).json({
+        success: true,
+        message: "Report fetched successfully",
+        data: report,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
 );
 
 export default router;

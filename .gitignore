@@ -19,3 +19,8 @@ backups/
 
 # Prisma migration files are the one exception: they are schema, not data.
 !backend/prisma/migrations/**/*.sql
+
+# Next.js build output
+.next/
+out/
+build/

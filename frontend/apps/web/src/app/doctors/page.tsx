@@ -6,6 +6,7 @@ import DashboardLayout from "@/components/layout/dashboardlayout";
 import DoctorTable, { Doctor } from "@/components/doctors/DoctorTable";
 import DoctorQuickViewModal, { DoctorProfileData } from "@/components/doctors/DoctorQuickViewModal";
 import DoctorCommissionPayoutModal from "@/components/doctors/DoctorCommissionPayoutModal";
+import DoctorRequisitionSlipModal from "@/components/doctors/DoctorRequisitionSlipModal";
 import RegisterDoctorWizard from "@/components/doctors/RegisterDoctorWizard";
 import { doctorApi } from "@/lib/api";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -66,6 +67,7 @@ export default function DoctorsPage() {
   // Modals state
   const [selectedDoctorForView, setSelectedDoctorForView] = useState<DoctorProfileData | null>(null);
   const [selectedDoctorForPayout, setSelectedDoctorForPayout] = useState<DoctorProfileData | null>(null);
+  const [selectedDoctorForRequisition, setSelectedDoctorForRequisition] = useState<DoctorProfileData | null>(null);
   const [doctorToEdit, setDoctorToEdit] = useState<DoctorProfileData | null>(null);
   const [showAddEditModal, setShowAddEditModal] = useState(false);
 
@@ -293,25 +295,25 @@ export default function DoctorsPage() {
       <DashboardLayout title="Doctors & Referral Management">
         <div className="space-y-6">
           
-          {/* Modern Hero Banner */}
-          <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-700 via-purple-700 to-indigo-900 shadow-md">
-            <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+          {/* Modern Hero Banner - Light White Professional UI */}
+          <div className="relative overflow-hidden rounded-2xl bg-white border border-slate-200 shadow-sm">
+            <div className="absolute -right-10 -bottom-10 w-64 h-64 bg-slate-50 rounded-full blur-2xl pointer-events-none"></div>
             
-            <div className="relative p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6 text-white">
+            <div className="relative p-6 sm:p-8 flex flex-col md:flex-row md:items-center justify-between gap-6">
               <div className="flex items-center gap-4">
-                <div className="w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center shadow-inner flex-shrink-0">
-                  <Users className="w-7 h-7 text-indigo-100" />
+                <div className="w-14 h-14 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center flex-shrink-0">
+                  <Users className="w-7 h-7 text-indigo-600" />
                 </div>
                 <div>
                   <div className="flex items-center gap-2 mb-1">
-                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
+                    <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900">
                       Doctors & Referral Management
                     </h1>
-                    <span className="px-2.5 py-0.5 rounded-full bg-white/20 text-white text-xs font-bold backdrop-blur-sm border border-white/20">
+                    <span className="px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-600 text-xs font-bold border border-slate-200">
                       LIS B2B Portal
                     </span>
                   </div>
-                  <p className="text-xs sm:text-sm text-indigo-100">
+                  <p className="text-xs sm:text-sm text-slate-500 font-medium">
                     Clinical practitioners, referring physician commissions, and pathologist digital authorizations
                   </p>
                 </div>
@@ -320,7 +322,7 @@ export default function DoctorsPage() {
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={handleExportCSV}
-                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold backdrop-blur-sm border border-white/20 transition-all active:scale-95"
+                  className="flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold border border-slate-200 shadow-sm transition-all active:scale-95"
                   title="Export Doctors to CSV"
                 >
                   <Download className="w-4 h-4" />
@@ -333,9 +335,9 @@ export default function DoctorsPage() {
                       setDoctorToEdit(null);
                       setShowAddEditModal(true);
                     }}
-                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white text-indigo-900 hover:bg-indigo-50 font-bold text-xs shadow-lg transition-all active:scale-95 transform hover:-translate-y-0.5"
+                    className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 font-bold text-xs shadow-md transition-all active:scale-95 transform hover:-translate-y-0.5"
                   >
-                    <Plus className="w-4 h-4 text-indigo-700" />
+                    <Plus className="w-4 h-4 text-white" />
                     Add New Doctor
                   </button>
                 )}
@@ -598,6 +600,7 @@ export default function DoctorsPage() {
             onDelete={handleDeleteDoctor}
             onQuickView={(doc) => setSelectedDoctorForView(doc as DoctorProfileData)}
             onPayout={(doc) => setSelectedDoctorForPayout(doc as DoctorProfileData)}
+            onRequisitionSlip={(doc) => setSelectedDoctorForRequisition(doc as DoctorProfileData)}
             onEdit={(doc) => {
               setDoctorToEdit(doc as DoctorProfileData);
               setShowAddEditModal(true);
@@ -641,6 +644,7 @@ export default function DoctorsPage() {
           onClose={() => setSelectedDoctorForView(null)}
           doctor={selectedDoctorForView}
           onOpenPayoutModal={(doc) => setSelectedDoctorForPayout(doc)}
+          onOpenRequisitionSlip={(doc) => setSelectedDoctorForRequisition(doc)}
           onEditDoctor={(doc) => {
             setDoctorToEdit(doc);
             setShowAddEditModal(true);
@@ -653,6 +657,13 @@ export default function DoctorsPage() {
           onClose={() => setSelectedDoctorForPayout(null)}
           doctor={selectedDoctorForPayout}
           onPayoutSuccess={() => fetchDoctors()}
+        />
+
+        {/* MODAL 3: OFFICIAL CLINICAL INVESTIGATION REQUISITION SLIP / RX PAD */}
+        <DoctorRequisitionSlipModal
+          isOpen={Boolean(selectedDoctorForRequisition)}
+          onClose={() => setSelectedDoctorForRequisition(null)}
+          doctor={selectedDoctorForRequisition}
         />
 
         {/* MODAL 3: ENTERPRISE 8-STEP DOCTOR REGISTRATION & COMPLIANCE WIZARD */}

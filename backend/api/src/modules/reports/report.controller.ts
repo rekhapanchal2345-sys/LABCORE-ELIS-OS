@@ -4,6 +4,7 @@ import {
     NextFunction,
   } from "express";
   
+  import prisma from "../../../config/database";
   import { pathParam } from "../../utils/request-meta";
   
   import {
@@ -100,6 +101,18 @@ import {
       next: NextFunction
     ) => {
       try {
+        if (req.path.endsWith('/count')) {
+          const count = await prisma.report.count({
+            where: { status: "PUBLISHED" }
+          });
+          res.status(200).json({
+            success: true,
+            message: "Report count fetched successfully",
+            data: { count }
+          });
+          return;
+        }
+
         const reports =
           await getPublishedReports({
             fromDate:

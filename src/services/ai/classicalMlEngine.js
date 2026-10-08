@@ -257,7 +257,7 @@ class ClassicalMlEngine {
 
     dataset.features.forEach((feat, i) => {
       const val = Number(inputFeatures[feat.key] !== undefined ? inputFeatures[feat.key] : feat.default);
-      const normVal = (val - feat.min) / (feat.max - feat.min || 1);
+      const normVal = Math.max(0, Math.min(1, (val - feat.min) / (feat.max - feat.min || 1)));
       const weight = model.featureImportances[i]?.importance || (1 / dataset.features.length);
       const impact = normVal * weight;
       score += impact;
@@ -301,7 +301,7 @@ class ClassicalMlEngine {
     const numClasses = dataset.classes.length;
     let classIdx = panicOverride
       ? numClasses - 1                                              // forced panic class
-      : Math.min(numClasses - 1, Math.floor(score * numClasses));  // normal scoring path
+      : Math.max(0, Math.min(numClasses - 1, Math.floor(score * numClasses)));  // normal scoring path
     const predictedClass = dataset.classes[classIdx];
 
     // Softmax probabilities

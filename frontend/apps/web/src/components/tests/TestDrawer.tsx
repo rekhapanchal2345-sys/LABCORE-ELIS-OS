@@ -140,13 +140,9 @@ export default function TestDrawer({
         <div className="w-screen max-w-3xl bg-slate-50 shadow-2xl flex flex-col border-l border-slate-200 overflow-hidden animate-in slide-in-from-right duration-300">
           
           {/* ========================================================================= */}
-          {/* ULTRA-PREMIUM HEADER */}
+          {/* LIGHT WHITE CLINICAL HEADER */}
           {/* ========================================================================= */}
-          <div className="relative bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 text-white px-6 pt-6 pb-5 shadow-lg border-b border-slate-800">
-            {/* Ambient background glow */}
-            <div className="absolute -top-12 -right-12 h-44 w-44 rounded-full bg-blue-600/20 blur-3xl pointer-events-none" />
-            <div className="absolute top-10 right-28 h-28 w-28 rounded-full bg-indigo-500/15 blur-2xl pointer-events-none" />
-
+          <div className="relative bg-white text-slate-900 px-6 pt-6 pb-2 shadow-xs border-b border-slate-200">
             <div className="relative z-10 flex items-start justify-between gap-4">
               <div className="space-y-1.5 flex-1">
                 {/* Meta badges row */}
@@ -154,14 +150,14 @@ export default function TestDrawer({
                   {/* Test Code with 1-Click Copy */}
                   <button
                     onClick={handleCopyCode}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-500/20 border border-blue-400/40 px-2.5 py-1 text-xs font-mono font-black text-blue-200 hover:bg-blue-500/30 transition shadow-xs"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-blue-50 border border-blue-200 px-2.5 py-1 text-xs font-mono font-black text-blue-700 hover:bg-blue-100 transition shadow-xs"
                     title="Click to copy test code"
                   >
                     <span>{test.testCode || test.code}</span>
                     {copiedCode ? (
-                      <span className="text-[10px] text-emerald-300 font-sans font-bold">✓ Copied!</span>
+                      <span className="text-[10px] text-emerald-600 font-sans font-bold">✓ Copied!</span>
                     ) : (
-                      <svg className="h-3.5 w-3.5 text-blue-300 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="h-3.5 w-3.5 text-blue-500 opacity-80" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                       </svg>
                     )}
@@ -169,7 +165,7 @@ export default function TestDrawer({
 
                   {/* Category Pill */}
                   {test.category?.name && (
-                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-200 bg-white/10 border border-white/15 px-2.5 py-1 rounded-lg backdrop-blur-xs">
+                    <span className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-700 bg-slate-100 border border-slate-200 px-2.5 py-1 rounded-lg">
                       {test.category.color && (
                         <span className="h-2 w-2 rounded-full shadow-xs" style={{ backgroundColor: test.category.color }} />
                       )}
@@ -181,24 +177,24 @@ export default function TestDrawer({
                   <span
                     className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold ${
                       activeStatus
-                        ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40"
-                        : "bg-slate-700/60 text-slate-300 border border-slate-600"
+                        ? "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                        : "bg-slate-100 text-slate-600 border border-slate-200"
                     }`}
                   >
-                    <span className={`h-2 w-2 rounded-full ${activeStatus ? "bg-emerald-400 animate-pulse" : "bg-slate-400"}`} />
+                    <span className={`h-2 w-2 rounded-full ${activeStatus ? "bg-emerald-500 animate-pulse" : "bg-slate-400"}`} />
                     <span>{activeStatus ? "Active Operational" : "Paused / Inactive"}</span>
                   </span>
                 </div>
 
                 {/* Main Title */}
-                <h2 className="text-2xl font-black text-white tracking-tight leading-snug">
+                <h2 className="text-2xl font-black text-slate-900 tracking-tight leading-snug">
                   {test.testName || test.name}
                 </h2>
 
                 {/* Subtitle / Short Name */}
                 {test.shortName && (
-                  <p className="text-xs text-slate-300 font-medium">
-                    Clinical Abbreviation: <span className="text-white font-semibold">{test.shortName}</span>
+                  <p className="text-xs text-slate-500 font-medium">
+                    Clinical Abbreviation: <span className="text-slate-800 font-bold">{test.shortName}</span>
                   </p>
                 )}
               </div>
@@ -208,21 +204,21 @@ export default function TestDrawer({
                 {/* 1-Click Operational Toggle */}
                 <button
                   onClick={() => onToggleStatus(test)}
-                  className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition shadow-xs ${
+                  className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1.5 rounded-xl border transition shadow-xs cursor-pointer ${
                     activeStatus
-                      ? "border-amber-400/50 bg-amber-500/20 text-amber-200 hover:bg-amber-500/30"
-                      : "border-emerald-400/50 bg-emerald-500/20 text-emerald-200 hover:bg-emerald-500/30"
+                      ? "border-amber-300 bg-amber-50 text-amber-800 hover:bg-amber-100"
+                      : "border-emerald-300 bg-emerald-50 text-emerald-800 hover:bg-emerald-100"
                   }`}
                   title={activeStatus ? "Pause test operations" : "Activate test operations"}
                 >
-                  <span className={`h-1.5 w-1.5 rounded-full ${activeStatus ? "bg-amber-400" : "bg-emerald-400"}`} />
+                  <span className={`h-1.5 w-1.5 rounded-full ${activeStatus ? "bg-amber-500" : "bg-emerald-500"}`} />
                   <span>{activeStatus ? "Pause Test" : "Resume Test"}</span>
                 </button>
 
                 {/* Close Drawer Button */}
                 <button
                   onClick={onClose}
-                  className="rounded-xl p-2 text-slate-400 hover:bg-white/10 hover:text-white transition"
+                  className="rounded-xl p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
                   aria-label="Close drawer"
                 >
                   <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -235,10 +231,10 @@ export default function TestDrawer({
             {/* Quick Diagnostic Metrics Bar */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mt-5">
               {/* Tariff / Rate */}
-              <div className="rounded-xl bg-white/10 border border-white/15 p-2.5 backdrop-blur-xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 block">Patient Tariff</span>
+              <div className="rounded-xl bg-slate-50 border border-slate-200/90 p-2.5 shadow-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Patient Tariff</span>
                 <div className="flex items-baseline gap-1.5 mt-0.5">
-                  <span className="text-base font-black text-white">
+                  <span className="text-base font-black text-slate-900">
                     ₹{(hasDiscount ? offerPrice : basePrice)?.toLocaleString("en-IN")}
                   </span>
                   {hasDiscount && (
@@ -248,59 +244,59 @@ export default function TestDrawer({
                   )}
                 </div>
                 {hasDiscount ? (
-                  <span className="text-[10px] font-bold text-emerald-300">
+                  <span className="text-[10px] font-bold text-emerald-600">
                     Save ₹{savings} ({discountPercent}% OFF)
                   </span>
                 ) : (
-                  <span className="text-[10px] text-slate-400">Standard MRP</span>
+                  <span className="text-[10px] text-slate-500">Standard MRP</span>
                 )}
               </div>
 
               {/* Turnaround Time */}
-              <div className="rounded-xl bg-white/10 border border-white/15 p-2.5 backdrop-blur-xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 block">Turnaround Time</span>
-                <p className="text-base font-black text-blue-300 mt-0.5">
+              <div className="rounded-xl bg-slate-50 border border-slate-200/90 p-2.5 shadow-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Turnaround Time</span>
+                <p className="text-base font-black text-blue-700 mt-0.5">
                   {test.tatDisplay || (test.tatHours ? `${test.tatHours} Hours` : "Same Day")}
                 </p>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-[10px] text-slate-500">
                   {Number(test.tatHours) <= 4 ? "⚡ STAT Available" : "Standard Routine"}
                 </span>
               </div>
 
               {/* Phlebotomy Specimen Container */}
-              <div className="rounded-xl bg-white/10 border border-white/15 p-2.5 backdrop-blur-xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 block">Specimen Tube</span>
+              <div className="rounded-xl bg-slate-50 border border-slate-200/90 p-2.5 shadow-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Specimen Tube</span>
                 <div className="flex items-center gap-1.5 mt-1">
                   <span className="h-3 w-3 rounded-full flex-shrink-0 shadow-xs" style={{ backgroundColor: tube.capColor }} />
-                  <span className="text-xs font-bold text-white truncate" title={tube.label}>
+                  <span className="text-xs font-bold text-slate-900 truncate" title={tube.label}>
                     {tube.label.split("(")[0].trim()}
                   </span>
                 </div>
-                <span className="text-[10px] text-slate-400 block truncate">
+                <span className="text-[10px] text-slate-500 block truncate">
                   {test.sampleType || "BLOOD"}
                 </span>
               </div>
 
               {/* Analytes Configured */}
-              <div className="rounded-xl bg-white/10 border border-white/15 p-2.5 backdrop-blur-xs">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 block">Analytes</span>
-                <p className="text-base font-black text-indigo-300 mt-0.5">
+              <div className="rounded-xl bg-slate-50 border border-slate-200/90 p-2.5 shadow-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 block">Analytes</span>
+                <p className="text-base font-black text-indigo-700 mt-0.5">
                   {parameters.length > 0 ? `${parameters.length} Parameters` : "Single Analyte"}
                 </p>
-                <span className="text-[10px] text-slate-400">
+                <span className="text-[10px] text-slate-500">
                   {parameters.length > 0 ? "Multi-analyte panel" : "Standard test"}
                 </span>
               </div>
             </div>
 
             {/* Navigation Tabs */}
-            <div className="flex items-center gap-1 mt-5 -mb-2 border-b border-white/10">
+            <div className="flex items-center gap-1 mt-5 -mb-2 border-b border-slate-200">
               <button
                 onClick={() => setActiveTab("overview")}
-                className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-bold transition border-b-2 ${
+                className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-bold transition border-b-2 cursor-pointer ${
                   activeTab === "overview"
-                    ? "border-blue-400 text-blue-300"
-                    : "border-transparent text-slate-400 hover:text-slate-200"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <span>🧪</span> Overview &amp; Phlebotomy
@@ -308,15 +304,15 @@ export default function TestDrawer({
 
               <button
                 onClick={() => setActiveTab("parameters")}
-                className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-bold transition border-b-2 ${
+                className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-bold transition border-b-2 cursor-pointer ${
                   activeTab === "parameters"
-                    ? "border-blue-400 text-blue-300"
-                    : "border-transparent text-slate-400 hover:text-slate-200"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <span>🔬</span> Parameters &amp; Ranges
                 {parameters.length > 0 && (
-                  <span className="rounded-full bg-blue-500/30 px-1.5 py-0.2 text-[10px] text-blue-200">
+                  <span className="rounded-full bg-blue-100 px-1.5 py-0.2 text-[10px] text-blue-800 font-bold">
                     {parameters.length}
                   </span>
                 )}
@@ -324,10 +320,10 @@ export default function TestDrawer({
 
               <button
                 onClick={() => setActiveTab("tariff")}
-                className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-bold transition border-b-2 ${
+                className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-bold transition border-b-2 cursor-pointer ${
                   activeTab === "tariff"
-                    ? "border-blue-400 text-blue-300"
-                    : "border-transparent text-slate-400 hover:text-slate-200"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <span>💳</span> Tariff &amp; Commercials
@@ -335,10 +331,10 @@ export default function TestDrawer({
 
               <button
                 onClick={() => setActiveTab("clinical")}
-                className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-bold transition border-b-2 ${
+                className={`flex items-center gap-1.5 pb-2.5 px-3 text-xs font-bold transition border-b-2 cursor-pointer ${
                   activeTab === "clinical"
-                    ? "border-blue-400 text-blue-300"
-                    : "border-transparent text-slate-400 hover:text-slate-200"
+                    ? "border-blue-600 text-blue-600"
+                    : "border-transparent text-slate-500 hover:text-slate-800"
                 }`}
               >
                 <span>📋</span> Clinical Notes

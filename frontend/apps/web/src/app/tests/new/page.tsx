@@ -513,23 +513,23 @@ export default function NewTestPage() {
   return (
     <ProtectedRoute requiredRoles={["ADMIN", "PATHOLOGIST"]}>
       <div className="max-w-7xl mx-auto space-y-6 pb-20">
-        {/* Header Breadcrumb */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+        {/* Header Breadcrumb & Actions in Light White UI */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200 pb-4">
           <div>
             <Link
               href="/tests"
-              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-400 hover:text-blue-300 transition mb-1.5"
+              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 transition mb-1.5"
             >
               <ChevronLeft className="h-4 w-4" />
               <span>Diagnostic Directory / Master Investigations</span>
             </Link>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              <span className="p-2.5 rounded-2xl bg-gradient-to-br from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/20 text-white">
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+              <span className="p-2.5 rounded-2xl bg-blue-600 text-white shadow-xs">
                 <FlaskConical className="h-6 w-6" />
               </span>
               <span>New Diagnostic Investigation Studio</span>
             </h1>
-            <p className="text-xs font-medium text-slate-400 mt-1">
+            <p className="text-xs font-medium text-slate-500 mt-1">
               Configure clinical test profiles, vacutainer tubes, multi-analyte reference ranges, and diagnostic tariff matrices
             </p>
           </div>
@@ -539,10 +539,10 @@ export default function NewTestPage() {
             <button
               type="button"
               onClick={() => setIsNablAccredited(!isNablAccredited)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border cursor-pointer ${
                 isNablAccredited
-                  ? "bg-emerald-950/60 border-emerald-500/50 text-emerald-400 shadow-lg shadow-emerald-500/10"
-                  : "bg-slate-900 border-slate-700 text-slate-400"
+                  ? "bg-emerald-50 border-emerald-300 text-emerald-800 shadow-xs"
+                  : "bg-slate-100 border-slate-300 text-slate-600"
               }`}
             >
               <ShieldCheck className="h-4 w-4" />
@@ -552,10 +552,10 @@ export default function NewTestPage() {
             <button
               type="button"
               onClick={() => setIsStatEligible(!isStatEligible)}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition border cursor-pointer ${
                 isStatEligible
-                  ? "bg-amber-950/60 border-amber-500/50 text-amber-400 shadow-lg shadow-amber-500/10"
-                  : "bg-slate-900 border-slate-700 text-slate-400"
+                  ? "bg-amber-50 border-amber-300 text-amber-800 shadow-xs"
+                  : "bg-slate-100 border-slate-300 text-slate-600"
               }`}
             >
               <Zap className="h-4 w-4" />
@@ -564,19 +564,19 @@ export default function NewTestPage() {
           </div>
         </div>
 
-        {/* Clinical Quick Presets Bar */}
-        <div className="rounded-2xl border border-blue-500/30 bg-gradient-to-r from-blue-950/70 via-indigo-950/40 to-slate-950/90 p-4.5 backdrop-blur-xl shadow-xl">
+        {/* Clinical Quick Presets Bar (Light White Card) */}
+        <div className="rounded-2xl border border-blue-200/80 bg-blue-50/50 p-4.5 shadow-xs">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
             <div className="flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-amber-400/20 text-amber-300">
+              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-blue-600 text-white shadow-xs">
                 <Zap className="h-3.5 w-3.5" />
               </span>
-              <span className="text-xs font-black uppercase tracking-wider text-blue-200">
+              <span className="text-xs font-black uppercase tracking-wider text-blue-900">
                 Fast-Track Clinical Presets (1-Click Auto Configure)
               </span>
             </div>
-            <span className="text-[11px] font-semibold text-blue-300">
-              Click any panel below to load full parameters & reference ranges
+            <span className="text-[11px] font-semibold text-blue-700">
+              Click any panel below to load full parameters &amp; biological intervals
             </span>
           </div>
 
@@ -586,11 +586,11 @@ export default function NewTestPage() {
                 type="button"
                 key={p.code}
                 onClick={() => applyPreset(p)}
-                className="group flex items-center gap-2 rounded-xl border border-blue-400/20 bg-slate-900/90 px-3.5 py-2 text-xs font-bold text-slate-200 hover:border-blue-400 hover:bg-gradient-to-r hover:from-blue-600 hover:to-indigo-600 hover:text-white transition-all shadow-md active:scale-95"
+                className="group flex items-center gap-2 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-800 hover:border-blue-400 hover:bg-blue-50/70 hover:text-blue-900 transition-all shadow-xs active:scale-95 cursor-pointer"
               >
-                <Sparkles className="h-3.5 w-3.5 text-blue-400 group-hover:text-white transition" />
+                <Sparkles className="h-3.5 w-3.5 text-blue-600 group-hover:scale-110 transition" />
                 <span>{p.name}</span>
-                <span className="rounded-md bg-slate-800 px-1.5 py-0.5 text-[10px] font-mono text-blue-300 group-hover:bg-blue-700 group-hover:text-white">
+                <span className="rounded-md bg-blue-50 border border-blue-200 px-1.5 py-0.5 text-[10px] font-mono text-blue-700 font-bold">
                   ₹{p.offerPrice}
                 </span>
               </button>
@@ -600,15 +600,15 @@ export default function NewTestPage() {
 
         {/* Notifications & Error alerts */}
         {successToast && (
-          <div className="rounded-2xl bg-emerald-950/70 border border-emerald-500/50 p-4 text-xs font-bold text-emerald-300 flex items-center gap-2.5 shadow-xl animate-in fade-in slide-in-from-top-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400 flex-shrink-0" />
+          <div className="rounded-2xl bg-emerald-50 border border-emerald-300 p-4 text-xs font-bold text-emerald-800 flex items-center gap-2.5 shadow-xs animate-in fade-in slide-in-from-top-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600 flex-shrink-0" />
             <span>{successToast}</span>
           </div>
         )}
 
         {error && (
-          <div className="rounded-2xl bg-rose-950/70 border border-rose-500/50 p-4 text-xs font-bold text-rose-300 flex items-center gap-2.5 shadow-xl">
-            <AlertCircle className="h-4 w-4 text-rose-400 flex-shrink-0" />
+          <div className="rounded-2xl bg-rose-50 border border-rose-300 p-4 text-xs font-bold text-rose-800 flex items-center gap-2.5 shadow-xs">
+            <AlertCircle className="h-4 w-4 text-rose-600 flex-shrink-0" />
             <div>
               <span className="font-black">Validation Error: </span>
               {error}
@@ -620,8 +620,8 @@ export default function NewTestPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column: Form Steps (8 Cols) */}
           <div className="lg:col-span-8 space-y-6">
-            {/* Step Navigation Tabs */}
-            <div className="flex items-center gap-1.5 overflow-x-auto rounded-2xl border border-slate-800 bg-slate-950/80 p-1.5 shadow-xl">
+            {/* Step Navigation Tabs in Clean White Design */}
+            <div className="flex items-center gap-1.5 overflow-x-auto rounded-2xl border border-slate-200/90 bg-white p-1.5 shadow-xs">
               {[
                 { id: "general", label: "1. Definition & LOINC", icon: Tag },
                 { id: "specimen", label: "2. Vacutainer SOP", icon: TestTube2 },
@@ -635,10 +635,10 @@ export default function NewTestPage() {
                     key={tab.id}
                     type="button"
                     onClick={() => setActiveTab(tab.id as any)}
-                    className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-black transition-all ${
+                    className={`flex items-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-xs font-bold transition-all cursor-pointer ${
                       isActive
-                        ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/25 border border-blue-400/40"
-                        : "text-slate-400 hover:text-slate-200 hover:bg-slate-900 border border-transparent"
+                        ? "bg-blue-600 text-white shadow-xs border border-blue-600"
+                        : "text-slate-600 hover:text-slate-900 hover:bg-slate-100 border border-transparent"
                     }`}
                   >
                     <Icon className={`h-3.5 w-3.5 ${isActive ? "text-white" : "text-slate-400"}`} />
@@ -651,11 +651,11 @@ export default function NewTestPage() {
             <form onSubmit={handleSubmit} className="space-y-6">
               {/* TAB 1: GENERAL DEFINITION */}
               {activeTab === "general" && (
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 backdrop-blur-xl p-6 shadow-2xl space-y-5 animate-in fade-in">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h2 className="text-xs font-black uppercase tracking-wider text-blue-400 flex items-center gap-2">
+                <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5 animate-in fade-in">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h2 className="text-xs font-black uppercase tracking-wider text-blue-700 flex items-center gap-2">
                       <Tag className="h-4 w-4" />
-                      <span>Investigation Identification & Clinical Taxonomy</span>
+                      <span>Investigation Identification &amp; Clinical Taxonomy</span>
                     </h2>
                     <span className="text-[11px] font-semibold text-slate-500">Step 1 of 4</span>
                   </div>
@@ -663,8 +663,8 @@ export default function NewTestPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                     {/* Test Code */}
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
-                        Test Code <span className="text-rose-400">*</span>
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                        Test Code <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -672,15 +672,15 @@ export default function NewTestPage() {
                         placeholder="e.g. CBC, KFT, TSH"
                         value={formData.testCode}
                         onChange={(e) => setFormData({ ...formData, testCode: e.target.value.toUpperCase() })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-mono font-black uppercase text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-mono font-black uppercase text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                       />
-                      <span className="text-[10px] text-slate-400 mt-1 block">Barcode scan & analyzer identifier</span>
+                      <span className="text-[10px] text-slate-400 mt-1 block">Barcode scan &amp; analyzer identifier</span>
                     </div>
 
                     {/* Test Name */}
                     <div className="md:col-span-2">
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
-                        Full Investigation Name <span className="text-rose-400">*</span>
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                        Full Investigation Name <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="text"
@@ -688,13 +688,13 @@ export default function NewTestPage() {
                         placeholder="e.g. Complete Blood Count with 5-Part Differential"
                         value={formData.testName}
                         onChange={(e) => setFormData({ ...formData, testName: e.target.value })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                       />
                     </div>
 
                     {/* Short Name */}
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                         Short Name / Alias
                       </label>
                       <input
@@ -702,23 +702,23 @@ export default function NewTestPage() {
                         placeholder="e.g. CBC / Hemogram"
                         value={formData.shortName || ""}
                         onChange={(e) => setFormData({ ...formData, shortName: e.target.value })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                       />
                     </div>
 
                     {/* Category Dropdown */}
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                         Department / Discipline
                       </label>
                       <select
                         value={formData.categoryId || ""}
                         onChange={(e) => setFormData({ ...formData, categoryId: e.target.value })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                       >
                         <option value="">Select Lab Category</option>
                         {categories.map((c) => (
-                          <option key={c.id} value={c.id} className="bg-slate-900 text-white">
+                          <option key={c.id} value={c.id}>
                             {c.name} {c.department ? `(${c.department})` : ""}
                           </option>
                         ))}
@@ -727,7 +727,7 @@ export default function NewTestPage() {
 
                     {/* Processing Section */}
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                         Processing Lab Section
                       </label>
                       <input
@@ -735,14 +735,14 @@ export default function NewTestPage() {
                         placeholder="e.g. Central Automated Hematology"
                         value={formData.processingDepartment || ""}
                         onChange={(e) => setFormData({ ...formData, processingDepartment: e.target.value })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                       />
                     </div>
                   </div>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                         Analytical Methodology
                       </label>
                       <input
@@ -750,33 +750,33 @@ export default function NewTestPage() {
                         placeholder="e.g. Automated Flow Cytometry, HPLC, CLIA, Enzymatic"
                         value={formData.method || ""}
                         onChange={(e) => setFormData({ ...formData, method: e.target.value })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                         Display Order Sequence
                       </label>
                       <input
                         type="number"
                         value={formData.displayOrder ?? 0}
                         onChange={(e) => setFormData({ ...formData, displayOrder: parseInt(e.target.value) || 0 })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                       />
                     </div>
                   </div>
 
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
-                      Clinical Significance & Pathological Indications
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                      Clinical Significance &amp; Pathological Indications
                     </label>
                     <textarea
                       rows={3}
                       value={formData.clinicalSignificance || ""}
                       onChange={(e) => setFormData({ ...formData, clinicalSignificance: e.target.value })}
                       placeholder="Medical relevance, diagnosis value, differential diagnostic considerations..."
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30 leading-relaxed"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 leading-relaxed"
                     />
                   </div>
 
@@ -784,7 +784,7 @@ export default function NewTestPage() {
                     <button
                       type="button"
                       onClick={() => setActiveTab("specimen")}
-                      className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-black text-white hover:bg-blue-500 transition shadow-lg shadow-blue-500/20"
+                      className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-xs cursor-pointer"
                     >
                       <span>Proceed to Vacutainer Tube SOP</span>
                       <ArrowRight className="h-4 w-4" />
@@ -795,18 +795,18 @@ export default function NewTestPage() {
 
               {/* TAB 2: SPECIMEN & VACUTAINER SOP */}
               {activeTab === "specimen" && (
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 backdrop-blur-xl p-6 shadow-2xl space-y-5 animate-in fade-in">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h2 className="text-xs font-black uppercase tracking-wider text-purple-400 flex items-center gap-2">
+                <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5 animate-in fade-in">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h2 className="text-xs font-black uppercase tracking-wider text-purple-700 flex items-center gap-2">
                       <TestTube2 className="h-4 w-4" />
-                      <span>Vacutainer Specimen Collection & Cold-Chain Stability</span>
+                      <span>Vacutainer Specimen Collection &amp; Cold-Chain Stability</span>
                     </h2>
                     <span className="text-[11px] font-semibold text-slate-500">Step 2 of 4</span>
                   </div>
 
                   {/* Vacutainer Tube Picker */}
                   <div>
-                    <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-2">
+                    <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-2">
                       Standard CLSI Vacutainer Cap Picker (Click to Select):
                     </label>
                     <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2.5">
@@ -823,20 +823,20 @@ export default function NewTestPage() {
                                 sampleType: tube.sampleType as SampleType,
                               })
                             }
-                            className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all ${
+                            className={`flex flex-col items-center justify-center p-3 rounded-2xl border transition-all cursor-pointer ${
                               isSelected
-                                ? `border-blue-400 bg-gradient-to-b from-blue-950 to-slate-950 ring-2 ring-blue-500/50 shadow-xl scale-[1.03]`
-                                : `border-slate-800 bg-slate-950/80 hover:bg-slate-900 hover:border-slate-700`
+                                ? `border-blue-500 bg-blue-50/80 ring-2 ring-blue-500/20 shadow-xs scale-[1.02]`
+                                : `border-slate-200 bg-white hover:bg-slate-50 hover:border-slate-300`
                             }`}
                           >
                             <span
-                              className="h-5 w-5 rounded-full shadow-lg mb-2 border border-white/30"
-                              style={{ backgroundColor: tube.color, boxShadow: `0 0 12px ${tube.color}99` }}
+                              className="h-5 w-5 rounded-full shadow-xs mb-2 border border-slate-300"
+                              style={{ backgroundColor: tube.color }}
                             />
-                            <span className="text-[11px] font-black text-white text-center leading-tight">
+                            <span className="text-[11px] font-bold text-slate-900 text-center leading-tight">
                               {tube.label}
                             </span>
-                            <span className="text-[9px] font-bold text-slate-400 mt-1 uppercase">
+                            <span className="text-[9px] font-semibold text-slate-500 mt-1 uppercase">
                               {tube.sampleType}
                             </span>
                           </button>
@@ -848,30 +848,30 @@ export default function NewTestPage() {
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">
                     {/* Sample Matrix */}
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                         Specimen Matrix Type
                       </label>
                       <select
                         value={formData.sampleType}
                         onChange={(e) => setFormData({ ...formData, sampleType: e.target.value as SampleType })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                       >
-                        <option value="BLOOD" className="bg-slate-900">Whole Blood</option>
-                        <option value="SERUM" className="bg-slate-900">Serum</option>
-                        <option value="PLASMA" className="bg-slate-900">Plasma</option>
-                        <option value="URINE" className="bg-slate-900">Urine</option>
-                        <option value="STOOL" className="bg-slate-900">Stool</option>
-                        <option value="SWAB" className="bg-slate-900">Swab</option>
-                        <option value="SPUTUM" className="bg-slate-900">Sputum</option>
-                        <option value="CSF" className="bg-slate-900">CSF</option>
-                        <option value="TISSUE" className="bg-slate-900">Tissue</option>
-                        <option value="OTHER" className="bg-slate-900">Other</option>
+                        <option value="BLOOD">Whole Blood</option>
+                        <option value="SERUM">Serum</option>
+                        <option value="PLASMA">Plasma</option>
+                        <option value="URINE">Urine</option>
+                        <option value="STOOL">Stool</option>
+                        <option value="SWAB">Swab</option>
+                        <option value="SPUTUM">Sputum</option>
+                        <option value="CSF">CSF</option>
+                        <option value="TISSUE">Tissue</option>
+                        <option value="OTHER">Other</option>
                       </select>
                     </div>
 
                     {/* Minimum Sample Volume */}
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                         Minimum Volume
                       </label>
                       <input
@@ -879,23 +879,23 @@ export default function NewTestPage() {
                         value={formData.sampleVolume || ""}
                         onChange={(e) => setFormData({ ...formData, sampleVolume: e.target.value })}
                         placeholder="e.g. 2.0 mL"
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                       />
                     </div>
 
                     {/* Storage Temperature */}
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                         Cold-Chain Storage Temp
                       </label>
                       <select
                         value={storageTemp}
                         onChange={(e) => setStorageTemp(e.target.value as any)}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                       >
-                        <option value="2-8C" className="bg-slate-900">Refrigerated (2°C - 8°C)</option>
-                        <option value="ROOM_TEMP" className="bg-slate-900">Room Temperature (18°C - 25°C)</option>
-                        <option value="-20C" className="bg-slate-900">Deep Freeze (-20°C)</option>
+                        <option value="2-8C">Refrigerated (2°C - 8°C)</option>
+                        <option value="ROOM_TEMP">Room Temperature (18°C - 25°C)</option>
+                        <option value="-20C">Deep Freeze (-20°C)</option>
                       </select>
                     </div>
                   </div>
@@ -903,10 +903,10 @@ export default function NewTestPage() {
                   {/* Fasting SOP Chips */}
                   <div>
                     <div className="flex items-center justify-between mb-1.5">
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300">
-                        Patient Preparation & Fasting Guidelines
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700">
+                        Patient Preparation &amp; Fasting Guidelines
                       </label>
-                      <span className="text-[10px] text-slate-400">Click a chip to quick-fill:</span>
+                      <span className="text-[10px] text-slate-500">Click a chip to quick-fill:</span>
                     </div>
                     <div className="flex flex-wrap gap-1.5 mb-2.5">
                       {[
@@ -920,7 +920,7 @@ export default function NewTestPage() {
                           type="button"
                           key={chip}
                           onClick={() => setFormData({ ...formData, patientPreparation: chip })}
-                          className="text-[10px] font-bold bg-slate-800 hover:bg-slate-700 text-slate-300 px-2.5 py-1 rounded-lg border border-slate-700 transition active:scale-95"
+                          className="text-[10px] font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 px-2.5 py-1 rounded-lg border border-slate-200 transition active:scale-95 cursor-pointer"
                         >
                           + {chip}
                         </button>
@@ -931,7 +931,7 @@ export default function NewTestPage() {
                       value={formData.patientPreparation || ""}
                       onChange={(e) => setFormData({ ...formData, patientPreparation: e.target.value })}
                       placeholder="Specific instructions for phlebotomist and patient before collection..."
-                      className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-medium text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                      className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-medium text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                     />
                   </div>
 
@@ -939,14 +939,14 @@ export default function NewTestPage() {
                     <button
                       type="button"
                       onClick={() => setActiveTab("general")}
-                      className="rounded-xl border border-slate-700 bg-slate-900 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-800"
+                      className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-xs"
                     >
                       ← Back
                     </button>
                     <button
                       type="button"
                       onClick={() => setActiveTab("parameters")}
-                      className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-black text-white hover:bg-blue-500 transition shadow-lg shadow-blue-500/20"
+                      className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-xs cursor-pointer"
                     >
                       <span>Proceed to Analytes ({parameters.length})</span>
                       <ArrowRight className="h-4 w-4" />
@@ -957,21 +957,21 @@ export default function NewTestPage() {
 
               {/* TAB 3: ANALYTE SUB-PARAMETERS */}
               {activeTab === "parameters" && (
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 backdrop-blur-xl p-6 shadow-2xl space-y-5 animate-in fade-in">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5 animate-in fade-in">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
                     <div>
-                      <h2 className="text-xs font-black uppercase tracking-wider text-blue-400 flex items-center gap-2">
+                      <h2 className="text-xs font-black uppercase tracking-wider text-blue-700 flex items-center gap-2">
                         <Sliders className="h-4 w-4" />
-                        <span>Discrete Analyte Parameters & Biological Reference Intervals</span>
+                        <span>Discrete Analyte Parameters &amp; Biological Reference Intervals</span>
                       </h2>
-                      <p className="text-[11px] text-slate-400 mt-0.5">
+                      <p className="text-[11px] text-slate-500 mt-0.5">
                         Define parameters with normal low/high bounds and panic critical value triggers
                       </p>
                     </div>
                     <button
                       type="button"
                       onClick={handleAddParameter}
-                      className="flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-3.5 py-2 text-xs font-black text-white hover:from-blue-500 hover:to-indigo-500 shadow-md transition"
+                      className="flex items-center gap-1.5 rounded-xl bg-blue-600 px-3.5 py-2 text-xs font-bold text-white hover:bg-blue-700 shadow-xs transition cursor-pointer"
                     >
                       <Plus className="h-3.5 w-3.5" />
                       <span>Add Parameter</span>
@@ -979,15 +979,15 @@ export default function NewTestPage() {
                   </div>
 
                   {parameters.length === 0 ? (
-                    <div className="rounded-2xl border border-dashed border-slate-800 p-8 text-center space-y-3">
-                      <Sliders className="h-8 w-8 text-slate-600 mx-auto" />
-                      <div className="text-xs font-bold text-slate-400">
+                    <div className="rounded-2xl border border-dashed border-slate-200 p-8 text-center space-y-3">
+                      <Sliders className="h-8 w-8 text-slate-400 mx-auto" />
+                      <div className="text-xs font-bold text-slate-500">
                         No sub-parameters added. The investigation will be reported as a single summary result.
                       </div>
                       <button
                         type="button"
                         onClick={handleAddParameter}
-                        className="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-xs font-bold text-blue-400 hover:bg-slate-800"
+                        className="rounded-xl border border-slate-300 bg-white px-4 py-2 text-xs font-bold text-blue-600 hover:bg-slate-50 cursor-pointer shadow-xs"
                       >
                         + Add First Parameter
                       </button>
@@ -997,11 +997,11 @@ export default function NewTestPage() {
                       {parameters.map((param, index) => (
                         <div
                           key={index}
-                          className="rounded-2xl border border-slate-800 bg-slate-950/80 p-4 space-y-3 transition hover:border-slate-700"
+                          className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-3 transition hover:border-slate-300"
                         >
-                          <div className="flex items-center justify-between gap-2 border-b border-slate-800/80 pb-2.5">
-                            <span className="flex items-center gap-2 text-xs font-black text-white">
-                              <span className="h-5 w-5 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-[10px]">
+                          <div className="flex items-center justify-between gap-2 border-b border-slate-200 pb-2.5">
+                            <span className="flex items-center gap-2 text-xs font-bold text-slate-900">
+                              <span className="h-5 w-5 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center text-[10px] font-bold">
                                 {index + 1}
                               </span>
                               <span>Parameter #{index + 1}</span>
@@ -1009,7 +1009,7 @@ export default function NewTestPage() {
                             <button
                               type="button"
                               onClick={() => handleRemoveParameter(index)}
-                              className="text-slate-500 hover:text-rose-400 transition p-1"
+                              className="text-slate-400 hover:text-rose-600 transition p-1 cursor-pointer"
                               title="Delete Parameter"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -1018,7 +1018,7 @@ export default function NewTestPage() {
 
                           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                             <div className="sm:col-span-2">
-                              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">
                                 Parameter Name *
                               </label>
                               <input
@@ -1027,21 +1027,21 @@ export default function NewTestPage() {
                                 placeholder="e.g. Hemoglobin, SGPT, Creatinine"
                                 value={param.parameterName}
                                 onChange={(e) => handleParameterChange(index, "parameterName", e.target.value)}
-                                className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white focus:border-blue-500"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-900 focus:border-blue-500 focus:outline-none"
                               />
                             </div>
 
                             <div>
-                              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-400 mb-1">
+                              <label className="block text-[10px] font-black uppercase tracking-wider text-slate-500 mb-1">
                                 Reporting Unit
                               </label>
                               <select
                                 value={param.unit}
                                 onChange={(e) => handleParameterChange(index, "unit", e.target.value)}
-                                className="w-full rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-bold text-white focus:border-blue-500"
+                                className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold text-slate-900 focus:border-blue-500 focus:outline-none"
                               >
                                 {COMMON_UNITS.map((u) => (
-                                  <option key={u} value={u} className="bg-slate-900">
+                                  <option key={u} value={u}>
                                     {u}
                                   </option>
                                 ))}
@@ -1052,7 +1052,7 @@ export default function NewTestPage() {
                           {/* Reference Bounds */}
                           <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-1">
                             <div>
-                              <label className="block text-[9px] font-black uppercase tracking-wider text-blue-400 mb-1">
+                              <label className="block text-[9px] font-black uppercase tracking-wider text-blue-700 mb-1">
                                 Male Normal Low
                               </label>
                               <input
@@ -1060,11 +1060,11 @@ export default function NewTestPage() {
                                 step="any"
                                 value={param.maleLow ?? ""}
                                 onChange={(e) => handleParameterChange(index, "maleLow", parseFloat(e.target.value) || 0)}
-                                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-bold text-white"
+                                className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-900"
                               />
                             </div>
                             <div>
-                              <label className="block text-[9px] font-black uppercase tracking-wider text-blue-400 mb-1">
+                              <label className="block text-[9px] font-black uppercase tracking-wider text-blue-700 mb-1">
                                 Male Normal High
                               </label>
                               <input
@@ -1072,11 +1072,11 @@ export default function NewTestPage() {
                                 step="any"
                                 value={param.maleHigh ?? ""}
                                 onChange={(e) => handleParameterChange(index, "maleHigh", parseFloat(e.target.value) || 0)}
-                                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-bold text-white"
+                                className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-900"
                               />
                             </div>
                             <div>
-                              <label className="block text-[9px] font-black uppercase tracking-wider text-pink-400 mb-1">
+                              <label className="block text-[9px] font-black uppercase tracking-wider text-pink-700 mb-1">
                                 Female Normal Low
                               </label>
                               <input
@@ -1084,11 +1084,11 @@ export default function NewTestPage() {
                                 step="any"
                                 value={param.femaleLow ?? ""}
                                 onChange={(e) => handleParameterChange(index, "femaleLow", parseFloat(e.target.value) || 0)}
-                                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-bold text-white"
+                                className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-900"
                               />
                             </div>
                             <div>
-                              <label className="block text-[9px] font-black uppercase tracking-wider text-pink-400 mb-1">
+                              <label className="block text-[9px] font-black uppercase tracking-wider text-pink-700 mb-1">
                                 Female Normal High
                               </label>
                               <input
@@ -1096,15 +1096,15 @@ export default function NewTestPage() {
                                 step="any"
                                 value={param.femaleHigh ?? ""}
                                 onChange={(e) => handleParameterChange(index, "femaleHigh", parseFloat(e.target.value) || 0)}
-                                className="w-full rounded-lg border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-xs font-bold text-white"
+                                className="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-bold text-slate-900"
                               />
                             </div>
                           </div>
 
                           {/* Critical Panic Thresholds */}
-                          <div className="grid grid-cols-2 gap-2.5 pt-1 border-t border-slate-800/60">
+                          <div className="grid grid-cols-2 gap-2.5 pt-1 border-t border-slate-200">
                             <div>
-                              <label className="block text-[9px] font-black uppercase tracking-wider text-rose-400 mb-1">
+                              <label className="block text-[9px] font-black uppercase tracking-wider text-rose-700 mb-1">
                                 Critical Panic Low (Alert Trigger)
                               </label>
                               <input
@@ -1113,11 +1113,11 @@ export default function NewTestPage() {
                                 placeholder="e.g. 7.0 (Immediate doctor alert)"
                                 value={param.criticalLow ?? ""}
                                 onChange={(e) => handleParameterChange(index, "criticalLow", parseFloat(e.target.value) || undefined)}
-                                className="w-full rounded-lg border border-rose-500/30 bg-rose-950/20 px-2.5 py-1.5 text-xs font-bold text-rose-300 placeholder-rose-700"
+                                className="w-full rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-900 placeholder-rose-400"
                               />
                             </div>
                             <div>
-                              <label className="block text-[9px] font-black uppercase tracking-wider text-rose-400 mb-1">
+                              <label className="block text-[9px] font-black uppercase tracking-wider text-rose-700 mb-1">
                                 Critical Panic High (Alert Trigger)
                               </label>
                               <input
@@ -1126,7 +1126,7 @@ export default function NewTestPage() {
                                 placeholder="e.g. 20.0"
                                 value={param.criticalHigh ?? ""}
                                 onChange={(e) => handleParameterChange(index, "criticalHigh", parseFloat(e.target.value) || undefined)}
-                                className="w-full rounded-lg border border-rose-500/30 bg-rose-950/20 px-2.5 py-1.5 text-xs font-bold text-rose-300 placeholder-rose-700"
+                                className="w-full rounded-lg border border-rose-200 bg-rose-50 px-2.5 py-1.5 text-xs font-bold text-rose-900 placeholder-rose-400"
                               />
                             </div>
                           </div>
@@ -1139,16 +1139,16 @@ export default function NewTestPage() {
                     <button
                       type="button"
                       onClick={() => setActiveTab("specimen")}
-                      className="rounded-xl border border-slate-700 bg-slate-900 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-800"
+                      className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-xs"
                     >
                       ← Back
                     </button>
                     <button
                       type="button"
                       onClick={() => setActiveTab("pricing")}
-                      className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-black text-white hover:bg-blue-500 transition shadow-lg shadow-blue-500/20"
+                      className="flex items-center gap-2 rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-xs cursor-pointer"
                     >
-                      <span>Proceed to Tariff & Commercials</span>
+                      <span>Proceed to Tariff &amp; Commercials</span>
                       <ArrowRight className="h-4 w-4" />
                     </button>
                   </div>
@@ -1157,11 +1157,11 @@ export default function NewTestPage() {
 
               {/* TAB 4: TARIFF & COMMERCIALS */}
               {activeTab === "pricing" && (
-                <div className="rounded-2xl border border-slate-800 bg-slate-900/80 backdrop-blur-xl p-6 shadow-2xl space-y-5 animate-in fade-in">
-                  <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                    <h2 className="text-xs font-black uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                <div className="rounded-2xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5 animate-in fade-in">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h2 className="text-xs font-black uppercase tracking-wider text-emerald-700 flex items-center gap-2">
                       <DollarSign className="h-4 w-4" />
-                      <span>Diagnostic Tariffs, Doctor Margins & Turnaround SLA</span>
+                      <span>Diagnostic Tariffs, Doctor Margins &amp; Turnaround SLA</span>
                     </h2>
                     <span className="text-[11px] font-semibold text-slate-500">Step 4 of 4</span>
                   </div>
@@ -1169,8 +1169,8 @@ export default function NewTestPage() {
                   <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                     {/* MRP */}
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
-                        Patient MRP (₹) <span className="text-rose-400">*</span>
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
+                        Patient MRP (₹) <span className="text-rose-500">*</span>
                       </label>
                       <input
                         type="number"
@@ -1178,14 +1178,14 @@ export default function NewTestPage() {
                         required
                         value={formData.price}
                         onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-base font-black text-white focus:border-blue-500 focus:ring-2 focus:ring-blue-500/30"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-base font-black text-slate-900 focus:bg-white focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10"
                       />
-                      <span className="text-[10px] text-slate-500 mt-1 block">Standard walk-in retail rate</span>
+                      <span className="text-[10px] text-slate-400 mt-1 block">Standard walk-in retail rate</span>
                     </div>
 
                     {/* Offer Price */}
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                         Special Offer Price (₹)
                       </label>
                       <input
@@ -1194,14 +1194,14 @@ export default function NewTestPage() {
                         value={formData.offerPrice || ""}
                         onChange={(e) => setFormData({ ...formData, offerPrice: parseFloat(e.target.value) || 0 })}
                         placeholder="Discounted rate"
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-base font-black text-emerald-400 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-base font-black text-emerald-700 focus:bg-white focus:border-emerald-500 focus:ring-4 focus:ring-emerald-500/10"
                       />
-                      <span className="text-[10px] text-slate-500 mt-1 block">Direct patient discounted rate</span>
+                      <span className="text-[10px] text-slate-400 mt-1 block">Direct patient discounted rate</span>
                     </div>
 
                     {/* B2B Rate */}
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                         B2B / Referral Net (₹)
                       </label>
                       <input
@@ -1210,14 +1210,14 @@ export default function NewTestPage() {
                         value={formData.b2bRate || ""}
                         onChange={(e) => setFormData({ ...formData, b2bRate: parseFloat(e.target.value) || 0 })}
                         placeholder="Transfer rate"
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-base font-black text-indigo-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-base font-black text-indigo-700 focus:bg-white focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/10"
                       />
-                      <span className="text-[10px] text-slate-500 mt-1 block">Net rate billed to clinic partner</span>
+                      <span className="text-[10px] text-slate-400 mt-1 block">Net rate billed to clinic partner</span>
                     </div>
 
                     {/* GST % */}
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                         GST / Tax Rate (%)
                       </label>
                       <input
@@ -1226,43 +1226,43 @@ export default function NewTestPage() {
                         max="28"
                         value={formData.gstPercentage ?? 0}
                         onChange={(e) => setFormData({ ...formData, gstPercentage: parseFloat(e.target.value) || 0 })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-blue-500"
                       />
-                      <span className="text-[10px] text-slate-500 mt-1 block">Exempted in clinical diagnostics</span>
+                      <span className="text-[10px] text-slate-400 mt-1 block">Exempted in clinical diagnostics</span>
                     </div>
                   </div>
 
                   {/* Live Financial Margin Matrix Card */}
-                  <div className="rounded-2xl border border-slate-800 bg-slate-950/90 p-4.5 shadow-xl">
-                    <div className="text-xs font-black uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
-                      <TrendingUp className="h-4 w-4 text-emerald-400" />
+                  <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4.5 shadow-xs">
+                    <div className="text-xs font-black uppercase tracking-wider text-slate-600 mb-3 flex items-center gap-1.5">
+                      <TrendingUp className="h-4 w-4 text-emerald-600" />
                       <span>Live Commercial Margin Realization Matrix</span>
                     </div>
                     <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 text-xs">
                       <div>
-                        <span className="text-slate-400 block font-semibold">Patient Pay Amount:</span>
-                        <span className="text-xl font-black text-white mt-1 block">
+                        <span className="text-slate-500 block font-semibold">Patient Pay Amount:</span>
+                        <span className="text-xl font-black text-slate-900 mt-1 block">
                           ₹{(hasDiscount ? offerPrice : baseMRP).toLocaleString("en-IN")}
                         </span>
                       </div>
 
                       <div>
-                        <span className="text-slate-400 block font-semibold">Patient Benefit / Discount:</span>
-                        <span className="text-xl font-black text-emerald-400 mt-1 block">
+                        <span className="text-slate-500 block font-semibold">Patient Benefit / Discount:</span>
+                        <span className="text-xl font-black text-emerald-600 mt-1 block">
                           {hasDiscount ? `${discountPercent}% (Save ₹${savings})` : "Standard MRP"}
                         </span>
                       </div>
 
                       <div>
-                        <span className="text-slate-400 block font-semibold">Referring Doctor Margin:</span>
-                        <span className="text-xl font-black text-indigo-400 mt-1 block">
+                        <span className="text-slate-500 block font-semibold">Referring Doctor Margin:</span>
+                        <span className="text-xl font-black text-indigo-700 mt-1 block">
                           {referralMargin > 0 ? `₹${referralMargin} (${referralMarginPercent}%)` : "—"}
                         </span>
                       </div>
 
                       <div>
-                        <span className="text-slate-400 block font-semibold">Net Diagnostic Realization:</span>
-                        <span className="text-xl font-black text-blue-400 mt-1 block">
+                        <span className="text-slate-500 block font-semibold">Net Diagnostic Realization:</span>
+                        <span className="text-xl font-black text-blue-700 mt-1 block">
                           ₹{(b2bRate > 0 ? b2bRate : hasDiscount ? offerPrice : baseMRP).toLocaleString("en-IN")}
                         </span>
                       </div>
@@ -1272,7 +1272,7 @@ export default function NewTestPage() {
                   {/* Turnaround Time (TAT) */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                         Analytical Turnaround Time (TAT Hours)
                       </label>
                       <input
@@ -1280,12 +1280,12 @@ export default function NewTestPage() {
                         min="1"
                         value={formData.tatHours ?? 12}
                         onChange={(e) => setFormData({ ...formData, tatHours: parseInt(e.target.value) || 12 })}
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white focus:border-blue-500"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-bold text-slate-900 focus:bg-white focus:border-blue-500"
                       />
                     </div>
 
                     <div>
-                      <label className="block text-xs font-black uppercase tracking-wider text-slate-300 mb-1.5">
+                      <label className="block text-xs font-black uppercase tracking-wider text-slate-700 mb-1.5">
                         Receipt SLA Display
                       </label>
                       <input
@@ -1293,30 +1293,30 @@ export default function NewTestPage() {
                         value={formData.tatDisplay || ""}
                         onChange={(e) => setFormData({ ...formData, tatDisplay: e.target.value })}
                         placeholder="e.g. Same Day (4-6 hours), 24 hours"
-                        className="w-full rounded-xl border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-bold text-white placeholder-slate-500 focus:border-blue-500"
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50/70 px-3.5 py-2.5 text-xs font-bold text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500"
                       />
                     </div>
                   </div>
 
                   {/* Active Switch */}
-                  <div className="flex items-center gap-3 pt-3 border-t border-slate-800">
+                  <div className="flex items-center gap-3 pt-3 border-t border-slate-200">
                     <input
                       type="checkbox"
                       id="isActive"
                       checked={formData.isActive}
                       onChange={(e) => setFormData({ ...formData, isActive: e.target.checked })}
-                      className="h-4 w-4 rounded border-slate-700 bg-slate-950 text-blue-600 focus:ring-blue-500/40"
+                      className="h-4 w-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500/40"
                     />
-                    <label htmlFor="isActive" className="text-xs font-bold text-slate-200 cursor-pointer">
-                      Publish Investigation in Diagnostic Catalog (Available immediately for CPOE requisitions & Billing)
+                    <label htmlFor="isActive" className="text-xs font-bold text-slate-800 cursor-pointer">
+                      Publish Investigation in Diagnostic Catalog (Available immediately for CPOE requisitions &amp; Billing)
                     </label>
                   </div>
 
-                  <div className="flex items-center justify-between pt-4 border-t border-slate-800">
+                  <div className="flex items-center justify-between pt-4 border-t border-slate-200">
                     <button
                       type="button"
                       onClick={() => setActiveTab("parameters")}
-                      className="rounded-xl border border-slate-700 bg-slate-900 px-5 py-2.5 text-xs font-bold text-slate-300 hover:bg-slate-800"
+                      className="rounded-xl border border-slate-200 bg-white px-5 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 cursor-pointer shadow-xs"
                     >
                       ← Back to Analytes
                     </button>
@@ -1324,17 +1324,17 @@ export default function NewTestPage() {
                     <button
                       type="submit"
                       disabled={loading}
-                      className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-7 py-3 text-xs font-black text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-xl shadow-blue-500/30 disabled:opacity-50"
+                      className="flex items-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 px-7 py-3 text-xs font-bold text-white transition shadow-xs disabled:opacity-50 cursor-pointer"
                     >
                       {loading ? (
                         <>
                           <div className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                          <span>Registering Investigation & Analytes...</span>
+                          <span>Registering Investigation &amp; Analytes...</span>
                         </>
                       ) : (
                         <>
                           <CheckCircle2 className="h-4 w-4" />
-                          <span>Register & Publish Investigation</span>
+                          <span>Register &amp; Publish Investigation</span>
                         </>
                       )}
                     </button>
@@ -1348,47 +1348,47 @@ export default function NewTestPage() {
           <div className="lg:col-span-4 space-y-4">
             <div className="sticky top-6 space-y-4">
               {/* Card 1: 360° Requisition Card Preview */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/90 backdrop-blur-xl p-5 shadow-2xl space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-3">
-                  <span className="text-xs font-black uppercase tracking-wider text-blue-400 flex items-center gap-1.5">
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                  <span className="text-xs font-black uppercase tracking-wider text-blue-700 flex items-center gap-1.5">
                     <Eye className="h-4 w-4" />
                     <span>Live CPOE Order Preview</span>
                   </span>
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-950 text-blue-300 border border-blue-800">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 font-bold">
                     {formData.testCode || "CODE"}
                   </span>
                 </div>
 
                 <div>
-                  <h3 className="text-base font-black text-white leading-snug">
+                  <h3 className="text-base font-black text-slate-900 leading-snug">
                     {formData.testName || "Investigation Name"}
                   </h3>
                   <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-slate-400">{formData.shortName || "Alias"}</span>
-                    <span className="text-slate-600">•</span>
-                    <span className="text-xs font-semibold text-blue-400">
+                    <span className="text-xs text-slate-500">{formData.shortName || "Alias"}</span>
+                    <span className="text-slate-400">•</span>
+                    <span className="text-xs font-semibold text-blue-600">
                       {formData.processingDepartment || "Central Lab"}
                     </span>
                   </div>
                 </div>
 
                 {/* Pricing & TAT Pill */}
-                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-950/80 border border-slate-800">
+                <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 border border-slate-200">
                   <div>
-                    <span className="text-[10px] font-bold text-slate-400 block">Patient Price</span>
-                    <span className="text-base font-black text-emerald-400">
+                    <span className="text-[10px] font-bold text-slate-400 block uppercase">Patient Price</span>
+                    <span className="text-base font-black text-slate-900">
                       ₹{hasDiscount ? offerPrice : baseMRP}
                     </span>
                     {hasDiscount && (
-                      <span className="text-[10px] text-slate-500 line-through ml-1.5 font-bold">
+                      <span className="text-[10px] text-slate-400 line-through ml-1.5 font-bold">
                         ₹{baseMRP}
                       </span>
                     )}
                   </div>
 
                   <div className="text-right">
-                    <span className="text-[10px] font-bold text-slate-400 block">TAT SLA</span>
-                    <span className="text-xs font-bold text-amber-400 flex items-center gap-1">
+                    <span className="text-[10px] font-bold text-slate-400 block uppercase">TAT SLA</span>
+                    <span className="text-xs font-bold text-amber-700 flex items-center gap-1">
                       <Clock3 className="h-3 w-3" />
                       <span>{formData.tatDisplay || `${formData.tatHours}h`}</span>
                     </span>
@@ -1396,48 +1396,48 @@ export default function NewTestPage() {
                 </div>
 
                 {/* Sub-Parameters Count */}
-                <div className="text-xs text-slate-400 flex items-center justify-between px-1">
+                <div className="text-xs text-slate-500 flex items-center justify-between px-1">
                   <span>Sub-Analytes Configured:</span>
-                  <span className="font-bold text-white">{parameters.length} Parameters</span>
+                  <span className="font-bold text-slate-900">{parameters.length} Parameters</span>
                 </div>
               </div>
 
               {/* Card 2: Physical Barcode Thermal Sticker Label Preview */}
-              <div className="rounded-2xl border border-slate-800 bg-slate-900/90 backdrop-blur-xl p-5 shadow-2xl space-y-3">
-                <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                  <span className="text-xs font-black uppercase tracking-wider text-purple-400 flex items-center gap-1.5">
+              <div className="rounded-2xl border border-slate-200/90 bg-white p-5 shadow-xs space-y-3">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                  <span className="text-xs font-black uppercase tracking-wider text-purple-700 flex items-center gap-1.5">
                     <Barcode className="h-4 w-4" />
                     <span>Specimen Barcode Sticker</span>
                   </span>
-                  <span className="text-[10px] font-bold text-slate-500">2.0" × 1.0" Thermal</span>
+                  <span className="text-[10px] font-bold text-slate-400">2.0" × 1.0" Thermal</span>
                 </div>
 
                 {/* Realistic White Barcode Sticker */}
-                <div className="rounded-xl border border-slate-300 bg-white p-3 text-slate-900 shadow-lg space-y-1.5">
+                <div className="rounded-xl border border-slate-300 bg-white p-3 text-slate-900 shadow-xs space-y-1.5">
                   <div className="flex items-center justify-between text-[11px] font-black border-b border-slate-200 pb-1">
                     <div className="flex items-center gap-1.5">
                       <span
-                        className="h-3 w-3 rounded-full border border-slate-400"
+                        className="h-3 w-3 rounded-full border border-slate-300"
                         style={{ backgroundColor: currentTube.color }}
                       />
-                      <span className="font-mono">{formData.testCode || "TEST"}</span>
+                      <span className="font-mono text-blue-700">{formData.testCode || "TEST"}</span>
                     </div>
-                    <span className="text-[10px] font-bold uppercase">{formData.sampleType}</span>
+                    <span className="text-[10px] font-bold uppercase text-slate-600">{formData.sampleType}</span>
                   </div>
 
-                  <div className="flex items-center justify-between text-[9px] font-bold text-slate-700">
+                  <div className="flex items-center justify-between text-[9px] font-bold text-slate-800">
                     <span className="truncate max-w-[140px]">{formData.testName || "Investigation"}</span>
                     <span>{formData.sampleVolume || "2.0 mL"}</span>
                   </div>
 
                   {/* Faux Barcode Lines */}
                   <div className="py-1 flex flex-col items-center justify-center">
-                    <div className="h-7 w-full flex items-center justify-center gap-0.5 px-2 bg-slate-100 rounded">
+                    <div className="h-7 w-full flex items-center justify-center gap-0.5 px-2 bg-slate-50 rounded border border-slate-200">
                       {[3, 1, 2, 4, 1, 3, 2, 1, 4, 2, 3, 1, 2, 4, 1, 3, 2, 1, 3].map((w, i) => (
                         <div key={i} className="h-full bg-slate-900" style={{ width: `${w * 1.5}px` }} />
                       ))}
                     </div>
-                    <span className="text-[8px] font-mono tracking-widest text-slate-600 mt-0.5">
+                    <span className="text-[8px] font-mono tracking-widest text-slate-500 mt-0.5">
                       *{formData.testCode || "LAB"}-SPECIMEN*
                     </span>
                   </div>

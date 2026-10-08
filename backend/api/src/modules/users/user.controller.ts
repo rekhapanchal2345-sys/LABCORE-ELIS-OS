@@ -324,6 +324,16 @@ export const getUsers = async (
       ];
     }
 
+    if (req.path.endsWith('/count')) {
+      const count = await prisma.user.count({ where });
+      res.status(200).json({
+        success: true,
+        message: "User count fetched successfully",
+        data: { count }
+      });
+      return;
+    }
+
     const [
       users,
       total,

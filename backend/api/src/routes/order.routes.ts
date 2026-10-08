@@ -27,9 +27,9 @@ const router = Router();
  */
 router.post(
   "/",
-  validate(
-    createOrderSchema
-  ),
+  validate({
+    body: createOrderSchema
+  }),
   createOrder
 );
 
@@ -47,9 +47,9 @@ router.post(
  */
 router.get(
   "/:id",
-  validate(
-    orderIdSchema
-  ),
+  validate({
+    params: orderIdSchema
+  }),
   getOrderById
 );
 

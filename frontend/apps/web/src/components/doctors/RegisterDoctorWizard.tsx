@@ -98,6 +98,12 @@ export type DoctorFormValues = {
   // 8 Review
   notes: string;
   isActive: boolean;
+  // Advanced realworld features
+  consultationFee: string;
+  licenseNumber: string;
+  licenseExpiry: string;
+  availableDays: string;
+  availableTime: string;
 };
 
 const EMPTY: DoctorFormValues = {
@@ -147,6 +153,11 @@ const EMPTY: DoctorFormValues = {
   cancelledChequeUrl: '',
   notes: '',
   isActive: true,
+  consultationFee: '',
+  licenseNumber: '',
+  licenseExpiry: '',
+  availableDays: 'Mon-Sat',
+  availableTime: '10:00 AM - 05:00 PM',
 };
 
 export const WIZARD_STEPS = [
@@ -212,6 +223,11 @@ export const valuesFromDoctor = (d: DoctorProfile): DoctorFormValues => ({
   cancelledChequeUrl: (d as any).cancelledChequeUrl ?? '',
   notes: (d as any).notes ?? '',
   isActive: d.isActive !== false,
+  consultationFee: String(d.consultationFee ?? ''),
+  licenseNumber: d.licenseNumber ?? '',
+  licenseExpiry: d.licenseExpiry ? new Date(d.licenseExpiry).toISOString().slice(0, 10) : '',
+  availableDays: d.availableDays ?? '',
+  availableTime: d.availableTime ?? '',
 });
 
 const DRAFT_KEY = 'labcore.doctor.draft.v1';
@@ -275,6 +291,15 @@ export const validateStep = (
       if (Number.isNaN(d.getTime())) e.registrationExpiry = 'Enter a valid date';
       else if (d.getTime() < Date.now())
         e.registrationExpiry = 'This registration has already expired';
+    }
+    if (v.consultationFee && Number.isNaN(Number(v.consultationFee))) {
+      e.consultationFee = 'Consultation fee must be a number';
+    }
+    if (v.licenseExpiry) {
+      const d = new Date(v.licenseExpiry);
+      if (Number.isNaN(d.getTime())) e.licenseExpiry = 'Enter a valid date';
+      else if (d.getTime() < Date.now())
+        e.licenseExpiry = 'This license has already expired';
     }
   }
 
@@ -673,6 +698,11 @@ export default function RegisterDoctorWizard({
       cancelledChequeUrl: values.cancelledChequeUrl || undefined,
       notes: values.notes.trim() || undefined,
       isActive: values.isActive,
+      consultationFee: values.consultationFee ? Number(values.consultationFee) : undefined,
+      licenseNumber: values.licenseNumber.trim() || undefined,
+      licenseExpiry: values.licenseExpiry || undefined,
+      availableDays: values.availableDays.trim() || undefined,
+      availableTime: values.availableTime.trim() || undefined,
     };
     return payload;
   };
@@ -1026,6 +1056,32 @@ export default function RegisterDoctorWizard({
                   onChange={(e) => set('registrationExpiry', e.target.value)}
                 />
               </Field>
+              <Field label="License Number" error={errors.licenseNumber} className="dr-col-4">
+                <input
+                  className={inputClass(errors.licenseNumber)}
+                  value={values.licenseNumber}
+                  onChange={(e) => set('licenseNumber', e.target.value)}
+                  placeholder="State Medical License No."
+                />
+              </Field>
+              <Field label="License Expiry" error={errors.licenseExpiry} className="dr-col-4">
+                <input
+                  type="date"
+                  className={inputClass(errors.licenseExpiry)}
+                  value={values.licenseExpiry}
+                  onChange={(e) => set('licenseExpiry', e.target.value)}
+                />
+              </Field>
+              <Field label="Consultation Fee (₹)" error={errors.consultationFee} className="dr-col-4">
+                <input
+                  type="number"
+                  min="0"
+                  className={inputClass(errors.consultationFee)}
+                  value={values.consultationFee}
+                  onChange={(e) => set('consultationFee', e.target.value)}
+                  placeholder="500"
+                />
+              </Field>
             </div>
           ) : null}
 
@@ -1187,6 +1243,22 @@ export default function RegisterDoctorWizard({
                   value={values.clinicAddress}
                   onChange={(e) => set('clinicAddress', e.target.value)}
                   placeholder="Clinic street address and landmarks"
+                />
+              </Field>
+              <Field label="Available Days (OPD)" className="dr-col-6">
+                <input
+                  className="dr-input"
+                  value={values.availableDays}
+                  onChange={(e) => set('availableDays', e.target.value)}
+                  placeholder="e.g. Mon-Sat"
+                />
+              </Field>
+              <Field label="Available Time (OPD)" className="dr-col-6">
+                <input
+                  className="dr-input"
+                  value={values.availableTime}
+                  onChange={(e) => set('availableTime', e.target.value)}
+                  placeholder="e.g. 10:00 AM - 05:00 PM"
                 />
               </Field>
             </div>

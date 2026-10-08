@@ -1,4 +1,5 @@
 import os
+import time
 import json
 from typing import List, Dict, Any, Optional
 
@@ -100,7 +101,7 @@ async def chat_completions(request: Request, body: ChatCompletionRequest):
             .get("text", "")
         )
         out = ChatCompletionResponse(
-            created=int(httpx.time.time()),
+            created=int(time.time()),
             model=body.model or DEFAULT_MODEL,
             choices=[
                 ChatChoice(

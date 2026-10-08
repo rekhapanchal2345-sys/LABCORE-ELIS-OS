@@ -28,7 +28,7 @@ const router = Router();
  */
 router.post(
   "/",
-  validate(enterResultSchema),
+  validate({ body: enterResultSchema }),
   enterResult
 );
 
@@ -39,7 +39,7 @@ router.post(
  */
 router.get(
   "/:id",
-  validate(resultIdSchema),
+  validate({ params: resultIdSchema }),
   getResultById
 );
 

@@ -80,6 +80,11 @@ export interface DoctorRow {
   reportDeliveryModes?: string[];
   enablePortalAccess?: boolean;
   createdAt: string;
+  consultationFee?: number | string | null;
+  licenseNumber?: string | null;
+  licenseExpiry?: string | null;
+  availableDays?: string | null;
+  availableTime?: string | null;
 
   // Metrics are server-computed and identical on every screen.
   totalReferrals?: number;

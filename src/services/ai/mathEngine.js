@@ -84,6 +84,7 @@ class MathEngine {
   }
 
   static matrixMultiply(A, B) {
+    if (!A || A.length === 0 || !A[0] || !B || B.length === 0 || !B[0]) return [];
     const rowsA = A.length;
     const colsA = A[0].length;
     const rowsB = B.length;
@@ -141,6 +142,7 @@ class MathEngine {
 
   // Preprocessing / Scalers
   static standardScale(matrix) {
+    if (!matrix || matrix.length === 0 || !matrix[0]) return { scaled: [], means: [], stds: [] };
     const cols = matrix[0].length;
     const means = [];
     const stds = [];
@@ -161,6 +163,7 @@ class MathEngine {
   }
 
   static minMaxScale(matrix) {
+    if (!matrix || matrix.length === 0 || !matrix[0]) return { scaled: [], mins: [], maxs: [] };
     const cols = matrix[0].length;
     const mins = [];
     const maxs = [];

@@ -52,7 +52,21 @@ router.get(
   requirePermission(
     PERMISSIONS.USER_READ
   ),
-  validate(userListSchema),
+  validate({ query: userListSchema }),
+  getUsers
+);
+
+/**
+ * -----------------------------------------
+ * GET /api/users/count
+ * -----------------------------------------
+ */
+router.get(
+  "/count",
+  requirePermission(
+    PERMISSIONS.USER_READ
+  ),
+  validate({ query: userListSchema }),
   getUsers
 );
 
@@ -66,7 +80,7 @@ router.post(
   requirePermission(
     PERMISSIONS.USER_CREATE
   ),
-  validate(createUserSchema),
+  validate({ body: createUserSchema }),
   createUser
 );
 
@@ -80,7 +94,7 @@ router.get(
   requirePermission(
     PERMISSIONS.USER_READ
   ),
-  validate(userIdSchema),
+  validate({ params: userIdSchema }),
   getUserById
 );
 
@@ -94,7 +108,7 @@ router.put(
   requirePermission(
     PERMISSIONS.USER_UPDATE
   ),
-  validate(updateUserSchema),
+  validate({ body: updateUserSchema }),
   updateUser
 );
 
@@ -108,7 +122,7 @@ router.patch(
   requirePermission(
     PERMISSIONS.USER_UPDATE
   ),
-  validate(userIdSchema),
+  validate({ params: userIdSchema }),
   activateUser
 );
 
@@ -122,7 +136,7 @@ router.patch(
   requirePermission(
     PERMISSIONS.USER_UPDATE
   ),
-  validate(userIdSchema),
+  validate({ params: userIdSchema }),
   suspendUser
 );
 
@@ -139,7 +153,7 @@ router.delete(
   requirePermission(
     PERMISSIONS.USER_UPDATE
   ),
-  validate(userIdSchema),
+  validate({ params: userIdSchema }),
   deactivateUser
 );
 
@@ -153,7 +167,7 @@ router.delete(
 router.patch(
   "/:id/profile",
   authenticate,
-  validate(userIdSchema),
+  validate({ params: userIdSchema }),
   updateProfileSettings
 );
 

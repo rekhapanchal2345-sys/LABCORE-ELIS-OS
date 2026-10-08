@@ -75,21 +75,6 @@ router.get(
   summary
 );
 
-// =======================================================
-// GET SETTLEMENT BY ID
-// =======================================================
-
-router.get(
-  "/:id",
-  authorize(
-    UserRole.ADMIN,
-    UserRole.ACCOUNTANT
-  ),
-  validate({
-    params: settlementIdSchema,
-  }),
-  getOne
-);
 
 // =======================================================
 // PROCESS SETTLEMENT
@@ -153,6 +138,22 @@ router.post(
     body: reconcileSchema,
   }),
   reconcile
+);
+
+// =======================================================
+// GET SETTLEMENT BY ID
+// =======================================================
+
+router.get(
+  "/:id",
+  authorize(
+    UserRole.ADMIN,
+    UserRole.ACCOUNTANT
+  ),
+  validate({
+    params: settlementIdSchema,
+  }),
+  getOne
 );
 
 export default router;

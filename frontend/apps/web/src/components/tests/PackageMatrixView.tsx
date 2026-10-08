@@ -1,10 +1,20 @@
 "use client";
 
 import React, { useState } from "react";
-import { 
-  Package, Sparkles, CheckCircle2, FlaskConical, 
-  ArrowRight, ShieldCheck, Tag, DollarSign, Layers, 
-  Clock3, ChevronRight, Plus, ExternalLink
+import {
+  Package,
+  Sparkles,
+  CheckCircle2,
+  FlaskConical,
+  ArrowRight,
+  ShieldCheck,
+  Tag,
+  DollarSign,
+  Layers,
+  Clock3,
+  ChevronRight,
+  Plus,
+  ExternalLink,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -60,41 +70,40 @@ const DEFAULT_PACKAGES: HealthPackage[] = [
     testsCount: 24,
     fasting: true,
     tatHours: 8,
-    popular: true,
     tests: [
-      { name: "Lipid Profile Extended (Cholesterol, Triglycerides, HDL, LDL, VLDL)", code: "LIPID-EXT", container: "Serum Separator Tube", sampleType: "SERUM" },
-      { name: "High Sensitivity C-Reactive Protein (hs-CRP)", code: "HS-CRP", container: "Serum Separator Tube", sampleType: "SERUM" },
-      { name: "Apolipoprotein A1 & B Ratio", code: "APO-AB", container: "Serum Separator Tube", sampleType: "SERUM" },
+      { name: "Lipid Profile (Total Chol, HDL, LDL, VLDL, TG, Non-HDL)", code: "LIPID-01", container: "Serum Separator Tube", sampleType: "SERUM" },
+      { name: "High-Sensitivity C-Reactive Protein (hs-CRP)", code: "HS-CRP", container: "Serum Separator Tube", sampleType: "SERUM" },
+      { name: "Apolipoprotein A1 & B with Apo B/A1 Ratio", code: "APO-AB", container: "Serum Separator Tube", sampleType: "SERUM" },
+      { name: "Lipoprotein (a) [Lp(a)]", code: "LPA", container: "Serum Separator Tube", sampleType: "SERUM" },
       { name: "Homocysteine Quantitative", code: "HOMO-Q", container: "EDTA Tube", sampleType: "BLOOD" },
-      { name: "Troponin I Quantitative (STAT)", code: "TROP-I", container: "Lithium Heparin", sampleType: "PLASMA" },
     ],
   },
   {
     id: "PKG-03",
-    name: "Diabetes & Metabolic Comprehensive Health Panel",
-    code: "PKG-DIAB-COMP",
+    name: "Comprehensive Diabetic & Metabolic Control Panel",
+    code: "PKG-DIAB-MET",
     category: "Endocrinology",
-    price: 899,
-    originalPrice: 1950,
+    price: 999,
+    originalPrice: 2400,
     testsCount: 16,
     fasting: true,
     tatHours: 6,
     tests: [
-      { name: "Fasting Blood Glucose (FBS)", code: "FBS-01", container: "Fluoride Tube", sampleType: "BLOOD" },
-      { name: "Post-Prandial Glucose (PPBS)", code: "PPBS-01", container: "Fluoride Tube", sampleType: "BLOOD" },
-      { name: "HbA1c (Glycated Hemoglobin) by HPLC", code: "HBA1C", container: "EDTA Tube", sampleType: "BLOOD" },
-      { name: "Estimated Average Glucose (eAG)", code: "EAG-01", container: "Calculated", sampleType: "CALCULATED" },
-      { name: "Microalbuminuria / Creatinine Ratio (Urine ACR)", code: "U-ACR", container: "Sterile Container", sampleType: "URINE" },
-      { name: "Serum Creatinine with eGFR", code: "CREAT-EGFR", container: "Serum Separator Tube", sampleType: "SERUM" },
+      { name: "Fasting Blood Sugar (FBS)", code: "FBS", container: "Fluoride Tube", sampleType: "BLOOD" },
+      { name: "Post-Prandial Blood Sugar (PPBS)", code: "PPBS", container: "Fluoride Tube", sampleType: "BLOOD" },
+      { name: "Glycated Hemoglobin (HbA1c) with eAG", code: "HBA1C", container: "EDTA Tube", sampleType: "BLOOD" },
+      { name: "Serum Creatinine with eGFR Calculation", code: "CREAT-EGFR", container: "Serum Separator Tube", sampleType: "SERUM" },
+      { name: "Urine Microalbumin / Creatinine Ratio (UACR)", code: "UACR", container: "Sterile Container", sampleType: "URINE" },
+      { name: "Lipid Profile Basic", code: "LIPID-BSC", container: "Serum Separator Tube", sampleType: "SERUM" },
     ],
   },
   {
     id: "PKG-04",
-    name: "Acute Fever & Monsoon Vector Panel (Dengue, Malaria, Typhoid)",
-    code: "PKG-FEV-VEC",
-    category: "Infectious Disease",
-    price: 1199,
-    originalPrice: 2600,
+    name: "Acute Fever & Tropical Infectious Disease Panel",
+    code: "PKG-FEVER-ACUTE",
+    category: "Infectious & Tropical",
+    price: 1299,
+    originalPrice: 2800,
     testsCount: 18,
     fasting: false,
     tatHours: 4,
@@ -110,11 +119,11 @@ const DEFAULT_PACKAGES: HealthPackage[] = [
 ];
 
 const TUBE_CONTAINER_COLORS: Record<string, { bg: string; text: string; capColor: string }> = {
-  "EDTA Tube": { bg: "bg-purple-500/20", text: "text-purple-300", capColor: "#8B5CF6" },
-  "Serum Separator Tube": { bg: "bg-amber-500/20", text: "text-amber-300", capColor: "#F59E0B" },
-  "Fluoride Tube": { bg: "bg-slate-500/20", text: "text-slate-300", capColor: "#64748B" },
-  "Lithium Heparin": { bg: "bg-emerald-500/20", text: "text-emerald-300", capColor: "#10B981" },
-  "Sterile Container": { bg: "bg-yellow-500/20", text: "text-yellow-300", capColor: "#EAB308" },
+  "EDTA Tube": { bg: "bg-purple-50", text: "text-purple-700", capColor: "#8B5CF6" },
+  "Serum Separator Tube": { bg: "bg-amber-50", text: "text-amber-800", capColor: "#F59E0B" },
+  "Fluoride Tube": { bg: "bg-slate-100", text: "text-slate-700", capColor: "#64748B" },
+  "Lithium Heparin": { bg: "bg-emerald-50", text: "text-emerald-700", capColor: "#10B981" },
+  "Sterile Container": { bg: "bg-yellow-50", text: "text-yellow-800", capColor: "#EAB308" },
 };
 
 export default function PackageMatrixView() {
@@ -123,19 +132,18 @@ export default function PackageMatrixView() {
 
   return (
     <div className="space-y-6">
-      {/* Banner */}
-      <div className="relative overflow-hidden rounded-3xl border border-indigo-500/30 bg-gradient-to-br from-slate-950 via-slate-900 to-indigo-950 p-6 text-white shadow-2xl">
-        <div className="pointer-events-none absolute -right-20 -top-24 h-64 w-64 rounded-full bg-cyan-500/10 blur-3xl" />
-        
-        <div className="relative flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <div className="inline-flex items-center gap-2 rounded-full border border-indigo-400/40 bg-indigo-400/10 px-3.5 py-1.5 text-[11px] font-bold uppercase tracking-widest text-indigo-300 backdrop-blur-md">
-              <Package className="h-3.5 w-3.5" /> Bundled Health Checkups &amp; Pathology Profiles
+      {/* Light White Professional Clinical Hero */}
+      <div className="relative overflow-hidden rounded-3xl border border-blue-200/80 bg-gradient-to-br from-blue-50/50 via-white to-indigo-50/30 p-6 sm:p-7 shadow-xs">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-5">
+          <div className="space-y-2">
+            <div className="inline-flex items-center gap-2 rounded-full border border-blue-300 bg-blue-100/70 px-3.5 py-1 text-xs font-bold text-blue-800">
+              <Package className="h-3.5 w-3.5 text-blue-600" />
+              <span>Bundled Health Checkups &amp; Pathology Profiles</span>
             </div>
-            <h2 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">
-              Multi-Test Health Packages Master
+            <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+              Diagnostic Health Packages &amp; Multi-Test Panels
             </h2>
-            <p className="mt-1 text-xs text-slate-300 sm:text-sm">
+            <p className="text-sm text-slate-600 max-w-2xl leading-relaxed">
               Integrated multi-parameter clinical panels with bundled vacutainer tube optimization, package tariffs, and automatic discount calculation.
             </p>
           </div>
@@ -143,7 +151,7 @@ export default function PackageMatrixView() {
           <div className="flex flex-wrap items-center gap-3">
             <Link
               href="/orders/new"
-              className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 px-5 py-3 text-xs font-black text-slate-950 shadow-xl shadow-cyan-950/50 hover:from-cyan-400 hover:to-blue-500 transition-all"
+              className="inline-flex items-center gap-2 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white px-5 py-3 text-xs font-bold shadow-xs transition"
             >
               <Plus className="h-4 w-4" /> Book Package Order
             </Link>
@@ -152,9 +160,9 @@ export default function PackageMatrixView() {
       </div>
 
       {/* Grid: Packages List + Package Detail Breakdown */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Package Cards (2 Cols) */}
-        <div className="lg:col-span-2 space-y-4">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        {/* Package Cards (7 Cols) */}
+        <div className="lg:col-span-7 space-y-4">
           {packages.map((pkg) => {
             const savings = pkg.originalPrice - pkg.price;
             const discountPercent = Math.round((savings / pkg.originalPrice) * 100);
@@ -164,40 +172,42 @@ export default function PackageMatrixView() {
               <div
                 key={pkg.id}
                 onClick={() => setSelectedPkg(pkg)}
-                className={`relative overflow-hidden rounded-3xl border p-6 transition-all duration-300 cursor-pointer ${
+                className={`relative overflow-hidden rounded-2xl border p-5 transition-all duration-200 cursor-pointer ${
                   isSelected
-                    ? "border-cyan-400 bg-slate-900/90 ring-2 ring-cyan-400/30 shadow-2xl"
-                    : "border-slate-800 bg-slate-950/80 hover:border-slate-700 hover:bg-slate-900/60"
+                    ? "border-blue-400 bg-blue-50/50 ring-2 ring-blue-500/10 shadow-sm"
+                    : "border-slate-200/90 bg-white hover:border-slate-300 hover:bg-slate-50/50 shadow-xs"
                 }`}
               >
                 {pkg.popular && (
-                  <div className="absolute right-0 top-0 bg-gradient-to-l from-amber-500 to-orange-500 px-4 py-1 text-[9px] font-black uppercase tracking-widest text-slate-950 rounded-bl-xl shadow-md">
-                    ⭐ POPULAR CLINICAL PACKAGE
+                  <div className="absolute right-0 top-0 bg-amber-500 px-3 py-0.5 text-[9px] font-black uppercase tracking-wider text-slate-950 rounded-bl-xl shadow-xs">
+                    ⭐ POPULAR PACKAGE
                   </div>
                 )}
 
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                  <div className="space-y-1.5">
+                  <div className="space-y-1.5 flex-1">
                     <div className="flex items-center gap-2">
-                      <span className="font-mono text-xs font-bold text-cyan-300 bg-cyan-950/60 border border-cyan-500/40 px-2.5 py-0.5 rounded-lg">
+                      <span className="font-mono text-xs font-bold text-blue-700 bg-blue-50 border border-blue-200 px-2 py-0.5 rounded-md">
                         {pkg.code}
                       </span>
-                      <span className="text-xs font-bold text-slate-400">{pkg.category}</span>
+                      <span className="text-xs font-semibold text-slate-500">{pkg.category}</span>
                     </div>
-                    <h3 className="text-lg font-bold text-white">{pkg.name}</h3>
-                    <p className="text-xs text-slate-400 flex items-center gap-3">
-                      <span>🧪 {pkg.testsCount} Total Parameters</span>
-                      <span>⏱️ TAT: {pkg.tatHours} Hours</span>
-                      <span>{pkg.fasting ? "⚠️ 10-12h Fasting Required" : "✓ Non-Fasting"}</span>
-                    </p>
+                    <h3 className="text-base font-bold text-slate-900 leading-snug">{pkg.name}</h3>
+                    <div className="text-xs text-slate-500 flex flex-wrap items-center gap-3 pt-0.5">
+                      <span className="font-semibold text-slate-700">🧪 {pkg.testsCount} Analytes</span>
+                      <span>⏱️ TAT: {pkg.tatHours}h</span>
+                      <span className={pkg.fasting ? "text-amber-700 font-semibold" : "text-emerald-700 font-semibold"}>
+                        {pkg.fasting ? "⚠️ Fasting 10-12h" : "✓ Non-Fasting"}
+                      </span>
+                    </div>
                   </div>
 
-                  <div className="text-right sm:border-l sm:border-slate-800 sm:pl-6 min-w-[140px]">
-                    <div className="flex items-baseline justify-end gap-2">
-                      <span className="text-2xl font-black text-cyan-300 font-mono">₹{pkg.price}</span>
-                      <span className="text-xs text-slate-500 line-through font-mono">₹{pkg.originalPrice}</span>
+                  <div className="text-right sm:border-l sm:border-slate-200 sm:pl-5 min-w-[130px] shrink-0">
+                    <div className="flex items-baseline justify-end gap-1.5">
+                      <span className="text-2xl font-black text-slate-900 font-mono">₹{pkg.price}</span>
+                      <span className="text-xs text-slate-400 line-through font-mono">₹{pkg.originalPrice}</span>
                     </div>
-                    <span className="inline-block rounded-full bg-emerald-500/20 border border-emerald-500/40 px-2 py-0.5 text-[10px] font-black text-emerald-300 mt-1">
+                    <span className="inline-block rounded-lg bg-emerald-50 border border-emerald-200 px-2 py-0.5 text-[10px] font-extrabold text-emerald-700 mt-1">
                       Save {discountPercent}% (₹{savings})
                     </span>
                   </div>
@@ -207,70 +217,80 @@ export default function PackageMatrixView() {
           })}
         </div>
 
-        {/* Selected Package Test Composition Inspector */}
-        <div className="rounded-3xl border border-slate-800 bg-slate-950 p-6 shadow-2xl space-y-5">
+        {/* Selected Package Test Composition Inspector (5 Cols) */}
+        <div className="lg:col-span-5 rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xs space-y-5">
           {selectedPkg ? (
             <>
-              <div className="border-b border-slate-800 pb-4">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-400">Package Composition &amp; Tubes</span>
-                <h3 className="text-lg font-black text-white mt-1">{selectedPkg.name}</h3>
-                <p className="text-xs text-slate-400 font-mono mt-0.5">Code: {selectedPkg.code}</p>
+              <div className="border-b border-slate-100 pb-4 space-y-1">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 bg-blue-50 px-2.5 py-0.5 rounded-md">
+                  Panel Composition &amp; Tubes
+                </span>
+                <h3 className="text-lg font-black text-slate-900 mt-1">{selectedPkg.name}</h3>
+                <p className="text-xs text-slate-500 font-mono">Code: {selectedPkg.code}</p>
               </div>
 
               {/* Required Vacutainer Tubes */}
               <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Required Phlebotomy Tubes for this Package
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {Array.from(new Set(selectedPkg.tests.map(t => t.container))).map((container, i) => {
-                    const style = TUBE_CONTAINER_COLORS[container] || { bg: "bg-slate-800", text: "text-slate-300", capColor: "#06B6D4" };
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-600 flex items-center justify-between">
+                  <span>Required Specimen Tubes</span>
+                  <span className="text-[10px] text-blue-600 font-bold">Phlebotomy SOP</span>
+                </h4>
+                <div className="flex flex-wrap gap-2">
+                  {Array.from(new Set(selectedPkg.tests.map((t) => t.container))).map((containerName) => {
+                    const tubeStyle = TUBE_CONTAINER_COLORS[containerName] || {
+                      bg: "bg-slate-100",
+                      text: "text-slate-700",
+                      capColor: "#64748B",
+                    };
                     return (
-                      <span
-                        key={i}
-                        className="inline-flex items-center gap-1.5 rounded-xl border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-bold text-slate-200"
+                      <div
+                        key={containerName}
+                        className={`inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-1.5 text-xs font-bold ${tubeStyle.bg} ${tubeStyle.text}`}
                       >
-                        <span className="h-2 w-2 rounded-full" style={{ backgroundColor: style.capColor }} />
-                        <span>{container}</span>
-                      </span>
+                        <span className="h-2.5 w-2.5 rounded-full shadow-xs" style={{ backgroundColor: tubeStyle.capColor }} />
+                        <span>{containerName}</span>
+                      </div>
                     );
                   })}
                 </div>
               </div>
 
-              {/* Included Diagnostic Profiles */}
+              {/* Component Tests List */}
               <div className="space-y-2">
-                <p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Included Test Profiles ({selectedPkg.tests.length})
-                </p>
-                <div className="space-y-2 max-h-[300px] overflow-y-auto custom-scrollbar">
-                  {selectedPkg.tests.map((test, idx) => (
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-600">
+                  Investigations Included ({selectedPkg.tests.length})
+                </h4>
+                <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
+                  {selectedPkg.tests.map((t, idx) => (
                     <div
                       key={idx}
-                      className="rounded-2xl border border-slate-800/80 bg-slate-900/60 p-3 flex items-start justify-between gap-2 text-xs"
+                      className="flex items-center justify-between p-2.5 rounded-xl bg-slate-50 border border-slate-200/80 text-xs"
                     >
-                      <div>
-                        <p className="font-bold text-slate-200">{test.name}</p>
-                        <span className="font-mono text-[10px] text-cyan-400 font-bold">{test.code}</span>
+                      <div className="space-y-0.5">
+                        <span className="font-bold text-slate-900 block">{t.name}</span>
+                        <span className="text-[10px] font-mono text-slate-500">{t.code} · {t.container}</span>
                       </div>
-                      <span className="text-[10px] text-slate-500 font-medium">{test.container}</span>
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0" />
                     </div>
                   ))}
                 </div>
               </div>
 
+              {/* Order Booking Action */}
               <div className="pt-2">
                 <Link
-                  href={`/orders/new`}
-                  className="w-full flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 p-3.5 text-xs font-black text-slate-950 shadow-xl shadow-cyan-950/50 hover:from-cyan-400 hover:to-blue-500 transition-all"
+                  href="/orders/new"
+                  className="w-full flex items-center justify-center gap-2 rounded-xl bg-blue-600 hover:bg-blue-700 text-white py-3 text-xs font-bold shadow-xs transition"
                 >
-                  <span>Book Requisition for this Package (₹{selectedPkg.price})</span>
+                  <span>Book Requisition for {selectedPkg.code}</span>
                   <ArrowRight className="h-4 w-4" />
                 </Link>
               </div>
             </>
           ) : (
-            <div className="p-12 text-center text-slate-500">Select a package to view test composition</div>
+            <div className="text-center py-10 text-slate-400 text-xs">
+              Select a package to view composition and vacutainer requirements
+            </div>
           )}
         </div>
       </div>

@@ -47,7 +47,7 @@ export const TrendView: React.FC<TrendViewProps> = ({
 
       // Call the trend endpoint
       const response = await fetch(
-        `/api/v1/results/trend/${patientId}/${testCode}?limit=20`
+        `/api/results/trend/${patientId}/${testCode}?limit=20`
       );
       
       if (!response.ok) {

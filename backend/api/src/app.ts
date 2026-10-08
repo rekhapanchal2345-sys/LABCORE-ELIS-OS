@@ -28,6 +28,7 @@ import analyzerRoutes from "./modules/analyzers/analyzer.routes";
 import auditRoutes from "./modules/audit/audit.routes";
 import dashboardRoutes from "./modules/dashboard/dashboard.routes";
 import communicationRoutes from "./modules/communications/communication.routes";
+import whatsappAdvancedRoutes from "./modules/communications/whatsapp-advanced.routes";
 import laboratorySettingsRoutes from "./modules/settings/laboratory-settings.routes";
 import notificationTemplateRoutes from "./modules/notifications/notification-template.routes";
 import backupRoutes from "./modules/backup/backup.routes";
@@ -406,6 +407,7 @@ app.use("/api/dashboard", dashboardRoutes);
 // =======================================================
 
 app.use("/api/communications", communicationRoutes);
+app.use("/api/whatsapp", whatsappAdvancedRoutes);
 
 // =======================================================
 // SETTINGS
@@ -430,6 +432,7 @@ app.use("/api/backups", backupRoutes);
 // =======================================================
 
 app.use("/api/barcodes", barcodeRoutes);
+app.use("/api/barcode", barcodeRoutes);
 
 // =======================================================
 // ABDM (Ayushman Bharat Digital Mission)

@@ -4,7 +4,7 @@ import bcrypt from 'bcryptjs';
 
 async function resetAdminPassword() {
   try {
-    const newPassword = 'nikil@7041983246';
+    const newPassword = process.env.NEW_ADMIN_PASSWORD || 'default_secure_pwd';
     const email = process.env.ADMIN_EMAIL || 'admin@labcore.local';
 
     console.log('🔐 Resetting admin password...');

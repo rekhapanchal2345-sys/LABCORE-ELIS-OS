@@ -59,7 +59,7 @@ const STANDARD_PACKAGES = [
     recommendedFor: "Annual preventive health assessment for adults above 25 years.",
     tatDisplay: "Same Day (8-12 hours)",
     isPopular: true,
-    color: "#10B981",
+    color: "#059669",
     icon: "🌟",
   },
   {
@@ -73,7 +73,7 @@ const STANDARD_PACKAGES = [
     recommendedFor: "Individuals with type 1/2 diabetes, pre-diabetes, or metabolic syndrome.",
     tatDisplay: "Same Day",
     isPopular: true,
-    color: "#3B82F6",
+    color: "#2563eb",
     icon: "🩺",
   },
   {
@@ -87,7 +87,7 @@ const STANDARD_PACKAGES = [
     recommendedFor: "Senior citizens (60+ years) for chronic disease monitoring and mobility assessment.",
     tatDisplay: "24 hours",
     isPopular: false,
-    color: "#8B5CF6",
+    color: "#7c3aed",
     icon: "👴",
   },
   {
@@ -101,7 +101,7 @@ const STANDARD_PACKAGES = [
     recommendedFor: "Patients with acute onset high fever, chills, body aches, or suspicion of vector-borne illness.",
     tatDisplay: "STAT (2 - 4 hours)",
     isPopular: true,
-    color: "#EF4444",
+    color: "#e11d48",
     icon: "🌡️",
   },
 ];
@@ -221,23 +221,23 @@ export default function TestPackagesPage() {
       <div className="space-y-6 pb-24">
         {/* Success Toast */}
         {successMessage && (
-          <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl border border-emerald-500/40 bg-emerald-950/90 px-5 py-3 text-xs font-black text-emerald-300 shadow-2xl backdrop-blur-xl animate-in fade-in slide-in-from-top-2">
-            <CheckCircle2 className="h-4 w-4 text-emerald-400" />
+          <div className="fixed top-5 right-5 z-50 flex items-center gap-2.5 rounded-2xl border border-emerald-300 bg-emerald-50 px-5 py-3 text-xs font-bold text-emerald-800 shadow-lg animate-in fade-in slide-in-from-top-2">
+            <CheckCircle2 className="h-4 w-4 text-emerald-600" />
             <span>{successMessage}</span>
           </div>
         )}
 
         {/* Master Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-800/80 pb-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-200/90 pb-4">
           <div>
-            <div className="flex items-center gap-2 text-xs font-bold text-blue-400 mb-1">
+            <div className="flex items-center gap-2 text-xs font-bold text-blue-600 mb-1">
               <Package className="h-3.5 w-3.5" />
-              <span>Preventive Healthcare & Multi-Test Health Profiles</span>
+              <span>Preventive Healthcare &amp; Multi-Test Health Profiles</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight flex items-center gap-3">
-              <span>Health Packages & Preventive Panels</span>
+            <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight flex items-center gap-3">
+              <span>Health Packages &amp; Preventive Panels</span>
             </h1>
-            <p className="text-xs font-medium text-slate-400 mt-1">
+            <p className="text-xs font-medium text-slate-500 mt-1">
               Bundle multiple diagnostic investigations into high-value health checkup packages with bundled savings
             </p>
           </div>
@@ -246,15 +246,15 @@ export default function TestPackagesPage() {
             <button
               onClick={handleSeedStandardPackages}
               disabled={seeding}
-              className="flex items-center gap-2 rounded-xl border border-indigo-500/30 bg-indigo-950/40 px-4 py-2.5 text-xs font-bold text-indigo-300 hover:bg-indigo-900/60 hover:text-white transition shadow-lg shadow-indigo-500/10 disabled:opacity-50"
+              className="flex items-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100 transition shadow-xs disabled:opacity-50 cursor-pointer"
             >
-              <Sparkles className="h-4 w-4 text-indigo-400" />
+              <Sparkles className="h-4 w-4 text-indigo-600" />
               <span>{seeding ? "Generating..." : "Generate 4 Standard Packages"}</span>
             </button>
 
             <Link
               href="/tests/packages/new"
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-4.5 py-2.5 text-xs font-black text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-lg shadow-blue-500/25"
+              className="flex items-center gap-2 rounded-xl bg-blue-600 px-4.5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-xs"
             >
               <Plus className="h-4 w-4" />
               <span>Create New Package</span>
@@ -263,7 +263,7 @@ export default function TestPackagesPage() {
         </div>
 
         {/* Search Bar */}
-        <div className="rounded-2xl border border-slate-800 bg-slate-950/80 p-3 shadow-xl flex items-center justify-between gap-3">
+        <div className="rounded-2xl border border-slate-200/90 bg-white p-3 shadow-xs flex items-center justify-between gap-3">
           <div className="relative w-full sm:w-96">
             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
             <input
@@ -271,17 +271,17 @@ export default function TestPackagesPage() {
               placeholder="Search packages by name, code, or clinical scope..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full rounded-xl border border-slate-700 bg-slate-900 pl-10 pr-4 py-2 text-xs font-semibold text-white placeholder-slate-500 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              className="w-full rounded-xl border border-slate-300 bg-slate-50/60 pl-10 pr-4 py-2 text-xs font-semibold text-slate-900 placeholder-slate-400 focus:bg-white focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition"
             />
           </div>
 
-          <span className="text-xs font-bold text-slate-400 px-2">
+          <span className="text-xs font-bold text-slate-500 px-2">
             {filteredPackages.length} Health Packages
           </span>
         </div>
 
         {error && (
-          <div className="rounded-2xl bg-rose-950/60 border border-rose-500/40 p-4 text-xs font-bold text-rose-300">
+          <div className="rounded-2xl bg-rose-50 border border-rose-300 p-4 text-xs font-bold text-rose-800 shadow-xs">
             {error}
           </div>
         )}
@@ -289,19 +289,19 @@ export default function TestPackagesPage() {
         {/* Packages Grid */}
         {loading ? (
           <div className="py-20 text-center space-y-3">
-            <div className="h-8 w-8 animate-spin rounded-full border-3 border-blue-500 border-t-transparent mx-auto" />
-            <div className="text-xs font-bold text-slate-400">Loading Health Packages Catalog...</div>
+            <div className="h-8 w-8 animate-spin rounded-full border-3 border-blue-600 border-t-transparent mx-auto" />
+            <div className="text-xs font-bold text-slate-500">Loading Health Packages Catalog...</div>
           </div>
         ) : filteredPackages.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-slate-800 bg-slate-900/40 p-12 text-center space-y-4">
-            <Package className="h-10 w-10 text-slate-600 mx-auto" />
-            <h3 className="text-base font-black text-white">No health packages found</h3>
-            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+          <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white p-12 text-center space-y-4 shadow-xs">
+            <Package className="h-10 w-10 text-slate-400 mx-auto" />
+            <h3 className="text-base font-black text-slate-900">No health packages found</h3>
+            <p className="text-xs text-slate-500 max-w-sm mx-auto">
               Create multi-test health checkup profiles or auto-generate 4 standard hospital packages.
             </p>
             <button
               onClick={handleSeedStandardPackages}
-              className="rounded-xl bg-gradient-to-r from-blue-600 to-indigo-600 px-5 py-2.5 text-xs font-bold text-white hover:from-blue-500 hover:to-indigo-500 transition shadow-lg shadow-blue-500/25"
+              className="rounded-xl bg-blue-600 px-5 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition shadow-xs cursor-pointer"
             >
               ⚡ Generate Standard Packages
             </button>
@@ -312,45 +312,44 @@ export default function TestPackagesPage() {
               const offerRate = pkg.offerPrice || pkg.totalPrice;
               const hasDiscount = pkg.offerPrice && pkg.offerPrice < pkg.totalPrice;
               const discountPct = hasDiscount ? Math.round(((pkg.totalPrice - offerRate) / pkg.totalPrice) * 100) : 0;
-              const pkgColor = pkg.color || "#3B82F6";
+              const pkgColor = pkg.color || "#2563eb";
 
               return (
                 <div
                   key={pkg.id}
                   onClick={() => setInspectingPackage(pkg)}
-                  className={`group relative rounded-2xl border transition-all duration-200 overflow-hidden backdrop-blur-xl cursor-pointer ${
+                  className={`group relative rounded-2xl border transition-all duration-200 overflow-hidden bg-white cursor-pointer shadow-xs ${
                     pkg.isActive
-                      ? "border-slate-800 bg-slate-900/70 hover:border-slate-700 hover:shadow-2xl"
-                      : "border-slate-800/50 bg-slate-950/40 opacity-70"
+                      ? "border-slate-200/90 hover:border-slate-300 hover:shadow-md"
+                      : "border-slate-200/60 opacity-70"
                   }`}
                 >
                   <div
                     className="h-1.5 w-full transition-all group-hover:h-2"
-                    style={{ backgroundColor: pkgColor, boxShadow: `0 0 12px ${pkgColor}88` }}
+                    style={{ backgroundColor: pkgColor }}
                   />
 
                   <div className="p-5 space-y-4">
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-3">
                         <span
-                          className="flex h-11 w-11 items-center justify-center rounded-2xl text-xl shadow-lg border border-white/10"
-                          style={{ backgroundColor: `${pkgColor}25` }}
+                          className="flex h-11 w-11 items-center justify-center rounded-2xl text-xl shadow-xs border border-slate-200/80 bg-slate-50"
                         >
                           {pkg.icon || "🌟"}
                         </span>
                         <div>
                           <div className="flex items-center gap-2">
-                            <span className="text-xs font-mono font-black text-slate-400">
+                            <span className="text-xs font-mono font-black text-slate-500">
                               {pkg.packageCode}
                             </span>
                             {pkg.isPopular && (
-                              <span className="flex items-center gap-1 rounded bg-amber-500/10 px-1.5 py-0.5 text-[9px] font-black text-amber-400 border border-amber-500/30">
-                                <Star className="h-2.5 w-2.5 fill-amber-400" />
+                              <span className="flex items-center gap-1 rounded bg-amber-50 px-1.5 py-0.5 text-[9px] font-black text-amber-700 border border-amber-200">
+                                <Star className="h-2.5 w-2.5 fill-amber-500 text-amber-500" />
                                 <span>FEATURED</span>
                               </span>
                             )}
                           </div>
-                          <h3 className="text-base font-black text-white leading-tight mt-0.5">
+                          <h3 className="text-base font-black text-slate-900 leading-tight mt-0.5">
                             {pkg.packageName}
                           </h3>
                         </div>
@@ -360,30 +359,30 @@ export default function TestPackagesPage() {
                       <button
                         type="button"
                         onClick={(e) => handleToggleActive(pkg, e)}
-                        className={`px-2 py-0.5 rounded-full text-[9px] font-black border ${
+                        className={`px-2 py-0.5 rounded-full text-[9px] font-black border cursor-pointer ${
                           pkg.isActive
-                            ? "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
-                            : "bg-slate-800 border-slate-700 text-slate-400"
+                            ? "bg-emerald-50 border-emerald-300 text-emerald-800"
+                            : "bg-slate-100 border-slate-300 text-slate-600"
                         }`}
                       >
                         {pkg.isActive ? "ACTIVE" : "INACTIVE"}
                       </button>
                     </div>
 
-                    <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed min-h-[36px]">
+                    <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed min-h-[36px]">
                       {pkg.description || "Comprehensive multi-test diagnostic screening package."}
                     </p>
 
                     {/* Pricing & Savings Box */}
-                    <div className="rounded-xl bg-slate-950/80 p-3 border border-slate-800 flex items-center justify-between">
+                    <div className="rounded-xl bg-slate-50 p-3 border border-slate-200/80 flex items-center justify-between">
                       <div>
-                        <span className="text-[10px] font-bold text-slate-400 block">Package Offer Price</span>
+                        <span className="text-[10px] font-bold text-slate-500 block">Package Offer Price</span>
                         <div className="flex items-baseline gap-2">
-                          <span className="text-lg font-black text-emerald-400">
+                          <span className="text-lg font-black text-emerald-700">
                             ₹{offerRate.toLocaleString("en-IN")}
                           </span>
                           {hasDiscount && (
-                            <span className="text-xs font-bold text-slate-500 line-through">
+                            <span className="text-xs font-bold text-slate-400 line-through">
                               ₹{pkg.totalPrice.toLocaleString("en-IN")}
                             </span>
                           )}
@@ -391,16 +390,16 @@ export default function TestPackagesPage() {
                       </div>
 
                       {hasDiscount && (
-                        <span className="rounded-lg bg-emerald-500/10 px-2 py-1 text-xs font-black text-emerald-400 border border-emerald-500/30">
+                        <span className="rounded-lg bg-emerald-50 px-2 py-1 text-xs font-black text-emerald-800 border border-emerald-200">
                           {discountPct}% OFF
                         </span>
                       )}
                     </div>
 
                     {/* Footer Info */}
-                    <div className="flex items-center justify-between pt-2 border-t border-slate-800/80 text-[11px] text-slate-400">
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-slate-500">
                       <span className="flex items-center gap-1 font-semibold">
-                        <Clock3 className="h-3.5 w-3.5 text-amber-400" />
+                        <Clock3 className="h-3.5 w-3.5 text-amber-600" />
                         <span>{pkg.tatDisplay || "Same Day"}</span>
                       </span>
 
@@ -408,19 +407,19 @@ export default function TestPackagesPage() {
                         <button
                           type="button"
                           onClick={(e) => handleTogglePopular(pkg, e)}
-                          className={`p-1.5 rounded-lg border transition ${
+                          className={`p-1.5 rounded-lg border transition cursor-pointer ${
                             pkg.isPopular
-                              ? "bg-amber-500/20 border-amber-500/40 text-amber-400"
-                              : "bg-slate-800 border-slate-700 text-slate-400 hover:text-white"
+                              ? "bg-amber-50 border-amber-300 text-amber-700"
+                              : "bg-slate-50 border-slate-200 text-slate-500 hover:text-slate-900"
                           }`}
                           title="Toggle Popular"
                         >
-                          <Star className={`h-3.5 w-3.5 ${pkg.isPopular ? "fill-amber-400" : ""}`} />
+                          <Star className={`h-3.5 w-3.5 ${pkg.isPopular ? "fill-amber-500 text-amber-500" : ""}`} />
                         </button>
                         <button
                           type="button"
                           onClick={(e) => handleDeletePackage(pkg.id, pkg.packageName, e)}
-                          className="p-1.5 rounded-lg border border-slate-800 bg-slate-800 text-slate-400 hover:bg-rose-950/50 hover:text-rose-400 transition"
+                          className="p-1.5 rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-rose-50 hover:text-rose-700 transition cursor-pointer"
                           title="Delete Package"
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -434,53 +433,53 @@ export default function TestPackagesPage() {
           </div>
         )}
 
-        {/* DRAWER / INSPECTOR: HEALTH PACKAGE DETAILS */}
+        {/* DRAWER / INSPECTOR: HEALTH PACKAGE DETAILS (LIGHT WHITE) */}
         {inspectingPackage && (
-          <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-            <div className="h-full w-full max-w-md bg-slate-900 border-l border-slate-800 p-6 overflow-y-auto space-y-6 shadow-2xl">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-end bg-slate-900/40 backdrop-blur-xs animate-in fade-in">
+            <div className="h-full w-full max-w-md bg-white border-l border-slate-200/90 p-6 overflow-y-auto space-y-6 shadow-2xl">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-4">
                 <div className="flex items-center gap-2">
-                  <Package className="h-5 w-5 text-blue-400" />
-                  <span className="text-xs font-black uppercase tracking-wider text-blue-400">
+                  <Package className="h-5 w-5 text-blue-600" />
+                  <span className="text-xs font-black uppercase tracking-wider text-blue-800">
                     Health Package Dossier
                   </span>
                 </div>
                 <button
                   type="button"
                   onClick={() => setInspectingPackage(null)}
-                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+                  className="rounded-xl p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition cursor-pointer"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
 
               <div>
-                <h2 className="text-xl font-black text-white">
+                <h2 className="text-xl font-black text-slate-900">
                   {inspectingPackage.packageName}
                 </h2>
                 <div className="flex items-center gap-2 mt-1">
-                  <span className="text-xs font-mono text-blue-400">{inspectingPackage.packageCode}</span>
-                  <span className="text-slate-600">•</span>
-                  <span className="text-xs text-slate-400">{inspectingPackage.targetAudience || "General Adult"}</span>
+                  <span className="text-xs font-mono font-bold text-blue-700">{inspectingPackage.packageCode}</span>
+                  <span className="text-slate-300">•</span>
+                  <span className="text-xs text-slate-500">{inspectingPackage.targetAudience || "General Adult"}</span>
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-slate-800 bg-slate-950 p-4 space-y-3">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-400 block">
-                  Package Pricing & Commercials
+              <div className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 space-y-3">
+                <span className="text-xs font-black uppercase tracking-wider text-slate-700 block">
+                  Package Pricing &amp; Commercials
                 </span>
                 <div className="space-y-2 text-xs">
-                  <div className="flex justify-between py-1 border-b border-slate-800">
-                    <span className="text-slate-400">Standard Sum of MRPs:</span>
-                    <span className="font-bold text-white">₹{inspectingPackage.totalPrice}</span>
+                  <div className="flex justify-between py-1 border-b border-slate-200/60">
+                    <span className="text-slate-500">Standard Sum of MRPs:</span>
+                    <span className="font-bold text-slate-900">₹{inspectingPackage.totalPrice}</span>
                   </div>
-                  <div className="flex justify-between py-1 border-b border-slate-800">
-                    <span className="text-slate-400">Package Offer Rate:</span>
-                    <span className="font-bold text-emerald-400">₹{inspectingPackage.offerPrice || inspectingPackage.totalPrice}</span>
+                  <div className="flex justify-between py-1 border-b border-slate-200/60">
+                    <span className="text-slate-500">Package Offer Rate:</span>
+                    <span className="font-bold text-emerald-700">₹{inspectingPackage.offerPrice || inspectingPackage.totalPrice}</span>
                   </div>
                   <div className="flex justify-between py-1">
-                    <span className="text-slate-400">Patient Savings:</span>
-                    <span className="font-bold text-emerald-400">
+                    <span className="text-slate-500">Patient Savings:</span>
+                    <span className="font-bold text-emerald-700">
                       ₹{inspectingPackage.totalPrice - (inspectingPackage.offerPrice || inspectingPackage.totalPrice)}
                     </span>
                   </div>
@@ -488,19 +487,19 @@ export default function TestPackagesPage() {
               </div>
 
               <div className="space-y-2">
-                <span className="text-xs font-black uppercase tracking-wider text-slate-400 block">
-                  Clinical Scope & Description
+                <span className="text-xs font-black uppercase tracking-wider text-slate-700 block">
+                  Clinical Scope &amp; Description
                 </span>
-                <p className="text-xs text-slate-300 leading-relaxed bg-slate-950 p-3 rounded-xl border border-slate-800">
+                <p className="text-xs text-slate-700 leading-relaxed bg-white p-3.5 rounded-xl border border-slate-200">
                   {inspectingPackage.description || "Comprehensive diagnostic health screening profile."}
                 </p>
               </div>
 
-              <div className="flex items-center gap-3 pt-4 border-t border-slate-800">
+              <div className="flex items-center gap-3 pt-4 border-t border-slate-100">
                 <button
                   type="button"
                   onClick={() => setInspectingPackage(null)}
-                  className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-black text-white hover:bg-blue-500 transition text-center"
+                  className="flex-1 rounded-xl bg-blue-600 px-4 py-2.5 text-xs font-bold text-white hover:bg-blue-700 transition text-center shadow-xs cursor-pointer"
                 >
                   Close Dossier
                 </button>

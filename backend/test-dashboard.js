@@ -9,8 +9,8 @@ async function login() {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        email: 'nikilpanchal5@gmail.com',
-        password: 'mns987654321'
+        email: process.env.ADMIN_EMAIL || 'admin@labcore.local',
+        password: process.env.ADMIN_PASSWORD || 'default_secure_pwd'
       })
     });
 

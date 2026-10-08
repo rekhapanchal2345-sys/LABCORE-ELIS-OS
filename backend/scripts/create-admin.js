@@ -15,7 +15,7 @@ async function createAdminUser() {
     const existingUser = await prisma.user.findFirst({
       where: {
         OR: [
-          { email: 'nikilpanchal5@gmail.com' },
+          { email: 'admin@labcore.local' },
           { employeeCode: 'ADMIN001' }
         ]
       }
@@ -31,8 +31,8 @@ async function createAdminUser() {
     console.log('🔐 Creating admin user...');
     
     // Admin user configuration
-    const email = 'nikilpanchal5@gmail.com';
-    const password = 'mns987654321';
+    const email = process.env.ADMIN_EMAIL || 'admin@labcore.local';
+    const password = process.env.ADMIN_PASSWORD || 'default_secure_pwd';
     const passwordHash = await bcrypt.hash(password, 12);
 
     // Create admin user

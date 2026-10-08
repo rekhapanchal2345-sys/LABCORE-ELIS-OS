@@ -93,7 +93,7 @@ const PatientRegistrationForm: React.FC = () => {
     try {
       const response = await axios.get('/api/patients/check-duplicate', {
         params: { phone, email },
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+        headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
       });
 
       if (response.data.data.isDuplicate) {
@@ -131,7 +131,7 @@ const PatientRegistrationForm: React.FC = () => {
           lastEditedSection: `step-${currentStep}`,
         },
         {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
         }
       );
 
@@ -161,14 +161,14 @@ const PatientRegistrationForm: React.FC = () => {
           `/api/patients/drafts/${draftId}/finalize`,
           data,
           {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+            headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
           }
         );
         setSuccessMessage(`Patient registered successfully! UHID: ${response.data.data.patient.uhid}`);
       } else {
         // Create new patient
         const response = await axios.post('/api/patients', data, {
-          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+          headers: { Authorization: `Bearer ${localStorage.getItem('accessToken')}` },
         });
         setSuccessMessage(`Patient registered successfully! UHID: ${response.data.data.uhid}`);
       }

@@ -62,8 +62,6 @@ export const createOrder = async (
 
   // Generate unique order number and barcode with collision prevention
   const timestamp = Date.now();
-  const randomSuffix = Math.floor(Math.random() * 10000).toString().padStart(4, "0");
-  const orderNumber = `ORD-${new Date().getFullYear()}-${randomSuffix}`;
   const barcode = `SMP-${timestamp}`;
 
   let subtotal = 0;
@@ -121,6 +119,8 @@ export const createOrder = async (
   }
 
   return prisma.$transaction(async (tx) => {
+    const orderNumber = await getNextSequenceNumber("ORD", "MAIN", tx);
+    
     const order = await tx.order.create({
       data: {
         orderNumber,

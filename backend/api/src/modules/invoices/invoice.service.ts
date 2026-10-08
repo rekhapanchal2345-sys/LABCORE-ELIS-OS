@@ -49,7 +49,7 @@ export const createInvoice = async (
 
     const subtotal = order.items.reduce(
       (total, item) => {
-        return total + (Number(item.finalPrice) || 0);
+        return total + (Number(item.price) || 0);
       },
       0
     );
