@@ -6,8 +6,8 @@ import Link from "next/link";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { testApi } from "@/lib/api";
 import { SampleType, TestFormData, TestCategory } from "@/types";
-import { CloneTestModal } from "@/components/tests/CloneTestModal";
-import { QuickOrderRequisitionModal } from "@/components/tests/QuickOrderRequisitionModal";
+import CloneTestModal from "@/components/tests/CloneTestModal";
+import QuickOrderRequisitionModal from "@/components/tests/QuickOrderRequisitionModal";
 import {
   FlaskConical,
   Edit,
@@ -964,7 +964,7 @@ export default function TestDetailPage() {
           <QuickOrderRequisitionModal
             isOpen={requisitionModalOpen}
             onClose={() => setRequisitionModalOpen(false)}
-            tests={[test]}
+            selectedTests={[test]}
           />
         )}
       </div>

@@ -4501,6 +4501,7 @@ export const userApi = {
 
 // Tests API
 export const testApi = {
+  getParameters: async (params = "") => { const qs = params ? `?${params}` : ""; return apiCall(`/api/tests/parameters${qs}`); },
   // Categories
   getCategories: async (params = '') => {
     const queryString = params ? `?${params}` : '';
